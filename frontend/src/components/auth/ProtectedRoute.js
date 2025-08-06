@@ -3,18 +3,21 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
-  const { currentUser } = useAuth();
-  
-  if (!currentUser) {
+  const {user} = useAuth();
+
+  if (!user){
     // Not logged in
     return <Navigate to="/login" replace />;
   }
-  
-  if (requiredRoles.length && !requiredRoles.includes(currentUser.role)) {
+
+  if (
+    requiredRoles.length &&
+    !requiredRoles.map(r => r.toLowerCase()).includes(currentUser.role?.toLowerCase())
+  ) {
     // User doesn't have required role
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 

@@ -1,32 +1,65 @@
-import React from 'react';
-import { Box, Container } from '@mui/material';
-import Header from './Header';
+import React, { useState } from 'react';
+import { Box, Container, useMediaQuery, useTheme } from '@mui/material';
+import { Outlet, useLocation } from 'react-router-dom';
+import TopBar from './TopBar';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
+import { APP_TEXT } from '../../utils/appText';
+
+const SIDEBAR_WIDTH = 240;
+const SIDEBAR_WIDTH_COLLAPSED = 72;
 
 const Layout = ({ children }) => {
-  const [open, setOpen] = React.useState(true);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [open, setOpen] = useState(!isMobile);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
 
-  const toggleDrawer = () => {
-    setOpen(!open);
+  const rawPath = location.pathname.split('/').filter(Boolean).pop();
+  const pageTitle = rawPath?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || APP_TEXT.DASHBOARD_TITLE;
+
+  const handleDrawerToggle = () => {
+    if (isMobile) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setOpen(!open);
+    }
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Header open={open} toggleDrawer={toggleDrawer} />
-      <Sidebar open={open} />
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+      <TopBar 
+        drawerWidth={open ? 240 : 72}
+        handleDrawerToggle={handleDrawerToggle}
+        title={pageTitle}
+        sidebarOpen={open}
+      />
+
+      <Sidebar 
+        open={open}
+        setOpen={setOpen}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        title={open ? pageTitle : ''}
+      />
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          overflow: 'auto',
-          pt: 8, // Space for fixed header
-          px: 2,
-          pb: 2,
+          backgroundColor: theme.palette.background.default,
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
+          marginLeft: !isMobile ? (open ? `${SIDEBAR_WIDTH}px` : `${SIDEBAR_WIDTH_COLLAPSED}px`) : 0,
+          width: !isMobile ? `calc(100% - ${(open ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_COLLAPSED)}px)` : '100%',
+          paddingTop: '64px', // For TopBar
         }}
       >
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          {children}
+        <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
+          <Outlet />
         </Container>
         <Footer />
       </Box>

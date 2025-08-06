@@ -1,6 +1,7 @@
 // src/components/layout/Footer.js
 import React from 'react';
 import { Box, Typography, Link } from '@mui/material';
+import { APP_TEXT } from '../../utils/appText';
 
 const Footer = () => {
   return (
@@ -9,7 +10,7 @@ const Footer = () => {
         {'© '}
         {new Date().getFullYear()}{' '}
         <Link color="inherit" href="#">
-          Cyber School Project
+          {APP_TEXT.SITE_NAME}
         </Link>
         {' | All rights reserved.'}
       </Typography>

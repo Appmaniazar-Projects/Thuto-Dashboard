@@ -1,41 +1,31 @@
 import axios from 'axios';
 
-// Create axios instance with base URL
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'http://localhost:8080/api',
 });
 
-// Add request interceptor to attach auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Add response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    // Handle 401 Unauthorized - redirect to login
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// ========== ADMIN DASHBOARD ENDPOINTS ==========
+
+export const fetchEnrollmentStats = () => api.get('/admin/stats/enrollment');
+
+export const fetchAttendanceStats = () => api.get('/admin/stats/attendance');
+
+export const fetchStudents = () => api.get('/admin/students');
+
+export const fetchCalendarEvents = () => api.get('/admin/calendar');
+
+export const fetchMessages = () => api.get('/admin/messages');
+
+export const fetchStudentsForTeacher = ({ grade, subject }) => api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
+
+export const submitAttendance = ({ grade, subject, date, attendance }) => api.post('/teacher/attendance', { grade, subject, date, attendance });
 
 export default api;

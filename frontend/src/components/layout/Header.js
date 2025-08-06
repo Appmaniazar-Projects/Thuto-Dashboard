@@ -4,6 +4,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../../context/AuthContext';
+import { APP_TEXT } from '../../utils/appText';
 
 const Header = ({ open, toggleDrawer }) => {
   const { currentUser } = useAuth();
@@ -27,7 +28,7 @@ const Header = ({ open, toggleDrawer }) => {
           noWrap
           sx={{ flexGrow: 1 }}
         >
-          Thuto
+          {APP_TEXT.SITE_NAME}
         </Typography>
         <IconButton color="inherit">
           <Badge badgeContent={4} color="secondary">

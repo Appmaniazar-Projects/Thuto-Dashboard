@@ -1,53 +1,108 @@
 // src/App.js
-// Main application component for Thuto School Management System
-// Configures global providers, routing, and theme
-
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
+import React, { useEffect } from 'react';
+import { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from 'notistack';
 
-// Import custom theme for consistent UI styling
+import './services/firebase';
+
+// Routes
+import { publicRoutes, protectedRoutes } from './routes';
+
+// Layouts
+import Layout from './components/layout/Layout';
+import AuthLayout from './components/layout/AuthLayout';
+
+// Contexts
+import { EventsProvider } from './context/EventsContext';
+import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { SystemMessageProvider } from './context/SystemMessageContext';
+
+// Theme
 import theme from './styles/theme';
 
-// Import pre-configured routes
-import routes from './routes';
+const getTheme = (mode = 'light') => createTheme({
+  ...theme,
+  palette: {
+    ...theme.palette,
+    mode,
+    ...(mode === 'dark' ? {
+      background: {
+        default: '#121212',
+        paper: '#1e1e1e',
+      },
+      text: {
+        primary: '#ffffff',
+        secondary: 'rgba(255, 255, 255, 0.7)',
+      },
+    } : {}),
+  },
+});
 
-// Import authentication context provider
-import AuthProvider from './context/AuthContext';
+// Scroll reset
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
+// App component
 function App() {
-  return (
-    // ThemeProvider: Applies consistent Material-UI theme across the application
-    <ThemeProvider theme={theme}>
-      {/* CssBaseline: Normalizes styles and provides a consistent baseline */}
-      <CssBaseline />
+  const [darkMode, setDarkMode] = React.useState(false);
+  const currentTheme = getTheme(darkMode ? 'dark' : 'light');
 
-      {/* AuthProvider: Manages authentication state and provides user context */}
-      <AuthProvider>
-        {/* BrowserRouter: Enables client-side routing */}
-        <BrowserRouter>
-          {/* Routes: Dynamically renders routes based on configuration */}
-          <Routes>
-            {/* Map through routes to create Route components */}
-            {routes.map((route, index) => (
-              <Route 
-                key={index} 
-                path={route.path} 
-                element={route.element} 
-              />
-            ))}
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+  return (
+    <ThemeProvider theme={currentTheme}>
+      <CssBaseline />
+      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+        <AuthProvider>
+          <NotificationProvider>
+            <SystemMessageProvider>
+              <EventsProvider>
+                <BrowserRouter>
+                  <ScrollToTop />
+                  <Routes>
+                    {/* Public routes - AuthLayout */}
+                    {publicRoutes.map((route, i) => (
+                      <Route
+                        key={i}
+                        path={route.path}
+                        element={
+                          <Suspense fallback={<div>Loading...</div>}>
+                            <AuthLayout>{route.element}</AuthLayout>
+                          </Suspense>
+                        }
+                      />
+                    ))}
+
+                    {/* Protected routes - Main Layout */}
+                    <Route element={<Layout />}>
+                      {protectedRoutes.map((route, i) => (
+                        <Route
+                          key={i}
+                          path={route.path}
+                          element={
+                            <Suspense fallback={<div>Loading...</div>}>
+                              {route.element}
+                            </Suspense>
+                          }
+                        />
+                      ))}
+                    </Route>
+                  </Routes>
+                </BrowserRouter>
+              </EventsProvider>
+            </SystemMessageProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }
 
 export default App;
-
-// Key Application Architecture Principles:
-// 1. Global theme management with Material-UI
-// 2. Centralized routing configuration
-// 3. Authentication context wrapping entire application
-// 4. Modular and extensible component structure

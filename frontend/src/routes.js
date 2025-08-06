@@ -1,57 +1,158 @@
 // src/routes.js
-// This file defines the routing configuration for the Thuto School Management System
-// It uses React Router for handling navigation between different components
-
-import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { lazy, Suspense, isValidElement } from 'react';
+import { CircularProgress } from '@mui/material';
+import AuthLayout from './components/layout/AuthLayout';
+import Layout from './components/layout/Layout';
 
-// Import authentication and dashboard components
-import Login from './components/auth/Login';
-import DashboardPage from './pages/DashboardPage';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import StudentReports from './components/reports/StudentReports';
-import ParentReports from './components/reports/ParentReports';
+const Login = lazy(() => import('./components/auth/Login'));
+const RegisterUser = lazy(() => import('./components/auth/RegisterUser'));
+const RegisterTeacher = lazy(() => import('./components/auth/RegisterTeacher'));
+const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const MessagesPage = lazy(() => import('./pages/MessagesPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+const StudentSubjects = lazy(() => import('./pages/student/StudentSubjects'));
+const Resources = lazy(() => import('./pages/student/Resources'));
+const StudentAttendance = lazy(() => import('./pages/student/StudentAttendance'));
+const StudentReports = lazy(() => import('./pages/student/StudentReports'));
+
+const ParentChildrenPage = lazy(() => import('./pages/parent/Children'));
+const ParentAcademicReportsPage = lazy(() => import('./pages/parent/Academic'));
+const ParentAttendance = lazy(() => import('./pages/parent/ParentAttendance'));
+const ParentReports = lazy(() => import('./components/reports/ParentReports'));
+
+const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
+const TeacherFeed = lazy(() => import('./components/dashboard/teacher/Feed'));
+
+const UserManagementPage = lazy(() => import('./pages/admin/Users'));
+const AdminReportsPage = lazy(() => import('./pages/admin/Reports'));
+const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettings'));
+const SystemMessagesPanel = lazy(() => import('./components/admin/SystemMessagesPanel'));
+const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
+
+const Loading = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <CircularProgress />
+  </div>
+);
+
+const isRedirect = (element) =>
+  isValidElement(element) && element.type === Navigate;
+
+// Only wrap in suspense here — layout is handled in App.js
+
+import RegisterWelcome from './components/auth/RegisterWelcome';
+
+export const publicRoutes = [
+  { path: '/', element: <RegisterWelcome /> },
+  { path: '/login', element: <Login /> },
+  { path: '/admin/login', element: <AdminLogin /> },
+  { path: '/register/user', element: <RegisterUser /> },
+  { path: '/register/teacher', element: <RegisterTeacher /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '*', element: <NotFoundPage /> }
+];
+
+export const protectedRoutes = [
+  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '/dashboard', element: <DashboardPage /> },
+  { path: '/calendar', element: <CalendarPage /> },
+  { path: '/messages', element: <MessagesPage /> },
+  { path: '/profile', element: <ProfilePage /> },
+  { path: '/settings', element: <SettingsPage /> },
+  { path: '/events/create', element: <CreateEventPage /> },
+  { path: '/calendar/event/new', element: <CreateEventPage /> },
+
+  // Student
+  { path: '/student/subjects', element: <StudentSubjects /> },
+  { path: '/student/resources', element: <Resources /> },
+  { path: '/student/attendance', element: <StudentAttendance /> },
+  { path: '/student/reports', element: <StudentReports /> },
+
+  // Parent
+  { path: '/parent/children', element: <ParentChildrenPage /> },
+  { path: '/parent/academic', element: <ParentAcademicReportsPage /> },
+  { path: '/parent/reports', element: <ParentAttendance /> },
+
+  // Teacher
+  { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
+  { path: '/teacher/feed', element: <TeacherFeed /> },
+  { path: '/teacher/resources', element: <Resources /> },
+  
+
+  // Admin
+  { path: '/admin/users', element: <UserManagementPage /> },
+  { path: '/admin/reports', element: <AdminReportsPage /> },
+  { path: '/admin/settings', element: <SystemSettingsPage /> },
+  { path: '/admin/messages', element: <SystemMessagesPanel /> },
+
+  // Redirects
+  { path: '/my-subjects', element: <Navigate to="/student/subjects" replace /> },
+  { path: '/student-reports', element: <Navigate to="/student/reports" replace /> },
+  { path: '/feed', element: <Navigate to="/teacher/feed" replace /> },
+  { path: '/children', element: <Navigate to="/parent/children" replace /> },
+  { path: '/academic', element: <Navigate to="/parent/academic" replace /> },
+  { path: '/academic-reports', element: <Navigate to="/parent/academic" replace /> },
+  { path: '/parent-reports', element: <Navigate to="/parent/reports" replace /> },
+  { path: '/attendance', element: <Navigate to="/teacher/attendance" replace /> },
+  { path: '/resources', element: <Navigate to="/teacher/resources" replace /> },
+  { path: '/users', element: <Navigate to="/admin/users" replace /> },
+  { path: '/reports', element: <Navigate to="/admin/reports" replace /> },
+  { path: '/system', element: <Navigate to="/admin/settings" replace /> }
+];
+
+
+// Create route elements with proper layout and suspense
+const createPublicRouteElement = (element) => {
+  if (isRedirect(element)) return element;
+  return (
+    <Suspense fallback={<Loading />}>
+      <AuthLayout>{element}</AuthLayout>
+    </Suspense>
+  );
+};
+
+const createProtectedRouteElement = (element) => {
+  if (isRedirect(element)) return element;
+  return (
+    <Suspense fallback={<Loading />}>
+      <Layout>{element}</Layout>
+    </Suspense>
+  );
+};
+
+// Process routes
+const processRoutes = (routes, isProtected = false) => {
+  return routes.map(route => ({
+    ...route,
+    element: isProtected 
+      ? createProtectedRouteElement(route.element)
+      : createPublicRouteElement(route.element)
+  }));
+};
+
+// Combine all routes
 const routes = [
+  // Public routes
+  ...processRoutes(publicRoutes, false),
+  
+  // Protected routes with authentication
+  ...processRoutes(protectedRoutes, true),
+  
+  // Catch all route - redirect to dashboard if authenticated, otherwise to login
   {
-    // Login page - entry point for all users
-    path: '/login',
-    element: <Login />,
-  },
-  {
-    // Main dashboard - dynamically renders based on user role
-    // Wrapped in ProtectedRoute to ensure only authenticated users can access
-    path: '/dashboard',
-    element: <ProtectedRoute><DashboardPage /></ProtectedRoute>,
-  },
-  {
-    // Student-specific reports page
-    // Requires authentication and student role
-    path: '/student-reports',
-    element: <ProtectedRoute><StudentReports /></ProtectedRoute>,
-  },
-  {
-    // Parent-specific reports page
-    // Requires authentication and parent role
-    path: '/parent-reports',
-    element: <ProtectedRoute><ParentReports /></ProtectedRoute>,
-  },
-  {
-    // Default route - redirects to dashboard if no specific path is provided
-    path: '/',
-    element: <Navigate to="/dashboard" replace />,
-  },
-  {
-    // Catch-all route - redirects to login for any undefined routes
-    path: '*',
-    element: <Navigate to="/login" replace />,
+    path: "*",
+    element: <Navigate to="/dashboard" replace />
   }
 ];
 
 export default routes;
-
-// Key Navigation Principles:
-// 1. All routes are protected to ensure user authentication
-// 2. Dashboard dynamically renders based on user role
-// 3. Specific report pages are role-specific
-// 4. Undefined routes redirect to login for security
