@@ -102,7 +102,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
           sx={{ 
             flexGrow: 1,
             fontWeight: 600,
-            letterSpacing: '0.5px'
+            letterSpacing: '0.5px',
+            marginLeft:'10px'
           }}
         >
           {title}
