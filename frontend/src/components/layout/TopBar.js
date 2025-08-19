@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AppBar, 
   Toolbar, 
@@ -12,7 +12,12 @@ import {
   Tooltip,
   useMediaQuery,
   useTheme,
-  ListItemText
+  ListItemText,
+  List,
+  ListItem,
+  Divider,
+  Button,
+  ListItemIcon
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -21,13 +26,13 @@ import {
   Mail as MailIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
+  Logout as LogoutIcon,
+  MarkChatRead as MarkChatReadIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import NotificationBell from '../notifications/NotificationBell';
-import Divider from '@mui/material/Divider';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { notificationService } from '../../services/notificationService';
+import { formatDistanceToNow } from 'date-fns';
 
 const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
   const theme = useTheme();
@@ -35,7 +40,25 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch notifications for admin user
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (user && user.role === 'admin') {
+        const userNotifications = await notificationService.getNotificationsForUser(user.id);
+        setNotifications(userNotifications);
+        setUnreadCount(userNotifications.filter(n => !n.read).length);
+      }
+    };
+
+    fetchNotifications();
+    // Optional: Set up polling to refresh notifications periodically
+    const interval = setInterval(fetchNotifications, 30000); // every 30 seconds
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -43,6 +66,14 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleNotificationsOpen = (event) => {
+    setNotificationsAnchorEl(event.currentTarget);
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchorEl(null);
   };
 
   const handleLogout = () => {
@@ -56,14 +87,26 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
     navigate('/profile');
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    // In a real app, you would update the theme here
-    // theme.palette.mode = darkMode ? 'light' : 'dark';
+  const handleMarkAsRead = async (notificationId) => {
+    await notificationService.markNotificationAsRead(notificationId);
+    const updatedNotifications = notifications.map(n => 
+      n.id === notificationId ? { ...n, read: true } : n
+    );
+    setNotifications(updatedNotifications);
+    setUnreadCount(updatedNotifications.filter(n => !n.read).length);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await notificationService.markAllNotificationsAsRead(user.id);
+    const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
+    setNotifications(updatedNotifications);
+    setUnreadCount(0);
+    handleNotificationsClose();
   };
 
   const menuId = 'primary-account-menu';
   const isMenuOpen = Boolean(anchorEl);
+  const isNotificationsOpen = Boolean(notificationsAnchorEl);
 
   return (
     <AppBar
@@ -110,17 +153,6 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {/* Dark/Light Mode Toggle */}
-          {/* <Tooltip title={darkMode ? 'Light mode' : 'Dark mode'}>
-            <IconButton 
-              color="inherit" 
-              onClick={toggleDarkMode}
-              sx={{ mr: 1 }}
-            >
-              {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
-            </IconButton>
-          </Tooltip>
-           */}
           {/* Messages */}
           <Tooltip title="Messages">
             <IconButton 
@@ -128,14 +160,26 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
               onClick={() => navigate('/messages')}
               sx={{ mr: 1 }}
             >
-              <Badge badgeContent={4} color="error">
+              <Badge badgeContent={0} color="error"> {/* TODO: Make dynamic */}
                 <MailIcon />
               </Badge>
             </IconButton>
           </Tooltip>
           
           {/* Notifications */}
-          <NotificationBell />
+          {user && user.role === 'admin' && (
+            <Tooltip title="Notifications">
+              <IconButton 
+                color="inherit" 
+                onClick={handleNotificationsOpen}
+                sx={{ mr: 1 }}
+              >
+                <Badge badgeContent={unreadCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          )}
           
           {/* User Profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
@@ -169,6 +213,58 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
         </Box>
       </Toolbar>
       
+      {/* Notifications Menu */}
+      <Menu
+        anchorEl={notificationsAnchorEl}
+        open={isNotificationsOpen}
+        onClose={handleNotificationsClose}
+        PaperProps={{
+          sx: {
+            width: 360,
+            maxWidth: '90vw',
+            mt: 1.5,
+            backgroundColor: '#1f2937',
+            border: '1px solid #374151',
+            color: '#f9fafb',
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+          <Typography variant="h6">Notifications</Typography>
+          {unreadCount > 0 && (
+            <Button size="small" onClick={handleMarkAllAsRead} startIcon={<MarkChatReadIcon />}>
+              Mark all as read
+            </Button>
+          )}
+        </Box>
+        <Divider sx={{ borderColor: '#374151' }} />
+        <List sx={{ p: 0, maxHeight: 400, overflowY: 'auto' }}>
+          {notifications.length > 0 ? notifications.map(notification => (
+            <ListItem 
+              key={notification.id}
+              button 
+              onClick={() => handleMarkAsRead(notification.id)}
+              sx={{
+                backgroundColor: !notification.read ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                borderBottom: '1px solid #374151',
+              }}
+            >
+              <ListItemText
+                primary={notification.message}
+                secondary={formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                primaryTypographyProps={{ fontWeight: !notification.read ? 'bold' : 'normal' }}
+                secondaryTypographyProps={{ color: '#9ca3af' }}
+              />
+            </ListItem>
+          )) : (
+            <ListItem>
+              <ListItemText primary="No new notifications" sx={{ textAlign: 'center', color: '#9ca3af' }} />
+            </ListItem>
+          )}
+        </List>
+      </Menu>
+
       {/* Profile Menu */}
       <Menu
         anchorEl={anchorEl}
@@ -238,20 +334,12 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
           <ListItemText>Profile</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={() => navigate('/messages')}>
           <ListItemIcon>
             <MailIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Messages</ListItemText>
-          <Badge badgeContent={4} color="error" sx={{ mr: 1 }} />
-        </MenuItem>
-        
-        <MenuItem onClick={handleMenuClose}>
-          <ListItemIcon>
-            <NotificationsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Notifications</ListItemText>
-          <Badge badgeContent={3} color="error" sx={{ mr: 1 }} />
+          <Badge badgeContent={0} color="error" sx={{ mr: 1 }} />
         </MenuItem>
         
         <Divider />

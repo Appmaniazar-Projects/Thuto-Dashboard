@@ -28,6 +28,8 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import FolderIcon from '@mui/icons-material/Folder';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import LogoutIcon from '@mui/icons-material/Logout';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -51,6 +53,7 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
       { path: '/calendar', icon: <CalendarTodayIcon />, text: 'Calendar' },
       { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
+      { path: '/announcements', icon: <CampaignIcon />, text: 'Announcements' },
     ];
 
     // Remove Calendar for students as per user request
@@ -62,16 +65,19 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
       admin: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
+        { path: '/admin/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/admin/settings', icon: <SettingsIcon />, text: 'System Settings' },
       ],
       administrator: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
+        { path: '/admin/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/admin/settings', icon: <SettingsIcon />, text: 'System Settings' },
       ],
       teacher: [
         { path: '/teacher/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/teacher/resources', icon: <FolderIcon />, text: 'Resources' },
+        { path: '/teacher/upload-report', icon: <CloudUploadIcon />, text: 'Upload Report' },
       ],
       parent: [
         { path: '/parent/children', icon: <PeopleIcon />, text: 'My Children' },

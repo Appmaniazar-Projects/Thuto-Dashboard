@@ -1,43 +1,32 @@
-import React, { useState } from 'react';
-import { Box, Paper, Typography, Grid, Button, Alert, Snackbar, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Paper, Typography, Grid, Button, Alert, Snackbar, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArticleIcon from '@mui/icons-material/Article';
-
-// Available reports for download (grades not yet in database)
-const availableReports = [
-  { 
-    id: 1, 
-    title: 'First Term Report Card', 
-    term: 'Term 1', 
-    year: '2024/2025',
-    date: '2024-12-15',
-    status: 'Available',
-    description: 'Complete academic performance report for first term'
-  },
-  { 
-    id: 2, 
-    title: 'Second Term Progress Report', 
-    term: 'Term 2', 
-    year: '2024/2025',
-    date: '2025-03-20',
-    status: 'Available',
-    description: 'Progress assessment and feedback for second term'
-  },
-  { 
-    id: 3, 
-    title: 'Midyear Assessment', 
-    term: 'Midyear', 
-    year: '2024/2025',
-    date: '2025-01-20',
-    status: 'Available',
-    description: 'Comprehensive midyear academic evaluation'
-  }
-];
+import { getMyReports } from '../../services/studentService';
 
 const StudentReports = () => {
+  const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState('');
+  const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true);
+        const reportData = await getMyReports();
+        setReports(reportData);
+      } catch (error) {
+        console.error('Failed to fetch reports:', error);
+        setNotification({ open: true, message: 'Could not load your reports.', severity: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
   const handleReportChange = (event) => {
     setSelectedReport(event.target.value);
   };
@@ -56,7 +45,7 @@ const StudentReports = () => {
       return;
     }
     
-    const report = availableReports.find(r => r.id === selectedReport);
+    const report = reports.find(r => r.downloadUrl === selectedReport);
     if (!report) {
       setNotification({
         open: true,
@@ -66,15 +55,8 @@ const StudentReports = () => {
       return;
     }
     
-    // Simulate download (in real app, this would call backend API)
-    setNotification({
-      open: true,
-      message: `Downloading ${report.title}...`,
-      severity: 'success'
-    });
-    
-    // TODO: Replace with actual API call to backend
-    // Example: await downloadStudentReport(selectedReport);
+    // Open the download URL in a new tab
+    window.open(report.downloadUrl, '_blank');
   };
   
   return (
@@ -99,39 +81,43 @@ const StudentReports = () => {
           </Alert>
         </Snackbar>
         
-        <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={8}>
-            <FormControl fullWidth>
-              <InputLabel id="report-select-label">Select Report</InputLabel>
-              <Select
-                labelId="report-select-label"
-                id="report-select"
-                value={selectedReport}
-                label="Select Report"
-                onChange={handleReportChange}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>
+        ) : (
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <FormControl fullWidth>
+                <InputLabel id="report-select-label">Select Report</InputLabel>
+                <Select
+                  labelId="report-select-label"
+                  id="report-select"
+                  value={selectedReport}
+                  label="Select Report"
+                  onChange={handleReportChange}
+                >
+                  {reports.map((report) => (
+                    <MenuItem key={report.id} value={report.downloadUrl}>
+                      {report.title} ({report.term} - {report.year})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<DownloadIcon />}
+                disabled={!selectedReport}
+                onClick={downloadReport}
+                fullWidth
+                sx={{ height: '56px' }}
               >
-                {availableReports.map((report) => (
-                  <MenuItem key={report.id} value={report.id}>
-                    {report.title} ({report.term} - {report.year})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                Download Report
+              </Button>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<DownloadIcon />}
-              disabled={!selectedReport}
-              onClick={downloadReport}
-              fullWidth
-              sx={{ height: '56px' }}
-            >
-              Download Report
-            </Button>
-          </Grid>
-        </Grid>
+        )}
       </Paper>
     </Box>
   );

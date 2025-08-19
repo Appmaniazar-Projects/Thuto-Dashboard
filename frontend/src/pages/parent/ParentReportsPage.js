@@ -1,10 +1,8 @@
-// Create: c:\Users\tiffy\Documents\GitHub\Thuto-Dashboard\frontend\src\pages\parent\ParentAttendance.js
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box, Paper, Typography, Grid, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, FormControl, InputLabel, Select, MenuItem,
-  Card, CardContent, Divider
+  Card, CardContent, Divider, CircularProgress, Alert
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -13,44 +11,54 @@ import {
   Schedule as LateIcon,
   PieChart as PieChartIcon
 } from '@mui/icons-material';
-
-// Mock data for multiple children
-const childrenData = [
-  { id: 1, name: 'Emma Thompson', grade: 'Grade 8', class: 'Room 103' },
-  { id: 2, name: 'James Thompson', grade: 'Grade 5', class: 'Room 201' }
-];
-
-const attendanceData = {
-  1: [ // Emma's attendance
-    { date: '2025-01-15', status: 'Present', time: '07:45', note: '' },
-    { date: '2025-01-16', status: 'Present', time: '07:50', note: '' },
-    { date: '2025-01-17', status: 'Absent', time: '', note: 'Sick leave' },
-    { date: '2025-01-18', status: 'Present', time: '07:40', note: '' },
-    { date: '2025-01-19', status: 'Late', time: '08:15', note: 'Traffic delay' },
-    { date: '2025-01-20', status: 'Present', time: '07:48', note: '' },
-    { date: '2025-01-21', status: 'Present', time: '07:51', note: '' },
-  ],
-  2: [ // James's attendance
-    { date: '2025-01-15', status: 'Present', time: '07:50', note: '' },
-    { date: '2025-01-16', status: 'Present', time: '07:45', note: '' },
-    { date: '2025-01-17', status: 'Present', time: '07:48', note: '' },
-    { date: '2025-01-18', status: 'Absent', time: '', note: 'Family emergency' },
-    { date: '2025-01-19', status: 'Present', time: '07:52', note: '' },
-    { date: '2025-01-20', status: 'Absent', time: '', note: 'Dentist appointment' },
-    { date: '2025-01-21', status: 'Late', time: '08:05', note: '' },
-  ]
-};
+import { useAuth } from '../../context/AuthContext';
+import { getUsersByIds } from '../../services/userService';
+import { fetchAttendanceForChildren } from '../../services/attendanceService';
 
 const ParentAttendance = () => {
-  const [selectedChild, setSelectedChild] = useState(1);
-  const [selectedMonth, setSelectedMonth] = useState('2025-01');
-  
-  const handleChildChange = (event) => {
-    setSelectedChild(event.target.value);
-  };
+  const { user: parent } = useAuth();
+  const [children, setChildren] = useState([]);
+  const [attendanceData, setAttendanceData] = useState({});
+  const [selectedChildId, setSelectedChildId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleMonthChange = (event) => {
-    setSelectedMonth(event.target.value);
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!parent || !parent.children || parent.children.length === 0) {
+        setError('No children are linked to your profile.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        // 1. Fetch the profiles of the children linked to the parent
+        const childProfiles = await getUsersByIds(parent.children);
+        setChildren(childProfiles);
+
+        // 2. Fetch attendance data for those children
+        const attendance = await fetchAttendanceForChildren(parent.children);
+        setAttendanceData(attendance);
+
+        // 3. Set the first child as the default selection
+        if (childProfiles.length > 0) {
+          setSelectedChildId(childProfiles[0].id);
+        }
+
+      } catch (err) {
+        setError('Failed to load attendance data. Please try again.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, [parent]);
+
+  const handleChildChange = (event) => {
+    setSelectedChildId(event.target.value);
   };
 
   const getStatusColor = (status) => {
@@ -71,8 +79,8 @@ const ParentAttendance = () => {
     }
   };
 
-  const currentChildData = attendanceData[selectedChild] || [];
-  const selectedChildInfo = childrenData.find(child => child.id === selectedChild);
+  const currentChildData = attendanceData[selectedChildId] || [];
+  const selectedChildInfo = children.find(child => child.id === selectedChildId);
 
   const attendanceSummary = useMemo(() => {
     const summary = {
@@ -88,6 +96,22 @@ const ParentAttendance = () => {
     });
     return summary;
   }, [currentChildData]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;
+  }
+
+  if (children.length === 0 && !loading) {
+    return <Alert severity="info" sx={{ m: 3 }}>No children have been assigned to your profile yet.</Alert>;
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -106,30 +130,15 @@ const ParentAttendance = () => {
               <InputLabel id="child-select-label">Select Child</InputLabel>
               <Select
                 labelId="child-select-label"
-                value={selectedChild}
+                value={selectedChildId}
                 label="Select Child"
                 onChange={handleChildChange}
               >
-                {childrenData.map((child) => (
+                {children.map(child => (
                   <MenuItem key={child.id} value={child.id}>
-                    {child.name} - {child.grade}
+                    {child.name}
                   </MenuItem>
                 ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel id="month-select-label">Select Month</InputLabel>
-              <Select
-                labelId="month-select-label"
-                value={selectedMonth}
-                label="Select Month"
-                onChange={handleMonthChange}
-              >
-                <MenuItem value="2025-01">January 2025</MenuItem>
-                <MenuItem value="2024-12">December 2024</MenuItem>
-                <MenuItem value="2024-11">November 2024</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -155,27 +164,37 @@ const ParentAttendance = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {currentChildData.map((record, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        {new Date(record.date).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                  {currentChildData.length > 0 ? (
+                    currentChildData.map((record, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {new Date(record.date).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            icon={getStatusIcon(record.status)}
+                            label={record.status}
+                            color={getStatusColor(record.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{record.time || '—'}</TableCell>
+                        <TableCell>{record.note || '—'}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography sx={{ p: 3, color: 'text.secondary' }}>
+                          No attendance records found for this month.
+                        </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={getStatusIcon(record.status)}
-                          label={record.status}
-                          color={getStatusColor(record.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{record.time || '—'}</TableCell>
-                      <TableCell>{record.note || '—'}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>

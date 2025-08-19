@@ -26,17 +26,21 @@ const StudentReports = lazy(() => import('./pages/student/StudentReports'));
 
 const ParentChildrenPage = lazy(() => import('./pages/parent/Children'));
 const ParentAcademicReportsPage = lazy(() => import('./pages/parent/Academic'));
-const ParentAttendance = lazy(() => import('./pages/parent/ParentAttendance'));
-const ParentReports = lazy(() => import('./components/reports/ParentReports'));
+
+const ParentReports = lazy(() => import('./pages/parent/ParentReports'));
 
 const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
 const TeacherFeed = lazy(() => import('./components/dashboard/teacher/Feed'));
+const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
 
 const UserManagementPage = lazy(() => import('./pages/admin/Users'));
 const AdminReportsPage = lazy(() => import('./pages/admin/Reports'));
 const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettings'));
 const SystemMessagesPanel = lazy(() => import('./components/admin/SystemMessagesPanel'));
+const AdminAttendancePage = lazy(() => import('./pages/admin/AdminAttendancePage'));
 const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
+const AnnouncementsPage = lazy(() => import('./pages/common/AnnouncementsPage'));
+const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncementPage'));
 
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -52,7 +56,7 @@ const isRedirect = (element) =>
 import RegisterWelcome from './components/auth/RegisterWelcome';
 
 export const publicRoutes = [
-  { path: '/', element: <RegisterWelcome /> },
+    { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/register/user', element: <RegisterUser /> },
@@ -71,6 +75,8 @@ export const protectedRoutes = [
   { path: '/settings', element: <SettingsPage /> },
   { path: '/events/create', element: <CreateEventPage /> },
   { path: '/calendar/event/new', element: <CreateEventPage /> },
+  { path: '/announcements', element: <AnnouncementsPage /> },
+  { path: '/announcements/create', element: <CreateAnnouncementPage /> },
 
   // Student
   { path: '/student/subjects', element: <StudentSubjects /> },
@@ -81,12 +87,13 @@ export const protectedRoutes = [
   // Parent
   { path: '/parent/children', element: <ParentChildrenPage /> },
   { path: '/parent/academic', element: <ParentAcademicReportsPage /> },
-  { path: '/parent/reports', element: <ParentAttendance /> },
+  { path: '/parent/reports', element: <ParentReports /> },
 
   // Teacher
   { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
   { path: '/teacher/feed', element: <TeacherFeed /> },
   { path: '/teacher/resources', element: <Resources /> },
+  { path: '/teacher/upload-report', element: <UploadReportPage /> },
   
 
   // Admin
@@ -94,6 +101,7 @@ export const protectedRoutes = [
   { path: '/admin/reports', element: <AdminReportsPage /> },
   { path: '/admin/settings', element: <SystemSettingsPage /> },
   { path: '/admin/messages', element: <SystemMessagesPanel /> },
+  { path: '/admin/attendance', element: <AdminAttendancePage /> },
 
   // Redirects
   { path: '/my-subjects', element: <Navigate to="/student/subjects" replace /> },

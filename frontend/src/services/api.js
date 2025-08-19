@@ -1,14 +1,30 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: 'http://localhost:8081/api',
 });
 
+// Set mock school ID if not already set
+if (!localStorage.getItem('schoolId')) {
+  localStorage.setItem('schoolId', '1');
+}
+
 api.interceptors.request.use((config) => {
+  // Add auth token to headers
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Add schoolId as a query parameter to all requests
+  const schoolId = localStorage.getItem('schoolId');
+  if (schoolId) {
+    config.params = {
+      ...config.params,
+      schoolId: schoolId,
+    };
+  }
+
   return config;
 });
 
