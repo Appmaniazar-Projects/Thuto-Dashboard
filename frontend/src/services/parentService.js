@@ -6,7 +6,7 @@ import api from './api';
  */
 export const getMyChildren = async () => {
   try {
-    const response = await api.get('/parent/me/children');
+    const response = await api.get('/parent/children');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch children:', error);
@@ -34,7 +34,7 @@ export const getChildAttendance = async (childId) => {
  * The schoolId is automatically added by the api interceptor.
  * @param {string} childId - The ID of the child.
  */
-export const getChildAcademicReports = async (childId) => {
+export const getChildReports = async (childId) => {
   try {
     const response = await api.get(`/parent/children/${childId}/reports`);
     return response.data;

@@ -5,7 +5,7 @@ import api from './api';
  */
 export const getAttendanceSubmissions = async () => {
   try {
-    const response = await api.get('/admin/attendance/submissions');
+    const response = await api.get('attendance/submissions');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch attendance submissions:', error);
@@ -20,7 +20,7 @@ export const getAttendanceSubmissions = async () => {
  */
 export const updateAttendanceSubmission = async (submissionId, updateData) => {
   try {
-    const response = await api.put(`/admin/attendance/submissions/${submissionId}`, updateData);
+    const response = await api.put(`attendance/submissions/${submissionId}`, updateData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update attendance submission ${submissionId}:`, error);
@@ -33,7 +33,7 @@ export const updateAttendanceSubmission = async (submissionId, updateData) => {
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admin/users');
+    const response = await api.get('admin/users');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch users:', error);

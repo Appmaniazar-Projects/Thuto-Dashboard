@@ -5,7 +5,7 @@ import api from './api';
  */
 export const getMyProfile = async () => {
   try {
-    const response = await api.get('/student/me');
+    const response = await api.get('/student');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student profile:', error);
@@ -18,7 +18,7 @@ export const getMyProfile = async () => {
  */
 export const getMyReports = async () => {
   try {
-    const response = await api.get('/student/me/reports');
+    const response = await api.get('/student/reports');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student reports:', error);
