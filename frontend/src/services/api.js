@@ -60,9 +60,9 @@ export const fetchAttendanceStats = () => api.get('/admin/stats/attendance');
 
 export const fetchStudents = () => api.get('/admin/students');
 
-export const fetchCalendarEvents = () => api.get('/admin/calendar');
+//export const fetchCalendarEvents = () => api.get('/admin/calendar');
 
-export const fetchMessages = () => api.get('/admin/messages');
+//export const fetchMessages = () => api.get('/admin/messages');
 
 export const fetchStudentsForTeacher = ({ grade, subject }) => api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
 
