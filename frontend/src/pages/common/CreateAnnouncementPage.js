@@ -1,70 +1,52 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, TextField, Button, Paper, CircularProgress, Alert } from '@mui/material';
+import { Box, TextField, Button, Paper, Alert } from '@mui/material';
 import { useSnackbar } from 'notistack';
-import { createAnnouncement } from '../../services/announcementService';
 import PageTitle from '../../components/common/PageTitle';
 
 const CreateAnnouncementPage = () => {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title || !content) {
-      setError('Both title and content are required.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      await createAnnouncement({ title, content });
-      enqueueSnackbar('Announcement created successfully!', { variant: 'success' });
-      navigate('/announcements');
-    } catch (err) {
-      setError('Failed to create announcement. Please try again.');
-      console.error(err);
-      enqueueSnackbar(error, { variant: 'error' });
-    } finally {
-      setLoading(false);
-    }
+    enqueueSnackbar('This feature is coming soon!', { variant: 'info' });
   };
 
   return (
     <Box>
-      <PageTitle title="Create Announcement" subtitle="Post news and updates for all users of the school." />
-      <Paper component="form" onSubmit={handleSubmit} sx={{ p: 3, maxWidth: '800px' }}>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      <PageTitle 
+        title="Create Announcement" 
+        subtitle="This feature is coming soon. Stay tuned for updates!" 
+      />
+      <Paper sx={{ p: 3, maxWidth: '800px', opacity: 0.7 }}>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <strong>Coming Soon!</strong> The announcements feature is currently under development.
+        </Alert>
         <TextField
           fullWidth
           required
           label="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          disabled
           margin="normal"
+          placeholder="Feature coming soon"
         />
         <TextField
           fullWidth
           required
           label="Content"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+          disabled
           margin="normal"
           multiline
           rows={8}
+          placeholder="This feature will be available in an upcoming release."
         />
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={() => navigate('/announcements')} sx={{ mr: 1 }}>
-            Cancel
+          <Button onClick={() => navigate(-1)} sx={{ mr: 1 }}>
+            Go Back
           </Button>
-          <Button type="submit" variant="contained" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : 'Publish Announcement'}
+          <Button type="submit" variant="contained" disabled>
+            Publish Announcement (Coming Soon)
           </Button>
         </Box>
       </Paper>
