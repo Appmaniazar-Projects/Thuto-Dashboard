@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081/api',
+  timeout: 10000, // 10 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Set mock school ID if not already set
@@ -26,7 +30,27 @@ api.interceptors.request.use((config) => {
   }
 
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
+
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+      console.error('Backend server is not running or not accessible');
+      error.message = 'Unable to connect to server. Please ensure the backend is running on port 8081.';
+    } else if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('schoolId');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // ========== ADMIN DASHBOARD ENDPOINTS ==========
 

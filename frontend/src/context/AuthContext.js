@@ -12,28 +12,42 @@ export const AuthProvider = ({ children }) => {
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    const storedSchoolId = localStorage.getItem('schoolId');
-    if (storedSchoolId) {
-      setSchoolId(storedSchoolId);
-    }
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      const storedSchoolId = localStorage.getItem('schoolId');
 
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-    }
+      if (storedToken && storedUser && storedSchoolId) {
+        try {
+          // Set API authorization header
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          
+          // Parse stored user data
+          const userData = JSON.parse(storedUser);
+          setCurrentUser(userData);
+          setSchoolId(storedSchoolId);
 
-    const unsubscribe = async () => {
-      try {
-        const userResponse = await api.get('/auth/me');
-        setCurrentUser(userResponse.data);
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-      } finally {
-        setLoading(false);
+          // Optionally verify token is still valid
+          const userResponse = await api.get('/auth/me');
+          if (userResponse.data) {
+            setCurrentUser(userResponse.data);
+            setSchoolId(userResponse.data.schoolId);
+            localStorage.setItem('user', JSON.stringify(userResponse.data));
+            localStorage.setItem('schoolId', userResponse.data.schoolId);
+          }
+        } catch (err) {
+          console.error('Error verifying stored auth data:', err);
+          // Clear invalid stored data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('schoolId');
+          delete api.defaults.headers.common['Authorization'];
+        }
       }
+      setLoading(false);
     };
 
-    unsubscribe();
+    initializeAuth();
   }, []);
 
   const signup = async (email, password, additionalData = {}) => {
@@ -54,31 +68,46 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (phone, schoolId) => {
+  const login = async (phone) => {
     try {
       setError('');
       setLoading(true);
 
       const response = await api.post('/auth/login', { phoneNumber: phone });
-      const { token } = response.data;
+      const { token, user } = response.data;
 
+      // Store token and user data
       localStorage.setItem('token', token);
-      localStorage.setItem('schoolId', schoolId);
-      setSchoolId(schoolId);
+      localStorage.setItem('schoolId', user.schoolId);
+      localStorage.setItem('user', JSON.stringify(user));
       
-      // After successful login, fetch user data
-      const userResponse = await api.get('/auth/me');
-      setUser(userResponse.data);
+      // Set API authorization header
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      
+      // Update state
+      setCurrentUser(user);
+      setSchoolId(user.schoolId);
 
       enqueueSnackbar('Logged in successfully!', { variant: 'success' });
-      return userResponse.data;
+      return user;
 
     } catch (err) {
       console.error('Login Error:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to log in.';
+      let errorMessage = 'Failed to log in.';
+      
+      if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
+        errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 8081.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Invalid phone number. Please check your credentials.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       enqueueSnackbar(errorMessage, { variant: 'error' });
-      throw err;
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -121,10 +150,19 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
+      
+      // Clear all stored data
       localStorage.removeItem('token');
       localStorage.removeItem('schoolId');
+      localStorage.removeItem('user');
+      
+      // Clear API authorization header
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Reset state
       setCurrentUser(null);
       setSchoolId(null);
+      
       enqueueSnackbar('Logged out successfully!', { variant: 'info' });
     } catch (err) {
       console.error('Logout Error:', err);

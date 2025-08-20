@@ -1,40 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Paper, Link, Alert, Grid } from '@mui/material';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Box, Button, TextField, Typography, Paper, Link, Alert, Grid, Chip } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
+import { checkBackendHealth } from '../../utils/healthCheck';
 
 const Login = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const [schoolId, setSchoolId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState({ status: 'checking', message: 'Checking...' });
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const id = params.get('schoolId');
-    if (id) {
-      setSchoolId(id);
-    } else {
-      setError('No school identifier provided. Please access this page through your school\'s official website.');
-    }
-  }, [location]);
+    // Check backend health on component mount
+    const checkHealth = async () => {
+      const health = await checkBackendHealth();
+      setBackendStatus(health);
+    };
+    checkHealth();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (!schoolId) {
-      setError('Cannot log in without a school identifier.');
+    if (!phone.trim()) {
+      setError('Please enter your phone number.');
+      setLoading(false);
+      return;
+    }
+
+    // Check backend health before attempting login
+    if (backendStatus.status === 'unhealthy') {
+      setError('Backend server is not available. Please ensure the server is running on port 8081.');
+      setLoading(false);
       return;
     }
 
     try {
-      await login(phone, schoolId);
+      await login(phone);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to log in. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,9 +53,20 @@ const Login = () => {
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
-          User Login
+          Thuto Dashboard Login
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Typography variant="body2" color="info.contrastText">
+            <strong>Demo Credentials:</strong><br/>
+            Admin: +27-81-000-0001<br/>
+            Teacher: +27-81-000-0002<br/>
+            Student: +27-81-000-0003<br/>
+            Parent: +27-81-000-0005
+          </Typography>
+        </Box>
+
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <TextField
             margin="normal"
@@ -57,16 +79,17 @@ const Login = () => {
             autoFocus
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            disabled={!schoolId} // Disable form if no schoolId
+            placeholder="+27-81-000-0001"
+            helperText="Enter your registered phone number"
           />
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
-            disabled={!schoolId}
+            disabled={loading}
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </Button>
           <Grid container>
             <Grid item xs>
