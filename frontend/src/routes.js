@@ -42,6 +42,9 @@ const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
 const AnnouncementsPage = lazy(() => import('./pages/common/AnnouncementsPage'));
 const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncementPage'));
 
+// Super Admin
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
     <CircularProgress />
@@ -103,6 +106,11 @@ export const protectedRoutes = [
   { path: '/admin/messages', element: <SystemMessagesPanel /> },
   { path: '/admin/attendance', element: <AdminAttendancePage /> },
 
+  // Super Admin
+  { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
+  { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
+  { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
+
   // Redirects
   { path: '/my-subjects', element: <Navigate to="/student/subjects" replace /> },
   { path: '/student-reports', element: <Navigate to="/student/reports" replace /> },
@@ -117,7 +125,6 @@ export const protectedRoutes = [
   { path: '/reports', element: <Navigate to="/admin/reports" replace /> },
   { path: '/system', element: <Navigate to="/admin/settings" replace /> }
 ];
-
 
 // Create route elements with proper layout and suspense
 const createPublicRouteElement = (element) => {
