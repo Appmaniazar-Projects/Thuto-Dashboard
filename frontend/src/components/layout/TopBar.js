@@ -34,7 +34,7 @@ import { useAuth } from '../../context/AuthContext';
 import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 
-const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
+const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, logout } = useAuth();
@@ -112,8 +112,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
     <AppBar
       position="fixed"
       sx={{
-        width: { sm: `calc(100% - ${drawerWidth}px)` },
-        ml: { sm: `${drawerWidth}px` },
+        width: isSuperAdmin ? '100%' : { sm: `calc(100% - ${drawerWidth}px)` },
+        ml: isSuperAdmin ? 0 : { sm: `${drawerWidth}px` },
         backgroundColor: '#1f2937',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         transition: theme.transitions.create(['margin', 'width'], {
@@ -123,21 +123,23 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
       }}
     >
       <Toolbar sx={{ minHeight: '64px !important' }}>
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
-          onClick={handleDrawerToggle}
-          sx={{ 
-            mr: 2, 
-            display: { sm: 'none' },
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
+        {!isSuperAdmin && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ 
+              mr: 2, 
+              display: { sm: 'none' },
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Typography 
           variant="h6" 
           noWrap 
@@ -153,18 +155,6 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen }) => {
         </Typography>
         
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          {/* Messages */}
-          <Tooltip title="Messages">
-            <IconButton 
-              color="inherit" 
-              onClick={() => navigate('/messages')}
-              sx={{ mr: 1 }}
-            >
-              <Badge badgeContent={0} color="error"> {/* TODO: Make dynamic */}
-                <MailIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
           
           {/* Notifications */}
           {user && user.role === 'admin' && (

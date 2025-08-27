@@ -26,7 +26,7 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { getMyReports } from '../../services/studentService';
+import studentService from '../../services/studentService';
 import { format } from 'date-fns';
 
 const StudentReports = () => {
@@ -56,9 +56,9 @@ const StudentReports = () => {
     try {
       setLoading(true);
       setError('');
-      const reportData = await getMyReports();
-      setReports(reportData);
-      setFilteredReports(reportData);
+      const response = await studentService.getReports();
+      setReports(response.data);
+      setFilteredReports(response.data);
     } catch (error) {
       console.error('Failed to fetch reports:', error);
       setError('Could not load your reports. Please try again later.');
@@ -106,8 +106,7 @@ const StudentReports = () => {
 
   const handleDownload = async (reportId, fileName) => {
     try {
-      // This would be implemented in your reportService
-      const response = await downloadReport(reportId);
+      const response = await studentService.getReportById(reportId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
