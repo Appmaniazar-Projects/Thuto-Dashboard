@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import EventIcon from '@mui/icons-material/Event';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EmailIcon from '@mui/icons-material/Email';
 import PersonIcon from '@mui/icons-material/Person';
@@ -51,16 +51,24 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
 
     let commonItems = [
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
-      { path: '/calendar', icon: <CalendarTodayIcon />, text: 'Calendar' },
+      {
+        path: '/calendar',
+        icon: <EventIcon />,
+        text: 'Events'
+      },
       { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
-      { path: '/announcements', icon: <CampaignIcon />, text: 'Announcements' },
     ];
 
-    // Remove Calendar for students as per user request
-    if (role === 'student') {
-      commonItems = commonItems.filter(item => item.path !== '/calendar');
+    // Add Announcements for admin and teacher roles
+    if (['admin', 'administrator', 'teacher'].includes(role)) {
+      commonItems.push({
+        path: '/announcements',
+        icon: <CampaignIcon />,
+        text: 'Announcements',
+      });
     }
 
+    // Role-specific items
     const roleSpecificItems = {
       admin: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },

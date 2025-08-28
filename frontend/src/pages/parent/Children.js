@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -9,31 +9,53 @@ import {
   Button,
   Avatar,
   Divider,
-  Chip
+  Chip,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { Face as ChildIcon, Add as AddIcon, Event as EventIcon, Assessment as GradesIcon } from '@mui/icons-material';
-
-// Mock data for parent's children
-const childrenData = [
-  {
-    id: 1,
-    name: 'Emma Thompson',
-    grade: 'Grade 8',
-    class: 'Room 103',
-    avatar: '/path/to/avatar1.jpg', // Placeholder
-    school: 'Northwood High School'
-  },
-  {
-    id: 2,
-    name: 'James Thompson',
-    grade: 'Grade 5',
-    class: 'Room 201',
-    avatar: '/path/to/avatar2.jpg', // Placeholder
-    school: 'Westwood Elementary'
-  }
-];
+import { useNavigate } from 'react-router-dom';
+import parentService from '../../services/parentService';
 
 const Children = () => {
+  const navigate = useNavigate();
+  const [children, setChildren] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        setLoading(true);
+        const data = await parentService.getMyChildren();
+        setChildren(data);
+      } catch (err) {
+        console.error('Failed to fetch children:', err);
+        setError('Unable to load children. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChildren();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;
+  }
+
+  if (children.length === 0) {
+    return <Alert severity="info" sx={{ m: 3 }}>No children are linked to your profile yet.</Alert>;
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -50,32 +72,43 @@ const Children = () => {
       </Box>
 
       <Grid container spacing={3}>
-        {childrenData.map((child) => (
+        {children.map((child) => (
           <Grid item xs={12} sm={6} md={4} key={child.id}>
             <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Avatar sx={{ width: 56, height: 56, mr: 2, bgcolor: 'primary.light' }}>
-                    <ChildIcon fontSize="large" />
+                  <Avatar
+                    sx={{ width: 56, height: 56, mr: 2, bgcolor: 'primary.light' }}
+                    src={child.avatar || ''}
+                  >
+                    {!child.avatar && <ChildIcon fontSize="large" />}
                   </Avatar>
                   <Box>
-                    <Typography variant="h6" component="div">
-                      {child.name}
-                    </Typography>
-                    <Typography color="text.secondary">
-                      {child.school}
-                    </Typography>
+                    <Typography variant="h6">{child.name}</Typography>
+                    <Typography color="text.secondary">{child.school}</Typography>
                   </Box>
                 </Box>
                 <Divider sx={{ my: 2 }} />
                 <Chip label={`${child.grade} - ${child.class}`} sx={{ mb: 2 }} />
                 <Typography variant="body2" color="text.secondary">
-                  Here you can find quick links to view {child.name.split(' ')[0]}'s academic progress and schedule.
+                  Quick links to view {child.name.split(' ')[0]}'s grades and attendance.
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'flex-start', px: 2, pb: 2 }}>
-                <Button size="small" startIcon={<GradesIcon />}>View Grades</Button>
-                <Button size="small" startIcon={<EventIcon />}>View Timetable</Button>
+                <Button
+                  size="small"
+                  startIcon={<GradesIcon />}
+                  onClick={() => navigate(`/parent/grades/${child.id}`)}
+                >
+                  View Grades
+                </Button>
+                <Button
+                  size="small"
+                  startIcon={<EventIcon />}
+                  onClick={() => navigate(`/parent/attendance/${child.id}`)}
+                >
+                  View Attendance
+                </Button>
               </CardActions>
             </Card>
           </Grid>
@@ -86,4 +119,3 @@ const Children = () => {
 };
 
 export default Children;
-

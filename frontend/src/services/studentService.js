@@ -147,60 +147,6 @@ export const getTimetable = async (weekStart) => {
   }
 };
 
-/**
- * Grades & Assignments
- */
-
-export const getMyGrades = async () => {
-  try {
-    const response = await api.get('/student/grades');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch grades:', error);
-    throw error;
-  }
-};
-
-export const getAssignments = async (params = {}) => {
-  try {
-    const response = await api.get('/student/assignments', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch assignments:', error);
-    throw error;
-  }
-};
-
-export const submitAssignment = async (assignmentId, submissionData) => {
-  try {
-    const formData = new FormData();
-    
-    // Append file if provided
-    if (submissionData.file) {
-      formData.append('file', submissionData.file);
-    }
-    
-    // Append other submission data
-    if (submissionData.text) {
-      formData.append('text', submissionData.text);
-    }
-    
-    const response = await api.post(
-      `/student/assignments/${assignmentId}/submit`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-    );
-    
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to submit assignment ${assignmentId}:`, error);
-    throw error;
-  }
-};
 
 // Export all functions as default object
 const studentService = {
@@ -223,11 +169,6 @@ const studentService = {
   // Schedule
   getMySchedule,
   getTimetable,
-  
-  // Grades & Assignments
-  getMyGrades,
-  getAssignments,
-  submitAssignment,
 };
 
 export default studentService;

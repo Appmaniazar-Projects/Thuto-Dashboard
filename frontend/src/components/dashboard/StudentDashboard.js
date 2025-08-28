@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box, Grid, Paper, Typography, Avatar, List, ListItem, ListItemText, 
-  ListItemIcon, Button, Divider, Chip, useTheme, Card, CardContent, CardActionArea
+  Box, Grid, Paper, Typography, Button, Divider, Chip,
+  useTheme, Card, CardContent, CircularProgress, Alert, Avatar
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -11,60 +11,81 @@ import {
   Folder as FolderIcon,
   CheckCircle as CheckCircleIcon,
   ArrowForward as ArrowForwardIcon,
-  Event as EventIcon,
-  Notifications as NotificationsIcon,
-  AssignmentTurnedIn as AssignmentTurnedInIcon,
-  Today as TodayIcon,
-  Grade as GradeIcon,
   EventNote as EventNoteIcon,
   Message as MessageIcon,
   InsertDriveFile as FileIcon,
-  CalendarToday as CalendarIcon,
-  Cancel as AbsentIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { format, parseISO, isAfter, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from 'date-fns';
-
-// Mock Data
-const mockResources = [
-  { id: 1, name: 'Physics Chapter 5 Notes.pdf', subject: 'Physics', uploaded: '2023-10-25T10:00:00Z' },
-  { id: 2, name: 'Algebra II Worksheet.docx', subject: 'Mathematics', uploaded: '2023-10-24T14:30:00Z' },
-  { id: 3, name: 'The Great Gatsby Analysis.pptx', subject: 'English Lit', uploaded: '2023-10-23T09:15:00Z' },
-];
-
-const mockAttendance = {
-  present: [2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 16, 17, 18, 20, 23, 24, 25],
-  absent: [19],
-  holiday: [26, 27],
-};
-
-const mockAnnouncements = [
-    { id: 1, title: 'Mid-term Exams Schedule', text: 'The schedule for the upcoming mid-term exams has been posted...', date: '2023-10-20T09:00:00Z', isNew: true, category: 'Academics' },
-    { id: 2, title: 'Annual Sports Day', text: 'Get ready for the annual sports day next month! Registrations are now open.', date: '2023-10-18T14:00:00Z', isNew: false, category: 'Events' },
-    { id: 3, title: 'Library Books Return', text: 'Please return all borrowed library books by the end of this week.', date: '2023-10-15T11:30:00Z', isNew: false, category: 'General' },
-];
+import { format } from 'date-fns';
+import studentService from '../../services/studentService';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const theme = useTheme();
   const today = format(new Date(), 'EEEE, MMMM d, yyyy');
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    attendance: 0,
+    resources: 0,
+    upcomingEvents: 0,
+    unreadMessages: 0
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch attendance stats
+        const attendanceStats = await studentService.getAttendanceStats();
+        
+        // Fetch resources count
+        const resources = await studentService.getAvailableResources();
+        
+        // Update stats
+        setStats({
+          attendance: attendanceStats.percentage || 0,
+          resources: resources.length || 0,
+          upcomingEvents: 0, // Coming soon
+          unreadMessages: 0  // Coming soon
+        });
+        
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []);
 
   const quickLinks = [
     { text: 'My Courses', path: '/student/subjects', icon: <BookIcon /> },
     { text: 'My Grades', path: '/student/reports', icon: <AssessmentIcon /> },
-    { text: 'Assignments', path: '/student/assignments', icon: <AssignmentIcon />, count: 5 },
-    { text: 'Resources', path: '/student/resources', icon: <FolderIcon />, count: mockResources.length },
+    { text: 'Assignments', path: '/student/assignments', icon: <AssignmentIcon />, comingSoon: true },
+    { text: 'Resources', path: '/student/resources', icon: <FolderIcon /> },
   ];
 
-  // Attendance Calendar Data
-  const now = new Date();
-  const daysInMonth = eachDayOfInterval({ start: startOfMonth(now), end: endOfMonth(now) });
-  const firstDayOfMonth = getDay(startOfMonth(now)); // 0 = Sunday, 1 = Monday...
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  const attendancePercentage = Math.round(
-    (mockAttendance.present.length / (mockAttendance.present.length + mockAttendance.absent.length)) * 100
-  );
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
@@ -81,112 +102,151 @@ const StudentDashboard = () => {
       {/* Stats Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Attendance" value={`${attendancePercentage}%`} icon={<CheckCircleIcon />} subtitle="This Month" />
+          <StatCard 
+            title="Attendance" 
+            value={`${stats.attendance}%`} 
+            icon={<CheckCircleIcon />} 
+            subtitle="This Month" 
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="New Resources" value={mockResources.length} icon={<FileIcon />} subtitle="Recently Added" />
+          <StatCard 
+            title="Resources" 
+            value={stats.resources} 
+            icon={<FileIcon />} 
+            subtitle="Available" 
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Upcoming Events" value="2" icon={<EventNoteIcon />} subtitle="This Month" />
+          <StatCard 
+            title="Upcoming Events" 
+            value="0" 
+            icon={<EventNoteIcon />} 
+            subtitle="Coming Soon" 
+            disabled
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Unread Messages" value="5" icon={<MessageIcon />} subtitle="In Your Inbox" />
+          <StatCard 
+            title="Messages" 
+            value="0" 
+            icon={<MessageIcon />} 
+            subtitle="Coming Soon" 
+            disabled
+          />
         </Grid>
       </Grid>
 
       <Grid container spacing={3}>
-        {/* Main Content (Left) */}
-        <Grid item xs={12} lg={8}>
-          {/* Monthly Attendance */}
-          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Monthly Attendance</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <Typography key={day} variant="caption" align="center" color="text.secondary">{day}</Typography>
-              ))}
-              {Array.from({ length: firstDayOfMonth }).map((_, i) => <Box key={`empty-${i}`} />)}
-              {daysInMonth.map(day => {
-                const date = day.getDate();
-                let dayStyle = {};
-                if (mockAttendance.present.includes(date)) {
-                  dayStyle = { bgcolor: 'success.light', color: 'success.contrastText' };
-                } else if (mockAttendance.absent.includes(date)) {
-                  dayStyle = { bgcolor: 'error.light', color: 'error.contrastText' };
-                } else if (mockAttendance.holiday.includes(date)) {
-                  dayStyle = { bgcolor: 'info.light', color: 'info.contrastText' };
-                }
-                return (
-                  <Avatar key={date} sx={{ width: 32, height: 32, fontSize: '0.875rem', ...dayStyle }}>{date}</Avatar>
-                );
-              })}
+        {/* Main Content */}
+        <Grid item xs={12} md={8}>
+          {/* Announcements */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="bold">Announcements</Typography>
+              <Button 
+                component={Link} 
+                to="/student/announcements" 
+                endIcon={<ArrowForwardIcon />}
+                disabled
+                size="small"
+              >
+                View All
+              </Button>
+            </Box>
+            <Box textAlign="center" py={4}>
+              <Typography variant="body1" color="text.secondary">
+                Announcements feature is coming soon
+              </Typography>
             </Box>
           </Paper>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-                {/* Events */}
-                <Paper sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Events</Typography>
-                    <Typography variant="body2" color="text.secondary">Coming Soon...</Typography>
-                </Paper>
-            </Grid>
-            <Grid item xs={12} md={6}>
-                {/* Messages */}
-                <Paper sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Recent Messages</Typography>
-                    <Typography variant="body2" color="text.secondary">Coming Soon...</Typography>
-                </Paper>
-            </Grid>
-          </Grid>
+          {/* Upcoming Events */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="bold">Upcoming Events</Typography>
+              <Button 
+                component={Link} 
+                to="/student/events" 
+                endIcon={<ArrowForwardIcon />}
+                disabled
+                size="small"
+              >
+                View All
+              </Button>
+            </Box>
+            <Box textAlign="center" py={4}>
+              <Typography variant="body1" color="text.secondary">
+                Events feature is coming soon
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
 
-        {/* Sidebar (Right) */}
-        <Grid item xs={12} lg={4}>
-          {/* Recent Resources */}
-          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Recent Resources</Typography>
-            <List dense disablePadding>
-              {mockResources.map(resource => (
-                <ListItem key={resource.id} disableGutters button component={Link} to={`/student/resources/${resource.id}`}>
-                  <ListItemIcon><FileIcon color="primary" /></ListItemIcon>
-                  <ListItemText primary={resource.name} secondary={resource.subject} />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-
-          {/* Announcements */}
-          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Announcements</Typography>
-            <List dense disablePadding>
-              {mockAnnouncements.map((announcement, index) => (
-                <React.Fragment key={announcement.id}>
-                  <ListItem disableGutters>
-                    <ListItemText 
-                      primary={announcement.title}
-                      secondary={announcement.category}
-                      primaryTypographyProps={{ fontWeight: 'medium' }}
-                    />
-                    {announcement.isNew && <Chip label="New" color="primary" size="small" />}
-                  </ListItem>
-                  {index < mockAnnouncements.length - 1 && <Divider component="li" sx={{ my: 1 }} />}
-                </React.Fragment>
-              ))}
-            </List>
-          </Paper>
-
+        {/* Sidebar */}
+        <Grid item xs={12} md={4}>
           {/* Quick Links */}
-          <Paper sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Quick Links</Typography>
-            <List dense disablePadding>
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Quick Links</Typography>
+            <Box>
               {quickLinks.map((link) => (
-                <ListItem key={link.text} button component={Link} to={link.path} disableGutters>
-                  <ListItemIcon sx={{ minWidth: 40, color: 'primary.main' }}>{link.icon}</ListItemIcon>
-                  <ListItemText primary={link.text} />
-                  <ArrowForwardIcon fontSize="small" color="action" />
-                </ListItem>
+                <Button
+                  key={link.text}
+                  component={Link}
+                  to={link.path}
+                  disabled={link.comingSoon}
+                  fullWidth
+                  startIcon={link.icon}
+                  sx={{
+                    justifyContent: 'flex-start',
+                    mb: 1,
+                    textTransform: 'none',
+                    color: link.comingSoon ? 'text.secondary' : 'text.primary',
+                    '&:hover': {
+                      backgroundColor: link.comingSoon ? 'transparent' : 'action.hover',
+                    }
+                  }}
+                >
+                  <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+                    <Typography variant="body1">
+                      {link.text}
+                      {link.comingSoon && (
+                        <Chip 
+                          label="Coming Soon" 
+                          size="small" 
+                          sx={{ 
+                            ml: 1, 
+                            height: 18,
+                            '& .MuiChip-label': { px: 1 },
+                            fontSize: '0.7rem'
+                          }} 
+                        />
+                      )}
+                    </Typography>
+                  </Box>
+                </Button>
               ))}
-            </List>
+            </Box>
+          </Paper>
+
+          {/* Resources */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="bold">Recent Resources</Typography>
+              <Button 
+                component={Link} 
+                to="/student/resources" 
+                endIcon={<ArrowForwardIcon />}
+                size="small"
+              >
+                View All
+              </Button>
+            </Box>
+            <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+              {stats.resources > 0 
+                ? `${stats.resources} resources available` 
+                : 'No resources available at the moment'}
+            </Typography>
           </Paper>
         </Grid>
       </Grid>
@@ -195,38 +255,53 @@ const StudentDashboard = () => {
 };
 
 // Helper Component
-const StatCard = ({ title, value, icon, subtitle }) => (
+const StatCard = ({ title, value, icon, subtitle, disabled = false }) => (
   <Paper 
+    elevation={2}
     sx={{ 
       p: 2, 
       height: '100%',
       borderRadius: 2,
-      borderLeft: '4px solid',
-      borderColor: 'primary.main',
+      opacity: disabled ? 0.7 : 1,
+      transition: 'all 0.2s ease-in-out',
       '&:hover': {
-        boxShadow: 3,
-        transform: 'translateY(-2px)',
-        transition: 'all 0.2s ease-in-out',
+        transform: disabled ? 'none' : 'translateY(-2px)',
+        boxShadow: disabled ? 2 : 3,
       },
     }}
   >
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box display="flex" alignItems="center">
       <Avatar 
         sx={{ 
-          mr: 2, 
-          bgcolor: 'primary.light',
-          color: 'primary.contrastText',
+          mr: 2,
           width: 48,
           height: 48,
+          bgcolor: disabled ? 'action.disabledBackground' : 'primary.light',
+          color: disabled ? 'text.secondary' : 'primary.contrastText',
         }}
       >
         {React.cloneElement(icon, { fontSize: 'medium' })}
       </Avatar>
       <Box>
-        <Typography variant="h5" fontWeight="bold">{value}</Typography>
-        <Typography variant="body2" color="text.secondary">{title}</Typography>
+        <Typography 
+          variant="h5" 
+          fontWeight="bold" 
+          color={disabled ? 'text.disabled' : 'text.primary'}
+        >
+          {value}
+        </Typography>
+        <Typography 
+          variant="body2" 
+          color={disabled ? 'text.disabled' : 'text.secondary'}
+        >
+          {title}
+        </Typography>
         {subtitle && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography 
+            variant="caption" 
+            color={disabled ? 'text.disabled' : 'text.secondary'}
+            sx={{ display: 'block', mt: 0.5 }}
+          >
             {subtitle}
           </Typography>
         )}

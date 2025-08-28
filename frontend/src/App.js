@@ -9,10 +9,11 @@ import { SnackbarProvider } from 'notistack';
 import './services/firebase';
 
 // Routes
-import { publicRoutes, protectedRoutes } from './routes';
+import { publicRoutes, protectedRoutes, superAdminRoutes } from './routes';
 
 // Layouts
 import Layout from './components/layout/Layout';
+import SuperAdminLayout from './components/layout/SuperAdminLayout';
 import AuthLayout from './components/layout/AuthLayout';
 
 // Contexts
@@ -83,6 +84,21 @@ function App() {
                     {/* Protected routes - Main Layout */}
                     <Route element={<Layout />}>
                       {protectedRoutes.map((route, i) => (
+                        <Route
+                          key={i}
+                          path={route.path}
+                          element={
+                            <Suspense fallback={<div>Loading...</div>}>
+                              {route.element}
+                            </Suspense>
+                          }
+                        />
+                      ))}
+                    </Route>
+
+                    {/* Super Admin routes - SuperAdminLayout */}
+                    <Route element={<SuperAdminLayout />}>
+                      {superAdminRoutes.map((route, i) => (
                         <Route
                           key={i}
                           path={route.path}

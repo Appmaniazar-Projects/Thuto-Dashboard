@@ -6,8 +6,6 @@ import AuthLayout from './components/layout/AuthLayout';
 import Layout from './components/layout/Layout';
 
 const Login = lazy(() => import('./components/auth/Login'));
-const RegisterUser = lazy(() => import('./components/auth/RegisterUser'));
-const RegisterTeacher = lazy(() => import('./components/auth/RegisterTeacher'));
 const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
@@ -24,14 +22,15 @@ const Resources = lazy(() => import('./pages/student/Resources'));
 const StudentAttendance = lazy(() => import('./pages/student/StudentAttendance'));
 const StudentReports = lazy(() => import('./pages/student/StudentReports'));
 
+const ParentDashboardPage = lazy(() => import('./components/dashboard/ParentDashboard'));
 const ParentChildrenPage = lazy(() => import('./pages/parent/Children'));
 const ParentAcademicReportsPage = lazy(() => import('./pages/parent/Academic'));
-
-const ParentReports = lazy(() => import('./pages/parent/ParentReports'));
+const ParentReports = lazy(() => import('./pages/parent/ParentReportsPage'));
 
 const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
 const TeacherFeed = lazy(() => import('./components/dashboard/teacher/Feed'));
 const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
+const UploadedResources = lazy(() => import('./components/dashboard/teacher/Resources'));
 
 const UserManagementPage = lazy(() => import('./pages/admin/Users'));
 const AdminReportsPage = lazy(() => import('./pages/admin/Reports'));
@@ -43,6 +42,7 @@ const AnnouncementsPage = lazy(() => import('./pages/common/AnnouncementsPage'))
 const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncementPage'));
 
 // Super Admin
+const SuperAdminLogin = lazy(() => import('./components/auth/SuperAdminLogin'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
 
 const Loading = () => (
@@ -56,20 +56,18 @@ const isRedirect = (element) =>
 
 // Only wrap in suspense here — layout is handled in App.js
 
-import RegisterWelcome from './components/auth/RegisterWelcome';
 
 export const publicRoutes = [
-    { path: '/', element: <Navigate to="/login" replace /> },
+  { path: '/', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
-  { path: '/register/user', element: <RegisterUser /> },
-  { path: '/register/teacher', element: <RegisterTeacher /> },
+  { path: '/superadmin/login', element: <SuperAdminLogin /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
-export const protectedRoutes = [
+const protectedRoutes = [
   { path: '/', element: <Navigate to="/dashboard" replace /> },
   { path: '/dashboard', element: <DashboardPage /> },
   { path: '/calendar', element: <CalendarPage /> },
@@ -88,14 +86,15 @@ export const protectedRoutes = [
   { path: '/student/reports', element: <StudentReports /> },
 
   // Parent
+  { path: '/parent/dashboard', element: <ParentDashboardPage /> },
   { path: '/parent/children', element: <ParentChildrenPage /> },
   { path: '/parent/academic', element: <ParentAcademicReportsPage /> },
   { path: '/parent/reports', element: <ParentReports /> },
 
   // Teacher
-  { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
+  { path: '/teacher/attendance/register', element: <AttendanceRegisterPage /> },
   { path: '/teacher/feed', element: <TeacherFeed /> },
-  { path: '/teacher/resources', element: <Resources /> },
+  { path: '/teacher/resources', element: <UploadedResources /> },
   { path: '/teacher/upload-report', element: <UploadReportPage /> },
   
 
@@ -106,10 +105,6 @@ export const protectedRoutes = [
   { path: '/admin/messages', element: <SystemMessagesPanel /> },
   { path: '/admin/attendance', element: <AdminAttendancePage /> },
 
-  // Super Admin
-  { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
-  { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
-  { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
 
   // Redirects
   { path: '/my-subjects', element: <Navigate to="/student/subjects" replace /> },
@@ -119,7 +114,7 @@ export const protectedRoutes = [
   { path: '/academic', element: <Navigate to="/parent/academic" replace /> },
   { path: '/academic-reports', element: <Navigate to="/parent/academic" replace /> },
   { path: '/parent-reports', element: <Navigate to="/parent/reports" replace /> },
-  { path: '/attendance', element: <Navigate to="/teacher/attendance" replace /> },
+  { path: '/attendance', element: <Navigate to="/teacher/attendance/register" replace /> },
   { path: '/resources', element: <Navigate to="/teacher/resources" replace /> },
   { path: '/users', element: <Navigate to="/admin/users" replace /> },
   { path: '/reports', element: <Navigate to="/admin/reports" replace /> },
@@ -169,5 +164,13 @@ const routes = [
     element: <Navigate to="/dashboard" replace />
   }
 ];
+
+export const superAdminRoutes = [
+  { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
+  { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
+  { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
+];
+
+export { protectedRoutes };
 
 export default routes;
