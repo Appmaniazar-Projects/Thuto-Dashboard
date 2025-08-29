@@ -14,8 +14,31 @@ const login = async (phone) => {
     return response.data;
 };
 
+const sendOTP = async (phone) => {
+    const response = await api.post('/auth/send-otp', { phone });
+    return response.data;
+};
+
+const verifyOTP = async (phone, otp) => {
+    const response = await api.post('/auth/verify-otp', { phone, otp });
+    if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+};
+
 const adminLogin = async (email, password) => {
     const response = await api.post('/auth/admin/login', { email, password });
+    if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+};
+
+const superAdminLogin = async (email, password) => {
+    const response = await api.post('/auth/superadmin/login', { email, password });
     if (response.data.token) {
         localStorage.setItem('user', JSON.stringify(response.data.user));
         localStorage.setItem('token', response.data.token);
@@ -36,7 +59,10 @@ const getCurrentUser = () => {
 const authService = {
     register,
     login,
+    sendOTP,
+    verifyOTP,
     adminLogin,
+    superAdminLogin,
     logout,
     getCurrentUser,
 };

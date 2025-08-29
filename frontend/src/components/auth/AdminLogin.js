@@ -5,7 +5,7 @@ import {
   Box, Alert
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
-import { mockAdminLogin } from '../../services/mockAuth';
+import authService from '../../services/auth';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -21,7 +21,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const { user, token } = await mockAdminLogin(email, password);
+      const { user, token } = await authService.adminLogin(email, password);
       setAuthData(user, token);
       navigate('/admin/users');
     } catch (err) {
