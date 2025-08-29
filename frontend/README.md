@@ -13,7 +13,6 @@ React-based frontend for the Thuto Dashboard educational management system.
 3. **School Admins**: Email + password (backend verification)
 4. **Super Admins**: Email + password (backend verification)
 
-**NO Google, Facebook, Twitter, or any other social login is implemented.**
 
 ## 🚀 Setup Instructions
 
@@ -55,10 +54,9 @@ React-based frontend for the Thuto Dashboard educational management system.
 Your Firebase project must have:
 
 1. **Phone Authentication enabled** in Firebase Console (NO other providers)
-2. **NO Google, Facebook, Twitter providers** enabled
-3. **Test phone numbers configured** (optional, for development)
-4. **Authorized domains** configured for your deployment
-5. **reCAPTCHA verification** enabled (uses invisible reCAPTCHA)
+2. **Test phone numbers configured** (optional, for development)
+3. **Authorized domains** configured for your deployment
+4. **reCAPTCHA verification** enabled (uses invisible reCAPTCHA)
 
 ### Running the Application
 
@@ -132,8 +130,6 @@ POST /api/auth/superadmin/login
 - Body: { email, password }
 ```
 
-**DO NOT implement social login endpoints (Google, Facebook, Twitter).**
-
 ### API Services
 
 Each role has dedicated service files:
@@ -165,7 +161,6 @@ For development, you can configure test phone numbers in Firebase Console to byp
 - Uses Firebase invisible reCAPTCHA for bot protection
 - JWT tokens stored in localStorage
 - Role-based route protection
-- **NO third-party social authentication** (Google, Facebook, Twitter)
 - Phone number validation and formatting
 - Automatic logout on token expiration
 
@@ -184,7 +179,3 @@ For development, you can configure test phone numbers in Firebase Console to byp
 - Notification system
 - Protected routing
 - Dynamic theming support
-
-## ⚠️ IMPORTANT - NO THIRD-PARTY LOGIN
-
-This system is designed to use **ONLY phone-based OTP authentication**. Do not attempt to add Google, Facebook, Twitter, or any other social login providers. The `firebase.js` configuration file has been specifically configured to exclude all social authentication providers.
