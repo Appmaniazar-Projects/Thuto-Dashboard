@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box, Grid, Paper, Typography, Card, CardContent, CardActions, Button, Avatar, List, ListItem, ListItemText, ListItemIcon, Divider, TextField, Select, MenuItem, FormControl, InputLabel, Chip
+  Box, Grid, Paper, Typography, Card, CardContent, Button, Avatar,
+  List, ListItem, ListItemText, ListItemIcon, Divider, Chip, Badge, Link, CircularProgress, Alert
 } from '@mui/material';
 import {
   Group as GroupIcon,
@@ -8,141 +9,217 @@ import {
   Book as BookIcon,
   Notifications as NotificationsIcon,
   CheckCircleOutline as AttendanceIcon,
-  PeopleOutline as RosterIcon,
+  PeopleOutline as PeopleIcon,
   Campaign as AnnounceIcon,
   Event as EventIcon,
-  Message as MessageIcon
+  Message as MessageIcon,
+  Info as InfoIcon,
+  Folder as FolderIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-
-// Mock Data
-const mockClasses = [
-  { id: 1, name: 'Grade 10 - Mathematics', students: 32, period: 'Period 2 (09:00 - 10:00)' },
-  { id: 2, name: 'Grade 11 - Physics', students: 28, period: 'Period 4 (11:00 - 12:00)' },
-  { id: 3, name: 'Grade 10 - Chemistry', students: 30, period: 'Period 5 (13:00 - 14:00)' },
-];
-
-const mockDeadlines = [
-  { id: 1, title: 'Maths Homework 5', class: 'Grade 10', dueDate: '2025-08-05' },
-  { id: 2, title: 'Physics Lab Report', class: 'Grade 11', dueDate: '2025-08-07' },
-  { id: 3, title: 'Chemistry Test', class: 'Grade 10', dueDate: '2025-08-10' },
-];
-
-const mockMessages = [
-  { id: 1, from: 'Mr. Smith (Parent of John)', snippet: 'John will be absent tomorrow...' },
-  { id: 2, from: 'Admin', snippet: 'Staff meeting at 3 PM today.' },
-];
+import { Link as RouterLink } from 'react-router-dom';
+import { getTeacherClasses, getRecentResources } from '../../services/teacherService';
+import StatCard from '../common/StatCard';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
-  const [announcement, setAnnouncement] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [classesError, setClassesError] = useState(null);
+  const [resources, setResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(true);
+  const [resourcesError, setResourcesError] = useState(null);
 
-  const handlePostAnnouncement = () => {
-    if (!announcement.trim()) return;
-    alert(`Announcing to ${selectedClass || 'all classes'}:\n${announcement}`);
-    setAnnouncement('');
-    setSelectedClass('');
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoadingClasses(true);
+        const classData = await getTeacherClasses();
+        setClasses(classData || []);
+      } catch (err) {
+        setClassesError('Failed to fetch classes.');
+        console.error(err);
+      } finally {
+        setLoadingClasses(false);
+      }
+
+      try {
+        setLoadingResources(true);
+        const resourceData = await getRecentResources(5);
+        setResources(resourceData || []);
+      } catch (err) {
+        setResourcesError('Failed to fetch resources.');
+        console.error(err);
+      } finally {
+        setLoadingResources(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const totalStudents = classes.reduce((sum, cls) => sum + (cls.students || 0), 0);
 
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold">
-          Welcome, {user?.title || 'Mrs.'} {user?.surname || 'Davis'}
+        <Typography variant="h4" fontWeight="bold" gutterBottom>
+          Welcome, {user?.name || 'Teacher'}!
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          Here's your summary for today, {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </Typography>
       </Box>
 
-      {/* Quick Stats */}
+      {/* Stats Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Total Students" value="90" icon={<GroupIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Classes Taught" value="3" icon={<BookIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Upcoming Deadlines" value={mockDeadlines.length} icon={<AssignmentIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Unread Messages" value={mockMessages.length} icon={<NotificationsIcon />} /></Grid>
+        {[
+          { title: 'Classes', value: loadingClasses ? '...' : classes.length, icon: <GroupIcon /> },
+          { title: 'Students', value: loadingClasses ? '...' : totalStudents, icon: <PeopleIcon /> },
+          { title: 'Resources', value: loadingResources ? '...' : resources.length, icon: <FolderIcon /> },
+          { title: 'Unread Messages', value: '0', icon: <MessageIcon />, disabled: true },
+        ].map((stat, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <StatCard 
+              title={stat.title} 
+              value={stat.value} 
+              icon={stat.icon}
+              disabled={stat.disabled}
+            />
+          </Grid>
+        ))}
       </Grid>
 
-      <Grid container spacing={4}>
-        {/* Main Content (Left) */}
+      <Grid container spacing={3}>
+        {/* Left Column */}
         <Grid item xs={12} md={8}>
-          <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>My Classes</Typography>
-          <Grid container spacing={3}>
-            {mockClasses.map((c) => (
-              <Grid item xs={12} sm={6} key={c.id}>
-                <ClassCard classInfo={c} />
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
-
-        {/* Sidebar (Right) */}
-        <Grid item xs={12} md={4}>
-          {/* Upcoming Deadlines */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>Upcoming Deadlines</Typography>
-            <List dense>
-              {mockDeadlines.map(d => (
-                <ListItem key={d.id} disableGutters>
-                  <ListItemIcon sx={{minWidth: 32}}><EventIcon fontSize="small" color="action"/></ListItemIcon>
-                  <ListItemText primary={d.title} secondary={`${d.class} - Due ${new Date(d.dueDate).toLocaleDateString()}`} />
-                </ListItem>
-              ))}
-            </List>
+          {/* Announcements */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="bold">Announcements</Typography>
+              <Chip 
+                label="Coming Soon" 
+                color="primary" 
+                size="small"
+                icon={<InfoIcon fontSize="small" />}
+              />
+            </Box>
+            <Box textAlign="center" py={4}>
+              <Typography variant="body1" color="text.secondary">
+                The announcements feature is coming soon. You'll be able to post and manage class announcements here.
+              </Typography>
+            </Box>
           </Paper>
 
-          {/* Post Announcement */}
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>Post Announcement</Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Target Class (Optional)</InputLabel>
-              <Select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} label="Target Class (Optional)">
-                <MenuItem value="">All Classes</MenuItem>
-                {mockClasses.map(c => <MenuItem key={c.id} value={c.name}>{c.name}</MenuItem>)}
-              </Select>
-            </FormControl>
-            <TextField
+          {/* Recent Resources */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Recent Resources</Typography>
+            {loadingResources ? (
+              <Box textAlign="center"><CircularProgress /></Box>
+            ) : resourcesError ? (
+              <Alert severity="error">{resourcesError}</Alert>
+            ) : resources.length === 0 ? (
+              <Typography color="text.secondary" textAlign="center">No recent resources found.</Typography>
+            ) : (
+              <List disablePadding>
+                {resources.map((resource, index) => (
+                  <ListItem key={resource.id} disablePadding sx={{ mb: 1 }}>
+                    <ListItemIcon><FolderIcon color="primary" /></ListItemIcon>
+                    <ListItemText 
+                      primary={resource.fileName}
+                      secondary={`Uploaded on: ${new Date(resource.uploadDate).toLocaleDateString()}`}
+                    />
+                    <Button size="small" variant="outlined" href={resource.fileUrl} target="_blank">View</Button>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </Grid>
+
+        {/* Right Column */}
+        <Grid item xs={12} md={4}>
+          {/* Quick Actions */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Quick Actions</Typography>
+            <Button
               fullWidth
-              multiline
-              rows={4}
-              label="Your message..."
-              value={announcement}
-              onChange={(e) => setAnnouncement(e.target.value)}
+              variant="contained"
+              startIcon={<AssignmentIcon />}
+              component={RouterLink}
+              to="/teacher/resources"
               sx={{ mb: 2 }}
-            />
-            <Button variant="contained" fullWidth onClick={handlePostAnnouncement}>Post</Button>
+            >
+              Manage Resources
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<AnnounceIcon />}
+              disabled
+            >
+              Post Announcement
+              <Chip 
+                label="Coming Soon" 
+                size="small" 
+                sx={{ ml: 1, height: 20, '& .MuiChip-label': { px: 1 } }} 
+              />
+            </Button>
+          </Paper>
+
+          {/* Today's Classes */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Today's Classes</Typography>
+            {loadingClasses ? (
+              <Box textAlign="center"><CircularProgress /></Box>
+            ) : classesError ? (
+              <Alert severity="error">{classesError}</Alert>
+            ) : classes.length === 0 ? (
+              <Typography color="text.secondary" textAlign="center">No classes scheduled for today.</Typography>
+            ) : (
+              <List disablePadding>
+                {classes.slice(0, 3).map((cls) => (
+                  <ListItem 
+                    key={cls.id}
+                    button 
+                    component={RouterLink}
+                    to={`/teacher/attendance/${cls.id}`}
+                    sx={{ borderRadius: 1, mb: 1, '&:hover': { bgcolor: 'action.hover' } }}
+                  >
+                    <ListItemText
+                      primary={cls.name}
+                      secondary={cls.period}
+                      primaryTypographyProps={{ fontWeight: 'medium', noWrap: true }}
+                    />
+                    <Chip label="Attend" size="small" color="primary" />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Paper>
+          
+          {/* Recent Messages */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" fontWeight="bold">Recent Messages</Typography>
+              <Chip 
+                label="Coming Soon" 
+                color="primary" 
+                size="small"
+                icon={<InfoIcon fontSize="small" />}
+              />
+            </Box>
+            <Box textAlign="center" py={4}>
+              <Typography variant="body1" color="text.secondary">
+                The messaging feature is coming soon.
+              </Typography>
+            </Box>
           </Paper>
         </Grid>
       </Grid>
     </Box>
   );
 };
-
-// Helper Components
-const StatCard = ({ title, value, icon }) => (
-  <Paper sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-    <Box>
-      <Typography variant="h6" fontWeight="bold">{value}</Typography>
-      <Typography variant="body2" color="text.secondary">{title}</Typography>
-    </Box>
-    <Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}>{icon}</Avatar>
-  </Paper>
-);
-
-const ClassCard = ({ classInfo }) => (
-  <Card sx={{ height: '100%' }}>
-    <CardContent>
-      <Typography variant="h6" fontWeight={600} noWrap>{classInfo.name}</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{classInfo.period}</Typography>
-      <Chip icon={<GroupIcon />} label={`${classInfo.students} Students`} size="small" />
-    </CardContent>
-    <CardActions>
-      <Button size="small" startIcon={<AttendanceIcon />}>Take Attendance</Button>
-      <Button size="small" startIcon={<RosterIcon />}>View Roster</Button>
-    </CardActions>
-  </Card>
-);
 
 export default TeacherDashboard;

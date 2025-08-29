@@ -33,7 +33,11 @@ const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
 const UploadedResources = lazy(() => import('./components/dashboard/teacher/Resources'));
 
 const UserManagementPage = lazy(() => import('./pages/admin/Users'));
-const AdminReportsPage = lazy(() => import('./pages/admin/Reports'));
+const AdminReportsPage = lazy(() => 
+  import('./pages/admin/Reports').then(module => ({ default: module.Reports }))
+);
+const UserStatistics = lazy(() => import('./components/admin/reports/UserStatistics'));
+const AttendanceSubmissions = lazy(() => import('./components/admin/reports/AttendanceSubmissions'));
 const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettings'));
 const SystemMessagesPanel = lazy(() => import('./components/admin/SystemMessagesPanel'));
 const AdminAttendancePage = lazy(() => import('./pages/admin/AdminAttendancePage'));
@@ -92,7 +96,7 @@ const protectedRoutes = [
   { path: '/parent/reports', element: <ParentReports /> },
 
   // Teacher
-  { path: '/teacher/attendance/register', element: <AttendanceRegisterPage /> },
+  { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
   { path: '/teacher/feed', element: <TeacherFeed /> },
   { path: '/teacher/resources', element: <UploadedResources /> },
   { path: '/teacher/upload-report', element: <UploadReportPage /> },
@@ -101,6 +105,8 @@ const protectedRoutes = [
   // Admin
   { path: '/admin/users', element: <UserManagementPage /> },
   { path: '/admin/reports', element: <AdminReportsPage /> },
+  { path: '/admin/reports/users', element: <UserStatistics /> },
+  { path: '/admin/reports/attendance', element: <AttendanceSubmissions /> },
   { path: '/admin/settings', element: <SystemSettingsPage /> },
   { path: '/admin/messages', element: <SystemMessagesPanel /> },
   { path: '/admin/attendance', element: <AdminAttendancePage /> },
@@ -114,7 +120,7 @@ const protectedRoutes = [
   { path: '/academic', element: <Navigate to="/parent/academic" replace /> },
   { path: '/academic-reports', element: <Navigate to="/parent/academic" replace /> },
   { path: '/parent-reports', element: <Navigate to="/parent/reports" replace /> },
-  { path: '/attendance', element: <Navigate to="/teacher/attendance/register" replace /> },
+  { path: '/attendance', element: <Navigate to="/teacher/attendance" replace /> },
   { path: '/resources', element: <Navigate to="/teacher/resources" replace /> },
   { path: '/users', element: <Navigate to="/admin/users" replace /> },
   { path: '/reports', element: <Navigate to="/admin/reports" replace /> },

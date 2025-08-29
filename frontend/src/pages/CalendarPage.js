@@ -1,33 +1,24 @@
 import React from 'react';
-import { Box, Paper, Typography, Alert } from '@mui/material';
-import PageTitle from '../components/common/PageTitle';
+import { Container, Paper, Typography, Box } from '@mui/material';
+import ConstructionIcon from '@mui/icons-material/Construction';
 
-const CalendarPage = () => {
-  return (
-    <Box>
-      <PageTitle 
-        title="School Calendar" 
-        subtitle="This feature is coming soon. Stay tuned for updates!" 
-      />
-      
-      <Paper elevation={2} sx={{ p: 4, mt: 3, textAlign: 'center', opacity: 0.7 }}>
-        <Alert severity="info" sx={{ mb: 3, justifyContent: 'center' }}>
-          <strong>Coming Soon!</strong> The calendar feature is currently under development.
-        </Alert>
-        
-        <Typography variant="h5" color="primary" gutterBottom>
-          Calendar Feature Coming Soon!
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          We're working hard to bring you a comprehensive school calendar.
-          This feature will be available in an upcoming release.
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Check back soon for exciting updates!
-        </Typography>
-      </Paper>
-    </Box>
-  );
-};
+const Calendar = () => (
+  <Container maxWidth="md">
+    <Paper elevation={0} sx={{ p: 4, mt: 4, textAlign: 'center' }}>
+      <Box sx={{ mb: 2 }}>
+        <ConstructionIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
+      </Box>
+      <Typography variant="h5" component="h2" gutterBottom>
+        Events Coming Soon
+      </Typography>
+      <Typography variant="body1" color="text.secondary">
+        We're working on bringing you a comprehensive events experience.
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+        This feature is currently under development and will be available in a future update.
+      </Typography>
+    </Paper>
+  </Container>
+);
 
-export default CalendarPage;
+export default Calendar;

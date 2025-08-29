@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { saveAs } from 'file-saver';
+import Papa from 'papaparse';
 import { 
   Box, 
   CircularProgress, 
@@ -32,7 +34,8 @@ import {
   Delete as DeleteIcon,
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
-  School as TeacherIcon
+  School as TeacherIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole } from '../../services/adminService';
 import PageTitle from '../../components/common/PageTitle';
@@ -110,6 +113,7 @@ const Users = () => {
             fetchUsers();
         } catch (err) {
             setError('Failed to save user');
+            console.error(err);
         }
     };
 
@@ -120,6 +124,7 @@ const Users = () => {
                 fetchUsers();
             } catch (err) {
                 setError('Failed to delete user');
+                console.error(err);
             }
         }
     };
@@ -159,6 +164,39 @@ const Users = () => {
         setActiveTab(newValue);
     };
 
+    const handleExport = (data, title) => {
+        if (!data || data.length === 0) {
+            setError('No data to export.');
+            return;
+        }
+
+        // Define headers based on the table
+        const headers = ['Name', 'Email', 'Phone Number', 'Role'];
+        const isTeachersTable = title === 'Teachers';
+        if (isTeachersTable) {
+            headers.push('Subjects', 'Grade');
+        }
+
+        const csvData = data.map(user => {
+            const row = {
+                'Name': user.name,
+                'Email': user.email,
+                'Phone Number': user.phoneNumber,
+                'Role': user.role,
+            };
+            if (isTeachersTable) {
+                row['Subjects'] = user.subjects?.join(', ') || 'Not assigned';
+                row['Grade'] = user.grade || 'Not assigned';
+            }
+            return row;
+        });
+
+        const csv = Papa.unparse(csvData, { header: true, columns: headers });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const fileName = `${title.replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.csv`;
+        saveAs(blob, fileName);
+    };
+
     const getRoleColor = (role) => {
         switch (role) {
             case 'admin': return 'error';
@@ -174,23 +212,33 @@ const Users = () => {
             <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6">{title}</Typography>
-                    {canCreateRole && (
+                    <Box>
+                        {canCreateRole && (
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => {
+                                    const roleMap = {
+                                        'All Users': 'student',
+                                        'Administrators': 'admin',
+                                        'Teachers': 'teacher'
+                                    };
+                                    setUserForm({ ...userForm, role: roleMap[title] || 'student' });
+                                    openDialog();
+                                }}
+                                sx={{ mr: 1 }}
+                            >
+                                Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
+                            </Button>
+                        )}
                         <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => {
-                                const roleMap = {
-                                    'All Users': 'student',
-                                    'Administrators': 'admin',
-                                    'Teachers': 'teacher'
-                                };
-                                setUserForm({ ...userForm, role: roleMap[title] || 'student' });
-                                openDialog();
-                            }}
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => handleExport(userData, title)}
                         >
-                            Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
+                            Export CSV
                         </Button>
-                    )}
+                    </Box>
                 </Box>
                 
                 <TableContainer>

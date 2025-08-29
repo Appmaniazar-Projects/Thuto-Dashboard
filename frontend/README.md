@@ -1,70 +1,190 @@
-# Getting Started with Create React App
+# Thuto Dashboard - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React-based frontend for the Thuto Dashboard educational management system.
 
-## Available Scripts
+## 🔐 Authentication System - PHONE OTP ONLY
 
-In the project directory, you can run:
+**CRITICAL: This frontend implements ONLY phone-based OTP authentication using Firebase. NO third-party social login options (Google, Facebook, Twitter) are supported.**
 
-### `npm start`
+### Supported Login Methods
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. **Students & Parents**: Phone number + Firebase OTP **ONLY**
+2. **Teachers**: Phone number + Firebase OTP **ONLY**
+3. **School Admins**: Email + password (backend verification)
+4. **Super Admins**: Email + password (backend verification)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+**NO Google, Facebook, Twitter, or any other social login is implemented.**
 
-### `npm test`
+## 🚀 Setup Instructions
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prerequisites
 
-### `npm run build`
+- Node.js 16 or higher
+- Firebase project with **Phone Authentication ONLY** enabled
+- Backend API running on `http://localhost:8080`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. Create environment file:
+   ```bash
+   cp .env.example .env
+   ```
 
-### `npm run eject`
+3. Configure Firebase credentials in `.env` (Phone Auth ONLY):
+   ```env
+   # Firebase Configuration (Phone Authentication ONLY)
+   REACT_APP_FIREBASE_API_KEY=your_firebase_api_key_here
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id_here
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
+   REACT_APP_FIREBASE_APP_ID=your_app_id_here
+   REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+   # Backend API
+   REACT_APP_API_BASE_URL=http://localhost:8080/api
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Firebase Setup Requirements - PHONE ONLY
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Your Firebase project must have:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. **Phone Authentication enabled** in Firebase Console (NO other providers)
+2. **NO Google, Facebook, Twitter providers** enabled
+3. **Test phone numbers configured** (optional, for development)
+4. **Authorized domains** configured for your deployment
+5. **reCAPTCHA verification** enabled (uses invisible reCAPTCHA)
 
-## Learn More
+### Running the Application
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+npm start
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The application will be available at `http://localhost:3000`
 
-### Code Splitting
+## 🏗️ Architecture
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Key Components
 
-### Analyzing the Bundle Size
+- **Authentication**: Firebase phone OTP integration **ONLY**
+- **Routing**: Role-based protected routes
+- **State Management**: React Context for auth and app state
+- **UI Framework**: Material-UI components
+- **API Communication**: Axios-based services
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Authentication Flow - PHONE OTP ONLY
 
-### Making a Progressive Web App
+```
+1. User enters phone number
+2. Firebase sends OTP via SMS
+3. User enters OTP code
+4. Firebase verifies OTP
+5. Frontend sends Firebase token to backend
+6. Backend verifies Firebase token and returns JWT
+7. JWT stored for subsequent API calls
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Project Structure
 
-### Advanced Configuration
+```
+src/
+├── components/
+│   ├── auth/              # Login components (phone OTP only)
+│   ├── admin/             # Admin dashboard
+│   ├── student/           # Student dashboard
+│   ├── parent/            # Parent dashboard
+│   ├── teacher/           # Teacher dashboard
+│   ├── superadmin/        # Super admin dashboard
+│   └── common/            # Reusable components
+├── services/
+│   ├── firebase.js        # Firebase phone auth config (NO social providers)
+│   ├── auth.js            # Phone OTP authentication service
+│   ├── api.js             # API client configuration
+│   └── [role]Service.js   # Role-specific API services
+├── context/               # React contexts
+├── config/                # App configuration
+└── assets/                # Static assets
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 🔧 Backend Integration
 
-### Deployment
+### Required Backend Endpoints
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The frontend expects these authentication endpoints:
 
-### `npm run build` fails to minify
+```
+POST /api/auth/verify-otp
+- Verifies Firebase phone token and returns JWT
+- Body: { phoneNumber, firebaseUid, firebaseToken }
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+POST /api/auth/admin/login  
+- Admin email/password login
+- Body: { email, password }
+
+POST /api/auth/superadmin/login
+- Super admin email/password login  
+- Body: { email, password }
+```
+
+**DO NOT implement social login endpoints (Google, Facebook, Twitter).**
+
+### API Services
+
+Each role has dedicated service files:
+- `adminService.js` - School admin operations
+- `superAdminService.js` - Super admin operations  
+- `studentService.js` - Student operations
+- `parentService.js` - Parent operations
+- `teacherService.js` - Teacher operations
+
+## 🛠️ Development
+
+### Available Scripts
+
+- `npm start` - Development server
+- `npm build` - Production build
+- `npm test` - Run tests
+- `npm run eject` - Eject from Create React App
+
+### Environment Variables
+
+All environment variables must be prefixed with `REACT_APP_` to be accessible in the React application.
+
+### Authentication Testing
+
+For development, you can configure test phone numbers in Firebase Console to bypass SMS sending.
+
+## 🔒 Security Notes - NO SOCIAL LOGIN
+
+- Uses Firebase invisible reCAPTCHA for bot protection
+- JWT tokens stored in localStorage
+- Role-based route protection
+- **NO third-party social authentication** (Google, Facebook, Twitter)
+- Phone number validation and formatting
+- Automatic logout on token expiration
+
+## 📱 Supported Features
+
+### Multi-Role Dashboard
+- Student: Subjects, attendance, reports, resources
+- Parent: Children's attendance, reports  
+- Teacher: Class management, attendance, resources
+- Admin: User management, school statistics
+- Super Admin: Multi-school management
+
+### Common Features
+- Responsive design
+- Loading states and error handling
+- Notification system
+- Protected routing
+- Dynamic theming support
+
+## ⚠️ IMPORTANT - NO THIRD-PARTY LOGIN
+
+This system is designed to use **ONLY phone-based OTP authentication**. Do not attempt to add Google, Facebook, Twitter, or any other social login providers. The `firebase.js` configuration file has been specifically configured to exclude all social authentication providers.

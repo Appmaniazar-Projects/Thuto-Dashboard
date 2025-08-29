@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
 
   if (
     requiredRoles.length &&
-    !requiredRoles.map(r => r.toLowerCase()).includes(currentUser.role?.toLowerCase())
+    !requiredRoles.map(r => r.toLowerCase()).includes(user.role?.toLowerCase())
   ) {
     // User doesn't have required role
     return <Navigate to="/dashboard" replace />;

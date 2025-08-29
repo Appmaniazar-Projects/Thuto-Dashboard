@@ -11,109 +11,58 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState('');
   const { enqueueSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      const storedSchoolId = localStorage.getItem('schoolId');
+  const setAuthData = (user, token) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    if (user.schoolId) {
+      localStorage.setItem('schoolId', user.schoolId);
+    }
 
-      if (storedToken && storedUser && storedSchoolId) {
-        try {
-          // Set API authorization header
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+    setCurrentUser(user);
+    if (user.schoolId) {
+      setSchoolId(user.schoolId);
+    }
+  };
+
+  useEffect(() => {
+    const initializeAuth = () => {
+      try {
+        setLoading(true);
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        const storedSchoolId = localStorage.getItem('schoolId');
+
+        if (storedToken && storedUser) {
+          // Set API authorization header for future use
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           
           // Parse stored user data
           const userData = JSON.parse(storedUser);
           setCurrentUser(userData);
-          setSchoolId(storedSchoolId);
-
-          // Optionally verify token is still valid
-          const userResponse = await api.get('/auth/me');
-          if (userResponse.data) {
-            setCurrentUser(userResponse.data);
-            setSchoolId(userResponse.data.schoolId);
-            localStorage.setItem('user', JSON.stringify(userResponse.data));
-            localStorage.setItem('schoolId', userResponse.data.schoolId);
+          
+          if (storedSchoolId) {
+            setSchoolId(storedSchoolId);
           }
-        } catch (err) {
-          console.error('Error verifying stored auth data:', err);
-          // Clear invalid stored data
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          localStorage.removeItem('schoolId');
-          delete api.defaults.headers.common['Authorization'];
         }
+      } catch (err) {
+        console.error('Error parsing stored auth data:', err);
+        // Clear invalid stored data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('schoolId');
+        delete api.defaults.headers.common['Authorization'];
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     initializeAuth();
   }, []);
 
-  const signup = async (email, password, additionalData = {}) => {
-    try {
-      setError('');
-      setLoading(true);
-      const userCredential = await api.post('/auth/signup', { email, password, ...additionalData });
-
-      enqueueSnackbar('Account created successfully!', { variant: 'success' });
-      return userCredential.data;
-    } catch (err) {
-      console.error('Signup Error:', err);
-      setError(err.message);
-      enqueueSnackbar(err.message, { variant: 'error' });
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (phone) => {
-    try {
-      setError('');
-      setLoading(true);
-
-      const response = await api.post('/auth/login', { phoneNumber: phone });
-      const { token, user } = response.data;
-
-      // Store token and user data
-      localStorage.setItem('token', token);
-      localStorage.setItem('schoolId', user.schoolId);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      // Set API authorization header
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      // Update state
-      setCurrentUser(user);
-      setSchoolId(user.schoolId);
-
-      enqueueSnackbar('Logged in successfully!', { variant: 'success' });
-      return user;
-
-    } catch (err) {
-      console.error('Login Error:', err);
-      let errorMessage = 'Failed to log in.';
-      
-      if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
-        errorMessage = 'Cannot connect to server. Please ensure the backend is running on port 8081.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Invalid phone number. Please check your credentials.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      enqueueSnackbar(errorMessage, { variant: 'error' });
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const resetPassword = async (email) => {
+    // Mock password reset - replace with real API when backend is ready
     try {
       setError('');
       setLoading(true);
@@ -131,10 +80,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const confirmPasswordReset = async (oobCode, newPassword) => {
+    // Mock password reset confirmation - replace with real API when backend is ready
     try {
       setError('');
       setLoading(true);
-      await api.post('/auth/reset-password-confirm', { oobCode, newPassword });
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       enqueueSnackbar('Your password has been reset successfully!', { variant: 'success' });
       return true;
     } catch (err) {
@@ -212,12 +165,11 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     loading,
     error,
-    signup,
-    login,
     resetPassword,
     logout,
     updateUserProfile,
     setUser,
+    setAuthData,
     isAuthenticated: !!currentUser
   };
 

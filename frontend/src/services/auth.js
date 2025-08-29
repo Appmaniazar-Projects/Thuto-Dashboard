@@ -1,11 +1,44 @@
-import axios from 'axios';
+import api from './api';
 
-const API_BASE = process.env.REACT_APP_API_BASE_URL; // Set this in your .env file
+const register = (userData) => {
+    return api.post('/auth/register', userData);
+};
 
-export async function loginWithFirebase(user) {
-  const idToken = await user.getIdToken();
-  const response = await axios.post(`${API_BASE}/auth/login`, {
-    idToken,
-  });
-  return response.data; // { user, token }
-}
+const login = async (phone) => {
+    // This would be the real API call
+    const response = await api.post('/auth/login', { phone });
+    if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+};
+
+const adminLogin = async (email, password) => {
+    const response = await api.post('/auth/admin/login', { email, password });
+    if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+};
+
+const logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+};
+
+const getCurrentUser = () => {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+};
+
+const authService = {
+    register,
+    login,
+    adminLogin,
+    logout,
+    getCurrentUser,
+};
+
+export default authService;

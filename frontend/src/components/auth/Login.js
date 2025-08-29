@@ -1,111 +1,143 @@
-import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Button, TextField, Typography, Paper, Link, Alert, Grid, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container, Paper, Typography, TextField, Button,
+  Box, Alert
+} from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
-import { checkBackendHealth } from '../../utils/healthCheck';
+import authService from '../../services/auth';
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
   const [phone, setPhone] = useState('');
-  const [error, setError] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState('phone'); // 'phone' or 'otp'
   const [loading, setLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState({ status: 'checking', message: 'Checking...' });
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const { setAuthData } = useAuth();
 
-  useEffect(() => {
-    // Check backend health on component mount
-    const checkHealth = async () => {
-      const health = await checkBackendHealth();
-      setBackendStatus(health);
-    };
-    checkHealth();
-  }, []);
-
-  const handleSubmit = async (e) => {
+  const handlePhoneSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
-
-    if (!phone.trim()) {
-      setError('Please enter your phone number.');
-      setLoading(false);
-      return;
-    }
-
-    // Check backend health before attempting login
-    if (backendStatus.status === 'unhealthy') {
-      setError('Backend server is not available. Please ensure the server is running on port 8081.');
-      setLoading(false);
-      return;
-    }
+    setError('');
 
     try {
-      await login(phone);
-      navigate('/dashboard');
+      await authService.sendOTP(phone);
+      setStep('otp');
     } catch (err) {
-      setError(err.message || 'Failed to log in. Please check your credentials.');
+      setError(err.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Thuto Dashboard Login
-        </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        
-        <Box sx={{ mb: 3, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
-          <Typography variant="body2" color="info.contrastText">
-            <strong>Demo Credentials:</strong><br/>
-            Admin: +27-81-000-0001<br/>
-            Teacher: +27-81-000-0002<br/>
-            Student: +27-81-000-0003<br/>
-            Parent: +27-81-000-0005
-          </Typography>
-        </Box>
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="phone"
-            label="Phone Number"
-            name="phone"
-            autoComplete="tel"
-            autoFocus
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+27-81-000-0001"
-            helperText="Enter your registered phone number"
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={loading}
-          >
-            {loading ? 'Signing In...' : 'Sign In'}
-          </Button>
-          <Grid container>
-            <Grid item xs>
-              <Link component={RouterLink} to="/forgot-password" variant="body2">
-                Forgot password?
-              </Link>
-            </Grid>
-            <Grid item>
-              <Link component={RouterLink} to="/register/user" variant="body2">
-                {"Don't have an account? Sign Up"}
-              </Link>
-            </Grid>
-          </Grid>
-        </Box>
+    try {
+      const { user, token } = await authService.verifyOTP(phone, otp);
+      setAuthData(user, token);
+      
+      // Redirect based on role
+      switch (user.role) {
+        case 'STUDENT':
+          navigate('/student/subjects');
+          break;
+        case 'PARENT':
+          navigate('/parent/children');
+          break;
+        default:
+          navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message || 'Invalid OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToPhone = () => {
+    setStep('phone');
+    setOtp('');
+    setError('');
+  };
+
+  return (
+    <Container component="main" maxWidth="xs">
+      <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Typography component="h1" variant="h4" align="center" sx={{ mb: 3 }}>
+          Login
+        </Typography>
+
+        {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+
+        {step === 'phone' ? (
+          <Box component="form" onSubmit={handlePhoneSubmit} sx={{ mt: 2, width: '100%' }}>
+            <TextField
+              required
+              fullWidth
+              label="Phone Number"
+              name="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+27-81-000-0000"
+              margin="normal"
+              disabled={loading}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
+            >
+              {loading ? 'Sending OTP...' : 'Send OTP'}
+            </Button>
+          </Box>
+        ) : (
+          <Box component="form" onSubmit={handleOtpSubmit} sx={{ mt: 2, width: '100%' }}>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 2 }}>
+              Enter the OTP sent to {phone}
+            </Typography>
+            
+            <TextField
+              required
+              fullWidth
+              label="OTP Code"
+              name="otp"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="123456"
+              margin="normal"
+              disabled={loading}
+              inputProps={{ maxLength: 6 }}
+            />
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
+            >
+              {loading ? 'Verifying...' : 'Verify OTP'}
+            </Button>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleBackToPhone}
+              disabled={loading}
+            >
+              Back to Phone Number
+            </Button>
+          </Box>
+        )}
       </Paper>
-    </Box>
+    </Container>
   );
 };
 

@@ -128,3 +128,74 @@ export const getAcademicTerms = async () => {
   const response = await api.get('/reports/terms');
   return response.data;
 };
+
+const REPORT_ENDPOINTS = {
+  ATTENDANCE: '/reports/attendance',
+  ACADEMIC: '/reports/academic',
+  BEHAVIOR: '/reports/behavior',
+  ENROLLMENT: '/reports/enrollment',
+  CUSTOM: '/reports/custom',
+};
+
+/**
+ * Generate a report
+ * @param {string} reportType - Type of report
+ * @param {Object} filters - Filters for the report
+ * @returns {Promise<Object>} Report data
+ */
+export const generateReport = async (reportType, filters = {}) => {
+  try {
+    const endpoint = REPORT_ENDPOINTS[reportType.toUpperCase()] || REPORT_ENDPOINTS.ATTENDANCE;
+    const response = await api.post(endpoint, filters);
+    return response.data;
+  } catch (error) {
+    console.error('Error generating report:', error);
+    throw error;
+  }
+};
+
+/**
+ * Download a report
+ * @param {string} reportType - Type of report
+ * @param {string} format - Format of the report (default: pdf)
+ * @param {Object} filters - Filters for the report
+ * @returns {Promise<boolean>} Whether the report was downloaded successfully
+ */
+export const downloadGeneratedReport = async (reportType, format = 'pdf', filters = {}) => {
+  try {
+    const endpoint = `${REPORT_ENDPOINTS[reportType.toUpperCase()] || REPORT_ENDPOINTS.ATTENDANCE}/download`;
+    const response = await api.post(
+      endpoint,
+      { ...filters, format },
+      { responseType: 'blob' } // Important for file download
+    );
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${reportType}_report.${format}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    return true;
+  } catch (error) {
+    console.error('Error downloading report:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get report filters
+ * @returns {Promise<Object>} Report filters
+ */
+export const getReportFilters = async () => {
+  try {
+    const response = await api.get('/reports/filters');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching report filters:', error);
+    throw error;
+  }
+};

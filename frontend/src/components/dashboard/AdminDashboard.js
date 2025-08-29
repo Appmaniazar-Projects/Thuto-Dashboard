@@ -9,17 +9,23 @@ import {
   Assessment as AssessmentIcon,
   PersonAdd as PersonAddIcon,
   Settings as SettingsIcon,
-  Campaign as CampaignIcon
+  Campaign as CampaignIcon,
+  ErrorOutline as ErrorIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import { fetchEnrollmentStats, fetchAttendanceStats } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { fetchEnrollmentStats, fetchAttendanceStats, fetchTotalStaff, fetchSystemAlerts } from '../../services/api';
 import GenderBreakdown from './admin/GenderBreakdown';
 import CalendarPanel from './admin/CalendarPanel';
+import StatCard from '../common/StatCard';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [totalStudents, setTotalStudents] = useState(null);
   const [averageAttendance, setAverageAttendance] = useState(null);
+  const [totalStaff, setTotalStaff] = useState(null);
+  const [systemAlerts, setSystemAlerts] = useState(null);
 
   useEffect(() => {
     fetchEnrollmentStats()
@@ -29,6 +35,14 @@ const AdminDashboard = () => {
     fetchAttendanceStats()
       .then((res) => setAverageAttendance(res.data?.average ?? 0))
       .catch(() => setAverageAttendance('Error'));
+
+    fetchTotalStaff()
+      .then((res) => setTotalStaff(res.data?.total ?? 0))
+      .catch(() => setTotalStaff('Error'));
+
+    fetchSystemAlerts()
+      .then((res) => setSystemAlerts(res.data?.total ?? 0))
+      .catch(() => setSystemAlerts('Error'));
   }, []);
 
   return (
@@ -46,9 +60,9 @@ const AdminDashboard = () => {
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}><StatCard title="Total Students" value={totalStudents} icon={<SchoolIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Average Attendance" value={averageAttendance !== null ? `${averageAttendance}%` : null} icon={<AssessmentIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="Total Staff" value="75" icon={<GroupIcon />} /></Grid>
-        <Grid item xs={12} sm={6} md={3}><StatCard title="System Alerts" value="2" icon={<CampaignIcon />} /></Grid>
+        <Grid item xs={12} sm={6} md={3}><StatCard title="Average Attendance" value={averageAttendance !== null ? (averageAttendance === 'Error' ? 'Error' : `${averageAttendance}%`) : null} icon={<AssessmentIcon />} /></Grid>
+        <Grid item xs={12} sm={6} md={3}><StatCard title="Total Staff" value={totalStaff} icon={<GroupIcon />} /></Grid>
+        <Grid item xs={12} sm={6} md={3}><StatCard title="System Alerts" value={systemAlerts} icon={<CampaignIcon />} /></Grid>
       </Grid>
 
       <Grid container spacing={4}>
@@ -71,9 +85,9 @@ const AdminDashboard = () => {
           <Paper sx={{ p: 2, mb: 3 }}>
             <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>Quick Actions</Typography>
             <List dense>
-              <ListItem disableGutters><Button startIcon={<PersonAddIcon />} fullWidth sx={{justifyContent: 'flex-start'}}>Manage Users</Button></ListItem>
-              <ListItem disableGutters><Button startIcon={<SettingsIcon />} fullWidth sx={{justifyContent: 'flex-start'}}>System Settings</Button></ListItem>
-              <ListItem disableGutters><Button startIcon={<CampaignIcon />} fullWidth sx={{justifyContent: 'flex-start'}}>Send Announcement</Button></ListItem>
+              <ListItem disableGutters><Button startIcon={<PersonAddIcon />} fullWidth sx={{justifyContent: 'flex-start'}} onClick={() => navigate('/admin/users')}>Manage Users</Button></ListItem>
+              <ListItem disableGutters><Button startIcon={<SettingsIcon />} fullWidth sx={{justifyContent: 'flex-start'}} onClick={() => navigate('/admin/settings')}>System Settings</Button></ListItem>
+              <ListItem disableGutters><Button startIcon={<CampaignIcon />} fullWidth sx={{justifyContent: 'flex-start'}} onClick={() => navigate('/announcements/create')}>Send Announcement</Button></ListItem>
             </List>
           </Paper>
           <CalendarPanel />
@@ -82,17 +96,5 @@ const AdminDashboard = () => {
     </Box>
   );
 };
-
-// Helper Component
-const StatCard = ({ title, value, icon }) => (
-  <Paper sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-    <Box>
-      <Typography variant="h5" fontWeight="bold">{value ?? '...'}</Typography>
-      <Typography variant="body2" color="text.secondary">{title}</Typography>
-    </Box>
-    <Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}>{icon}</Avatar>
-  </Paper>
-);
-
 
 export default AdminDashboard;

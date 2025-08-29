@@ -1,31 +1,39 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Container, Paper, Typography, TextField, Button,
   Box, Alert
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { mockAdminLogin } from '../../services/mockAuth';
+import authService from '../../services/auth';
 
-const AdminLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const SuperAdminLogin = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (error) setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
     try {
-      const { user, token } = await mockAdminLogin(email, password);
+      const { user, token } = await authService.superAdminLogin(formData.email, formData.password);
       setAuthData(user, token);
-      navigate('/admin/users');
+      navigate('/superadmin/dashboard');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Failed to log in.');
     } finally {
       setLoading(false);
     }
@@ -34,8 +42,11 @@ const AdminLogin = () => {
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h4" align="center" sx={{ mb: 3 }}>
-          Admin Login
+        <Typography component="h1" variant="h4" align="center" sx={{ mb: 1 }}>
+          Thuto Dashboard
+        </Typography>
+        <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 3 }}>
+          Super Admin Login
         </Typography>
 
         {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
@@ -46,8 +57,8 @@ const AdminLogin = () => {
             fullWidth
             label="Email"
             name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={handleChange}
             margin="normal"
             disabled={loading}
           />
@@ -58,8 +69,8 @@ const AdminLogin = () => {
             label="Password"
             type="password"
             name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={formData.password}
+            onChange={handleChange}
             margin="normal"
             disabled={loading}
           />
@@ -79,4 +90,4 @@ const AdminLogin = () => {
   );
 };
 
-export default AdminLogin;
+export default SuperAdminLogin;

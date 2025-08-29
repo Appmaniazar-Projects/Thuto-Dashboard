@@ -1,157 +1,207 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { getMyStudents, submitAttendance } from '../../services/teacherService';
 import {
-  Box, Select, MenuItem, Button, Table, TableHead, TableRow, TableCell, 
-  TableBody, Paper, Typography, Grid, FormControl, InputLabel, 
-  CircularProgress, Alert, ToggleButton, ToggleButtonGroup, TableContainer
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
+  TableHead, TableRow, Checkbox, Button, Avatar, TextField, 
+  FormControl, InputLabel, Select, MenuItem, CircularProgress, Alert,
+  Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
+  Grid, Snackbar
 } from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { format, parseISO } from 'date-fns';
+import { 
+  getClassForAttendance, 
+  getClassAttendance, 
+  submitAttendance 
+} from '../../services/teacherService';
 
 const AttendanceRegisterPage = () => {
-  const { user: teacher } = useAuth();
-  const [date, setDate] = useState(new Date());
-  const [students, setStudents] = useState([]);
-  const [attendance, setAttendance] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [subject, setSubject] = useState(''); // Assuming teacher teaches one subject for now
+  const { classId } = useParams();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [classData, setClassData] = useState({ students: [] });
+  const [attendanceDate, setAttendanceDate] = useState(new Date());
+  const [attendanceType, setAttendanceType] = useState('full');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  // Fetch class and attendance data
   useEffect(() => {
-    const fetchStudents = async () => {
-      setLoading(true);
-      setError('');
+    const fetchData = async () => {
+      if (!classId) return;
+      
       try {
-        const studentProfiles = await getMyStudents();
-        setStudents(studentProfiles);
-        // Initialize attendance for all students as 'Present'
-        const initialAttendance = studentProfiles.reduce((acc, student) => {
-          acc[student.id] = 'Present';
-          return acc;
-        }, {});
-        setAttendance(initialAttendance);
-
-        // Mock subject and grade from teacher profile
-        if (teacher && teacher.subjects) {
-          setSubject(teacher.subjects[0] || 'Default Subject');
+        setLoading(true);
+        const classDetails = await getClassForAttendance(classId);
+        
+        try {
+          const attendance = await getClassAttendance(classId, format(attendanceDate, 'yyyy-MM-dd'));
+          setClassData({
+            ...classDetails,
+            students: classDetails.students.map(s => ({
+              ...s,
+              isPresent: attendance.students.find(as => as.studentId === s.id)?.isPresent ?? true
+            }))
+          });
+        } catch {
+          setClassData({
+            ...classDetails,
+            students: classDetails.students.map(s => ({ ...s, isPresent: true }))
+          });
         }
-
       } catch (err) {
-        setError('Failed to fetch students.');
-        console.error(err);
+        console.error('Failed to fetch data:', err);
+        setSnackbar({
+          open: true,
+          message: 'Failed to load class data',
+          severity: 'error'
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStudents();
-  }, [teacher]);
+    fetchData();
+  }, [classId, attendanceDate]);
 
-  const handleMark = (studentId, newStatus) => {
-    if (newStatus !== null) { // Ensure a button was actually clicked
-      setAttendance(prev => ({ ...prev, [studentId]: newStatus }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
+  const handleSave = async () => {
     try {
-      const response = await submitAttendance({ 
-        date, 
-        attendance, 
-        subject,
-        grade: teacher.grades ? teacher.grades.join(', ') : 'Default Grade',
+      setSaving(true);
+      await submitClassAttendance({
+        classId,
+        date: format(attendanceDate, 'yyyy-MM-dd'),
+        attendanceType,
+        students: classData.students.map(s => ({
+          studentId: s.id,
+          isPresent: s.isPresent
+        }))
       });
-
-      if (response.success) {
-        setSuccess(response.message);
-      } else {
-        setError('Failed to submit attendance.');
-      }
+      
+      setSnackbar({
+        open: true,
+        message: 'Attendance saved successfully!',
+        severity: 'success'
+      });
     } catch (err) {
-      setError('An error occurred while submitting attendance.');
-      console.error(err);
+      console.error('Save failed:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to save attendance',
+        severity: 'error'
+      });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) return <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>;
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h5" gutterBottom>Take Attendance</Typography>
-        <Grid container spacing={3} component="form" onSubmit={handleSubmit}>
-          <Grid item xs={12} md={4}>
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Date"
-                value={date}
-                onChange={(newDate) => setDate(newDate)}
-                renderInput={(params) => <FormControl fullWidth><InputLabel>Date</InputLabel><Box {...params} /></FormControl>}
+      {/* Header and filters */}
+      <Box sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
+        <Typography variant="h5" gutterBottom>Class Attendance</Typography>
+        
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                type="date"
+                value={format(attendanceDate, 'yyyy-MM-dd')}
+                onChange={(e) => setAttendanceDate(parseISO(e.target.value))}
+                InputLabelProps={{ shrink: true }}
               />
-            </LocalizationProvider>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Attendance Type</InputLabel>
+                <Select
+                  value={attendanceType}
+                  label="Attendance Type"
+                  onChange={(e) => setAttendanceType(e.target.value)}
+                >
+                  <MenuItem value="full">Full Day</MenuItem>
+                  <MenuItem value="morning">Morning Only</MenuItem>
+                  <MenuItem value="afternoon">Afternoon Only</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={8} sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="body1" color="text.secondary">
-              Taking attendance for: <strong>{subject} - {teacher?.grades?.join(', ')}</strong>
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="contained" type="submit" disabled={loading || students.length === 0}>
-              {loading ? <CircularProgress size={24} /> : 'Submit Attendance'}
-            </Button>
-          </Grid>
-        </Grid>
-        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
-      </Paper>
-
-      {loading && students.length === 0 ? (
-        <Box sx={{ textAlign: 'center', mt: 4 }}><CircularProgress /></Box>
-      ) : students.length > 0 ? (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>Class Roster</Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Student Name</TableCell>
-                  <TableCell align="center">Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {students.map(student => (
-                  <TableRow key={student.id}>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell align="center">
-                      <ToggleButtonGroup
-                        value={attendance[student.id] || 'Present'}
-                        exclusive
-                        onChange={(e, newStatus) => handleMark(student.id, newStatus)}
-                        aria-label={`Attendance for ${student.name}`}
-                      >
-                        <ToggleButton value="Present" color="success">Present</ToggleButton>
-                        <ToggleButton value="Late" color="warning">Late</ToggleButton>
-                        <ToggleButton value="Absent" color="error">Absent</ToggleButton>
-                      </ToggleButtonGroup>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
         </Paper>
-      ) : (
-        <Typography sx={{ textAlign: 'center', mt: 4, color: 'text.secondary' }}>
-          {error || 'No students found for your classes.'}
-        </Typography>
-      )}
+      </Box>
+
+      {/* Student list */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Student</TableCell>
+              <TableCell align="right">Status</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {classData.students.map((student) => (
+              <TableRow key={student.id}>
+                <TableCell>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Avatar><PersonIcon /></Avatar>
+                    <Box>
+                      <div>{student.name}</div>
+                      <div style={{ fontSize: '0.8em', color: '#666' }}>{student.studentId}</div>
+                    </Box>
+                  </Box>
+                </TableCell>
+                <TableCell align="right">
+                  <Checkbox
+                    checked={student.isPresent}
+                    onChange={() => {
+                      setClassData(prev => ({
+                        ...prev,
+                        students: prev.students.map(s => 
+                          s.id === student.id 
+                            ? { ...s, isPresent: !s.isPresent } 
+                            : s
+                        )
+                      }));
+                    }}
+                    disabled={saving}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Save button */}
+      <Box mt={2} display="flex" justifyContent="flex-end">
+        <Button 
+          variant="contained" 
+          color="primary"
+          onClick={handleSave}
+          disabled={saving}
+          startIcon={saving ? <CircularProgress size={20} /> : null}
+        >
+          {saving ? 'Saving...' : 'Save Attendance'}
+        </Button>
+      </Box>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import studentService from '../../services/studentService';
+import StatCard from '../common/StatCard';
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -253,61 +254,5 @@ const StudentDashboard = () => {
     </Box>
   );
 };
-
-// Helper Component
-const StatCard = ({ title, value, icon, subtitle, disabled = false }) => (
-  <Paper 
-    elevation={2}
-    sx={{ 
-      p: 2, 
-      height: '100%',
-      borderRadius: 2,
-      opacity: disabled ? 0.7 : 1,
-      transition: 'all 0.2s ease-in-out',
-      '&:hover': {
-        transform: disabled ? 'none' : 'translateY(-2px)',
-        boxShadow: disabled ? 2 : 3,
-      },
-    }}
-  >
-    <Box display="flex" alignItems="center">
-      <Avatar 
-        sx={{ 
-          mr: 2,
-          width: 48,
-          height: 48,
-          bgcolor: disabled ? 'action.disabledBackground' : 'primary.light',
-          color: disabled ? 'text.secondary' : 'primary.contrastText',
-        }}
-      >
-        {React.cloneElement(icon, { fontSize: 'medium' })}
-      </Avatar>
-      <Box>
-        <Typography 
-          variant="h5" 
-          fontWeight="bold" 
-          color={disabled ? 'text.disabled' : 'text.primary'}
-        >
-          {value}
-        </Typography>
-        <Typography 
-          variant="body2" 
-          color={disabled ? 'text.disabled' : 'text.secondary'}
-        >
-          {title}
-        </Typography>
-        {subtitle && (
-          <Typography 
-            variant="caption" 
-            color={disabled ? 'text.disabled' : 'text.secondary'}
-            sx={{ display: 'block', mt: 0.5 }}
-          >
-            {subtitle}
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  </Paper>
-);
 
 export default StudentDashboard;
