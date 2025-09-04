@@ -31,39 +31,45 @@ export const updateAttendanceSubmission = async (submissionId, updateData) => {
 // ========== USER MANAGEMENT ==========
 
 /**
- * Fetches all users for the admin.
+ * Get all users with role-specific details
+ * @returns {Promise<Array>} Array of user objects with their role-specific data
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('admin/users');
+    const response = await api.get('/admin/allRoleSpecificUsers/all');
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch users:', error);
+    console.error('Error fetching all users:', error);
     throw error;
   }
 };
 
 /**
- * Fetches users by role
- * @param {string} role - The role to filter by (admin, teacher, student, parent)
+ * Get users filtered by a specific role
+ * @param {string} role - Role to filter by (Teacher, Student, or Parent)
+ * @returns {Promise<Array>} Array of user objects for the specified role
  */
 export const getUsersByRole = async (role) => {
   try {
-    const response = await api.get(`admin/users?role=${role}`);
+    if (!['Teacher', 'Student', 'Parent'].includes(role)) {
+      throw new Error('Invalid role. Must be one of: Teacher, Student, Parent');
+    }
+    const response = await api.get(`/admin/allRoleSpecificUsers/${role}`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch users with role ${role}:`, error);
+    console.error(`Error fetching ${role}s:`, error);
     throw error;
   }
 };
 
 /**
- * Creates a new user
- * @param {object} userData - User information including name, email, role, etc.
+ * Creates a new user with the specified role
+ * @param {object} userData - User information including role
+ * @returns {Promise<object>} Created user object
  */
 export const createUser = async (userData) => {
   try {
-    const response = await api.post('admin/users', userData);
+    const response = await api.post('/admin/users', userData);
     return response.data;
   } catch (error) {
     console.error('Failed to create user:', error);
@@ -75,10 +81,11 @@ export const createUser = async (userData) => {
  * Updates an existing user
  * @param {string} userId - The ID of the user to update
  * @param {object} userData - Updated user information
+ * @returns {Promise<object>} Updated user object
  */
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await api.put(`admin/users/${userId}`, userData);
+    const response = await api.patch(`/admin/users/${userId}`, userData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update user ${userId}:`, error);
@@ -89,10 +96,11 @@ export const updateUser = async (userId, userData) => {
 /**
  * Deletes a user
  * @param {string} userId - The ID of the user to delete
+ * @returns {Promise<object>} Deletion status
  */
 export const deleteUser = async (userId) => {
   try {
-    const response = await api.delete(`admin/users/${userId}`);
+    const response = await api.delete(`/admin/users/${userId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete user ${userId}:`, error);
@@ -100,76 +108,12 @@ export const deleteUser = async (userId) => {
   }
 };
 
-/**
- * Creates a new administrator
- * @param {object} adminData - Administrator information
- */
-export const createAdmin = async (adminData) => {
-  try {
-    const response = await api.post('admin/admins', adminData);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to create administrator:', error);
-    throw error;
-  }
-};
-
-/**
- * Creates a new teacher
- * @param {object} teacherData - Teacher information including subjects and grade
- */
-export const createTeacher = async (teacherData) => {
-  try {
-    const response = await api.post('admin/teachers', teacherData);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to create teacher:', error);
-    throw error;
-  }
-};
-
-/**
- * Gets user statistics for the admin dashboard
- */
-export const getUserStats = async () => {
-  try {
-    const response = await api.get('admin/users/stats');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch user statistics:', error);
-    throw error;
-  }
-};
-
-/**
- * Bulk creates users from CSV data
- * @param {FormData} csvFile - CSV file with user data
- */
-export const bulkCreateUsers = async (csvFile) => {
-  try {
-    const response = await api.post('admin/users/bulk', csvFile, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to bulk create users:', error);
-    throw error;
-  }
-};
-
-/**
- * Resets a user's password
- * @param {string} userId - The ID of the user
- * @param {string} newPassword - The new password
- */
-export const resetUserPassword = async (userId, newPassword) => {
-  try {
-    const response = await api.put(`admin/users/${userId}/reset-password`, { password: newPassword });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to reset password for user ${userId}:`, error);
-    throw error;
-  }
+export default {
+  getAttendanceSubmissions,
+  updateAttendanceSubmission,
+  getAllUsers,
+  getUsersByRole,
+  createUser,
+  updateUser,
+  deleteUser
 };

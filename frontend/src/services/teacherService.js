@@ -14,58 +14,6 @@ export const getMyStudents = async () => {
 };
 
 /**
- * Fetches academic reports for a specific student.
- * @param {string} studentId - The ID of the student.
- */
-export const getStudentReports = async (studentId) => {
-  try {
-    const response = await api.get(`/teacher/students/${studentId}/reports`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch reports for student ${studentId}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Uploads a report for a specific student.
- * @param {string} studentId - The ID of the student.
- * @param {File} file - The report file to upload.
- * @param {string} description - A description for the report.
- */
-export const uploadStudentReport = async (studentId, file, description) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('description', description);
-
-  try {
-    const response = await api.post(`/teacher/students/${studentId}/reports`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to upload report for student ${studentId}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Submits attendance data for the class.
- * @param {Object} attendanceData - The attendance data to submit.
- */
-export const submitAttendance = async (attendanceData) => {
-  try {
-    const response = await api.post('/teacher/attendance', attendanceData);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to submit attendance:', error);
-    throw error;
-  }
-};
-
-/**
  * Get all resources uploaded by the teacher
  */
 export const getTeacherResources = async () => {
@@ -192,12 +140,13 @@ export const getClassAttendance = async (classId, date) => {
  * @param {Object} attendanceData - The attendance data to submit
  * @param {string} attendanceData.classId - The ID of the class
  * @param {string} attendanceData.date - Date in YYYY-MM-DD format
- * @param {string} attendanceData.attendanceType - Type of attendance (full, morning, afternoon)
+ * @param {string} attendanceData.attendanceType - Type of attendance (full_day, morning, afternoon)
  * @param {Array} attendanceData.students - Array of student attendance records
  * @param {string} attendanceData.students[].studentId - The ID of the student
  * @param {boolean} attendanceData.students[].isPresent - Whether the student is present
+ * @returns {Promise<Object>} Response data from the server
  */
-export const submitClassAttendance = async (attendanceData) => {
+export const submitAttendance = async (attendanceData) => {
   try {
     const response = await api.post('/teacher/attendance', attendanceData);
     return response.data;

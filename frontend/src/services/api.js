@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance - configured for mock mode (no backend required)
 const api = axios.create({
   // baseURL removed for frontend-only mode
-  // When backend is ready, uncomment and set: baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8081/api',
+  baseURL: process.env.REACT_APP_API_URL,
   timeout: 10000, // 10 second timeout
   headers: {
     "Content-Type": "application/json",
@@ -61,15 +61,72 @@ api.interceptors.response.use(
 
 // ========== ADMIN DASHBOARD ENDPOINTS ==========
 
-export const fetchEnrollmentStats = () => api.get("/admin/stats/enrollment");
+/**
+ * Fetches all student data for frontend filtering
+ * @param {Object} filters - Optional filters to apply on the frontend
+ */
+export const fetchAllStudents = (filters = {}) => 
+  api.get("/admin/students").then(response => {
+    // Apply filters on the frontend
+    let filteredData = [...(response.data || [])];
+    
+    if (filters.grade) {
+      filteredData = filteredData.filter(student => student.grade === filters.grade);
+    }
+    
+    if (filters.gender) {
+      filteredData = filteredData.filter(student => student.gender === filters.gender);
+    }
+    
+    if (filters.status) {
+      filteredData = filteredData.filter(student => student.status === filters.status);
+    }
+    
+    return { data: filteredData };
+  });
 
-export const fetchAttendanceStats = () => api.get("/admin/stats/attendance");
+/**
+ * Fetches all attendance data for frontend filtering
+ * @param {Object} filters - Optional filters to apply on the frontend
+ */
+export const fetchAllAttendance = (filters = {}) => 
+  api.get("/admin/attendance").then(response => {
+    // Apply date range filter on the frontend
+    let filteredData = [...(response.data || [])];
+    
+    if (filters.startDate) {
+      filteredData = filteredData.filter(record => 
+        new Date(record.date) >= new Date(filters.startDate)
+      );
+    }
+    
+    if (filters.endDate) {
+      filteredData = filteredData.filter(record => 
+        new Date(record.date) <= new Date(filters.endDate)
+      );
+    }
+    
+    return { data: filteredData };
+  });
 
-export const fetchTotalStaff = () => api.get("/admin/stats/staff");
-
-export const fetchSystemAlerts = () => api.get("/admin/stats/alerts");
-
-export const fetchStudents = () => api.get("/admin/students");
+/**
+ * Fetches all staff data for frontend filtering
+ * @param {Object} filters - Optional filters to apply on the frontend
+ */
+export const fetchAllStaff = (filters = {}) => 
+  api.get("/admin/staff").then(response => {
+    let filteredData = [...(response.data || [])];
+    
+    if (filters.role) {
+      filteredData = filteredData.filter(staff => staff.role === filters.role);
+    }
+    
+    if (filters.department) {
+      filteredData = filteredData.filter(staff => staff.department === filters.department);
+    }
+    
+    return { data: filteredData };
+  });
 
 export const fetchCalendarEvents = () => api.get("/admin/calendar");
 

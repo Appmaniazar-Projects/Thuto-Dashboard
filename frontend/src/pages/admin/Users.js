@@ -57,10 +57,10 @@ const Users = () => {
         name: '',
         email: '',
         phoneNumber: '',
-        role: 'student',
-        password: '',
+        role: '',
         subjects: [],
-        grade: ''
+        grade: '',
+        schoolId: '',
     });
 
     const roles = [
@@ -69,7 +69,7 @@ const Users = () => {
         { value: 'teacher', label: 'Teacher' },
         { value: 'admin', label: 'Administrator' }
     ];
-
+// Change to objects
     const subjects = [
         'Mathematics', 'English', 'Science', 'History', 'Geography', 
         'Physics', 'Chemistry', 'Biology', 'Art', 'Music', 'Physical Education'
@@ -136,10 +136,11 @@ const Users = () => {
                 name: user.name || '',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
-                role: user.role || 'student',
+                role: user.role || '',
                 password: '',
                 subjects: user.subjects || [],
-                grade: user.grade || ''
+                grade: user.grade || '',
+                schoolId: user.schoolId || ''
             });
         } else {
             setEditingUser(null);
@@ -153,7 +154,7 @@ const Users = () => {
             name: '',
             email: '',
             phoneNumber: '',
-            role: 'student',
+            role: '',
             password: '',
             subjects: [],
             grade: ''

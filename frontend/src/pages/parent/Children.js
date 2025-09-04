@@ -15,25 +15,17 @@ import {
 } from '@mui/material';
 import { Face as ChildIcon, Add as AddIcon, Event as EventIcon, Assessment as GradesIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import parentService from '../../services/parentService';
+import { useParent } from '../../context/ParentContext';
 
 const Children = () => {
   const navigate = useNavigate();
-  const [children, setChildren] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
+  const { children, loading, error } = useParent();
+    
   useEffect(() => {
     const fetchChildren = async () => {
       try {
-        setLoading(true);
-        const data = await parentService.getMyChildren();
-        setChildren(data);
       } catch (err) {
         console.error('Failed to fetch children:', err);
-        setError('Unable to load children. Please try again.');
-      } finally {
-        setLoading(false);
       }
     };
 

@@ -1,11 +1,11 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = '/api/calendar';
+const API_BASE = '/calendar';
 
 // Get all events for a specific date range
 export const getEvents = async (startDate, endDate) => {
   try {
-    const response = await axios.get(API_URL, {
+    const response = await api.get(API_BASE, {
       params: { startDate, endDate }
     });
     return response.data;
@@ -18,7 +18,7 @@ export const getEvents = async (startDate, endDate) => {
 // Create a new event
 export const createEvent = async (eventData) => {
   try {
-    const response = await axios.post(API_URL, eventData);
+    const response = await api.post(API_BASE, eventData);
     return response.data;
   } catch (error) {
     console.error('Error creating event:', error);
@@ -29,7 +29,7 @@ export const createEvent = async (eventData) => {
 // Update an existing event
 export const updateEvent = async (eventId, eventData) => {
   try {
-    const response = await axios.put(`${API_URL}/${eventId}`, eventData);
+    const response = await api.put(`${API_BASE}/${eventId}`, eventData);
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);
@@ -40,7 +40,7 @@ export const updateEvent = async (eventId, eventData) => {
 // Delete an event
 export const deleteEvent = async (eventId) => {
   try {
-    await axios.delete(`${API_URL}/${eventId}`);
+    await api.delete(`${API_BASE}/${eventId}`);
     return eventId; // Return the deleted event ID for state updates
   } catch (error) {
     console.error('Error deleting event:', error);
@@ -51,7 +51,7 @@ export const deleteEvent = async (eventId) => {
 // Get event types (if they're dynamic)
 export const getEventTypes = async () => {
   try {
-    const response = await axios.get(`${API_URL}/event-types`);
+    const response = await api.get(`${API_BASE}/event-types`);
     return response.data;
   } catch (error) {
     console.error('Error fetching event types:', error);

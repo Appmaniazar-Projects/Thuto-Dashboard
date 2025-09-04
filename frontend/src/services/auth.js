@@ -1,8 +1,5 @@
 import api from './api';
-
-const register = (userData) => {
-    return api.post('/auth/register', userData);
-};
+import { auth } from './firebase';
 
 const login = async (phone) => {
     // This would be the real API call
@@ -14,19 +11,38 @@ const login = async (phone) => {
     return response.data;
 };
 
-const sendOTP = async (phone) => {
-    const response = await api.post('/auth/send-otp', { phone });
-    return response.data;
+const verifyOTP = async (phone, otp) => {
+    try {
+        // First verify OTP with Firebase and get the Firebase user
+        const firebaseUser = auth.currentUser;
+        
+        if (!firebaseUser) {
+            throw new Error('No Firebase user found. Please try again.');
+        }
+
+        // Get Firebase ID token
+        const firebaseToken = await firebaseUser.getIdToken();
+        
+        // Send Firebase token to backend for verification and user creation/login
+        const response = await api.post('/auth/verify-otp', { 
+            phone, 
+            otp,
+            firebaseToken 
+        });
+        
+        if (response.data.token) {
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            localStorage.setItem('token', response.data.token);
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error('OTP verification failed:', error);
+        throw error;
+    }
 };
 
-const verifyOTP = async (phone, otp) => {
-    const response = await api.post('/auth/verify-otp', { phone, otp });
-    if (response.data.token) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
-};
+// send token to backend
 
 const adminLogin = async (email, password) => {
     const response = await api.post('/auth/admin/login', { email, password });
@@ -57,9 +73,7 @@ const getCurrentUser = () => {
 };
 
 const authService = {
-    register,
     login,
-    sendOTP,
     verifyOTP,
     adminLogin,
     superAdminLogin,

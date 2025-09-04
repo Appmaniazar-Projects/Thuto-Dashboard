@@ -1,25 +1,17 @@
 // components/dashboard/admin/GenderBreakdown.js
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Paper, Typography } from '@mui/material';
 import { PieChart, Pie, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { fetchStudents } from '../../../services/api';
+import { useGenderData } from '../../../hooks/useStudentsData';
 
 const COLORS = ['#0088FE', '#FF69B4'];
 
 const GenderBreakdown = () => {
-  const [data, setData] = useState([]);
+  const { genderData, loading, error } = useGenderData();
 
-  useEffect(() => {
-    fetchStudents().then((res) => {
-      const students = res.data || [];
-      const male = students.filter(s => s.gender === 'male').length;
-      const female = students.filter(s => s.gender === 'female').length;
-      setData([
-        { name: 'Male', value: male },
-        { name: 'Female', value: female }
-      ]);
-    });
-  }, []);
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error loading data</div>;
+  if (!genderData.length) return <div>No data available</div>;
 
   return (
     <Paper sx={{ p: 2, height: 380 }}>
@@ -29,19 +21,20 @@ const GenderBreakdown = () => {
       <ResponsiveContainer width="100%" height="80%">
         <PieChart>
           <Pie
-            data={data}
+            data={genderData}
             cx="50%"
             cy="50%"
-            outerRadius={80}
+            labelLine={false}
+            outerRadius={100}
             fill="#8884d8"
             dataKey="value"
-            label={({ name, value }) => `${name}: ${value}`}
+            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
           >
-            {data.map((entry, index) => (
+            {genderData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => `${value} learners`} />
+          <Tooltip />
         </PieChart>
       </ResponsiveContainer>
     </Paper>

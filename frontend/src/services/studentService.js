@@ -25,43 +25,6 @@ export const updateProfile = async (profileData) => {
 };
 
 /**
- * Academic Reports
- */
-
-export const getMyReports = async () => {
-  try {
-    const response = await api.get('/student/reports');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch student reports:', error);
-    throw error;
-  }
-};
-
-export const downloadReport = async (reportId, filename) => {
-  try {
-    const response = await api.get(`/student/reports/${reportId}/download`, {
-      responseType: 'blob',
-    });
-    
-    // Create a temporary URL for the blob
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename || `report-${reportId}.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    
-    // Cleanup
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error(`Error downloading report ${reportId}:`, error);
-    throw error;
-  }
-};
-
-/**
  * Attendance
  */
 
@@ -153,10 +116,6 @@ const studentService = {
   // Profile
   getMyProfile,
   updateProfile,
-  
-  // Reports
-  getMyReports,
-  downloadReport,
   
   // Attendance
   getMyAttendance,

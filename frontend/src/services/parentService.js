@@ -49,38 +49,6 @@ const parentService = {
   },
 
   /**
-   * Fetches academic reports for a specific child
-   * @param {string} childId - The ID of the child
-   * @returns {Promise<Array>} List of academic reports
-   */
-  getChildReports: async (childId) => {
-    try {
-      const response = await api.get(`/api/parent/children/${childId}/reports`);
-      return response.data || [];
-    } catch (error) {
-      console.error(`Failed to fetch reports for child ${childId}:`, error);
-      throw new Error('Failed to load academic reports.');
-    }
-  },
-
-  /**
-   * Downloads a specific report
-   * @param {string} reportId - The ID of the report to download
-   * @returns {Promise<Blob>} The report file
-   */
-  downloadReport: async (reportId) => {
-    try {
-      const response = await api.get(`/api/parent/reports/${reportId}/download`, {
-        responseType: 'blob'
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Failed to download report ${reportId}:`, error);
-      throw new Error('Failed to download report. Please try again.');
-    }
-  },
-
-  /**
    * Fetches upcoming events for the parent's children
    * @param {string} [childId] - Optional child ID to filter events
    * @returns {Promise<Array>} List of upcoming events

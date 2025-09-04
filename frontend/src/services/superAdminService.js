@@ -7,7 +7,7 @@ import api from './api';
  */
 export const getAllSchools = async () => {
   try {
-    const response = await api.get('/superadmin/schools');
+    const response = await api.get('/superadmin/schools/allSchools');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch schools:', error);
@@ -21,7 +21,7 @@ export const getAllSchools = async () => {
  */
 export const createSchool = async (schoolData) => {
   try {
-    const response = await api.post('/superadmin/schools', schoolData);
+    const response = await api.post('/superadmin/createSchool', schoolData);
     return response.data;
   } catch (error) {
     console.error('Failed to create school:', error);
@@ -36,7 +36,7 @@ export const createSchool = async (schoolData) => {
  */
 export const updateSchool = async (schoolId, schoolData) => {
   try {
-    const response = await api.put(`/superadmin/schools/${schoolId}`, schoolData);
+    const response = await api.put(`/superadmin/updateSchool/${schoolId}`, schoolData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update school ${schoolId}:`, error);
@@ -50,7 +50,7 @@ export const updateSchool = async (schoolId, schoolData) => {
  */
 export const deleteSchool = async (schoolId) => {
   try {
-    const response = await api.delete(`/superadmin/schools/${schoolId}`);
+    const response = await api.delete(`/superadmin/deleteSchool/${schoolId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete school ${schoolId}:`, error);
@@ -64,10 +64,10 @@ export const deleteSchool = async (schoolId) => {
  */
 export const getSchoolDetails = async (schoolId) => {
   try {
-    const response = await api.get(`/superadmin/schools/${schoolId}/details`);
+    const response = await api.get(`/superadmin/school/${schoolId}`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch school details for ${schoolId}:`, error);
+    console.error(`Failed to get details for school ${schoolId}:`, error);
     throw error;
   }
 };
@@ -139,7 +139,7 @@ export const getAdminsBySchool = async (schoolId) => {
     const response = await api.get(`/superadmin/schools/${schoolId}/admins`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch administrators for school ${schoolId}:`, error);
+    console.error(`Failed to get administrators for school ${schoolId}:`, error);
     throw error;
   }
 };
@@ -168,44 +168,6 @@ export const getPlatformAnalytics = async () => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch platform analytics:', error);
-    throw error;
-  }
-};
-
-// ========== BULK OPERATIONS ==========
-
-/**
- * Bulk creates schools from CSV data
- * @param {FormData} csvFile - CSV file with school data
- */
-export const bulkCreateSchools = async (csvFile) => {
-  try {
-    const response = await api.post('/superadmin/schools/bulk', csvFile, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to bulk create schools:', error);
-    throw error;
-  }
-};
-
-/**
- * Bulk creates administrators from CSV data
- * @param {FormData} csvFile - CSV file with administrator data
- */
-export const bulkCreateAdmins = async (csvFile) => {
-  try {
-    const response = await api.post('/superadmin/admins/bulk', csvFile, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to bulk create administrators:', error);
     throw error;
   }
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem, TextField, Snackbar, Alert } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { getMyStudents, uploadStudentReport } from '../../services/teacherService';
+import { getMyStudents } from '../../services/teacherService';
+import { uploadTeacherStudentReport } from '../../services/reportService';
 
 // Mock data for report types, can be fetched from a service later
 const reportTypes = [
@@ -54,7 +55,7 @@ const UploadReportPage = () => {
 
     try {
       setLoading(true);
-      await uploadStudentReport(selectedStudent, selectedFile, selectedReportType);
+      await uploadTeacherStudentReport(selectedStudent, selectedFile, selectedReportType);
       setNotification({ open: true, message: `Successfully uploaded report for the selected student.`, severity: 'success' });
 
       // Reset form

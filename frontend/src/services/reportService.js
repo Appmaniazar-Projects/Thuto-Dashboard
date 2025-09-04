@@ -41,11 +41,11 @@ export const uploadStudentReport = async (reportData) => {
 };
 
 /**
- * Get reports for a specific student
+ * Get reports for a specific student (teacher/admin view)
  * @param {string} studentId - Student ID
  * @returns {Promise<Array>} List of student's reports
  */
-export const getStudentReports = async (studentId) => {
+export const getStudentReportsByTeacher = async (studentId) => {
   const response = await api.get(`/reports/student/${studentId}`);
   return response.data;
 };
@@ -196,6 +196,124 @@ export const getReportFilters = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching report filters:', error);
+    throw error;
+  }
+};
+
+// ========== ROLE-SPECIFIC REPORT FUNCTIONS ==========
+
+/**
+ * Get student's own reports (student view)
+ * @param {Object} params - Query parameters (optional filters)
+ * @returns {Promise<Array>} List of student's reports
+ */
+export const getMyReports = async (params = {}) => {
+  try {
+    const response = await api.get('/student/reports', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch student reports:', error);
+    throw error;
+  }
+};
+
+/**
+ * Download student report
+ * @param {string} reportId - Report ID to download
+ * @param {string} filename - Optional filename for download
+ * @returns {Promise<void>} Initiates file download
+ */
+export const downloadStudentReport = async (reportId, filename) => {
+  try {
+    const response = await api.get(`/student/reports/${reportId}/download`, {
+      responseType: 'blob',
+    });
+    
+    // Create a temporary URL for the blob
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename || `report-${reportId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(`Error downloading student report ${reportId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get reports for a specific student (teacher view)
+ * @param {string} studentId - Student ID
+ * @returns {Promise<Array>} List of student's reports
+ */
+export const getTeacherStudentReports = async (studentId) => {
+  try {
+    const response = await api.get(`/teacher/students/${studentId}/reports`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch reports for student ${studentId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Upload report for a student (teacher function)
+ * @param {string} studentId - Student ID
+ * @param {File} file - Report file
+ * @param {string} description - Report description
+ * @returns {Promise<Object>} Upload response
+ */
+export const uploadTeacherStudentReport = async (studentId, file, description) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('description', description);
+
+  try {
+    const response = await api.post(`/teacher/students/${studentId}/reports`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to upload report for student ${studentId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get child's reports (parent view)
+ * @param {string} childId - Child ID
+ * @returns {Promise<Array>} List of child's reports
+ */
+export const getParentChildReports = async (childId) => {
+  try {
+    const response = await api.get(`/api/parent/children/${childId}/reports`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch reports for child ${childId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Download report (parent function)
+ * @param {string} reportId - Report ID
+ * @returns {Promise<Blob>} Report file blob
+ */
+export const downloadParentReport = async (reportId) => {
+  try {
+    const response = await api.get(`/api/parent/reports/${reportId}/download`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to download report ${reportId}:`, error);
     throw error;
   }
 };
