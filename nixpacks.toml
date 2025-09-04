@@ -1,6 +1,8 @@
 [phases.setup]
 cmds = [
-  "echo 'Setting up Node.js environment'"
+  "apt-get update && apt-get install -y curl",
+  "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -",
+  "apt-get install -y nodejs"
 ]
 
 [phases.install]
