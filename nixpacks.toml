@@ -1,0 +1,26 @@
+[phases.setup]
+cmds = [
+  "echo 'Setting up Node.js environment'"
+]
+
+[phases.install]
+cmds = [
+  "cd frontend && npm install"
+]
+
+[phases.build]
+cmds = [
+  "cd frontend && npm run build"
+]
+
+[start]
+cmd = "cd frontend && npm start"
+
+[build.args]
+NODE_VERSION = "18.17.0"
+
+[build.environment]
+NODE_ENV = "production"
+
+[build.node]
+version = "18.17.0"
