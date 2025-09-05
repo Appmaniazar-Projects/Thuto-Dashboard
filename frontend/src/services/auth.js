@@ -1,84 +1,81 @@
 import api from './api';
 import { auth } from './firebase';
 
-const login = async (phone) => {
-    // This would be the real API call
-    const response = await api.post('/auth/login', { phone });
-    if (response.data.token) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
+/**
+ * Handles OTP-based login for Teachers, Students, and Parents
+ * @param {string} phoneNumber - User's phone number (digits only, no formatting)
+ * @returns {Promise<Object>} User data and auth token
+ */
+const login = async (phoneNumber) => {
+  const firebaseUser = auth.currentUser;
+  if (!firebaseUser) throw new Error('No Firebase user found');
+  
+  const firebaseToken = await firebaseUser.getIdToken();
+  const response = await api.post('/auth/login', { 
+    phoneNumber: phoneNumber.replace(/\s+/g, ''), 
+    firebaseToken 
+  });
+  
+  if (response.data.token) {
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    localStorage.setItem('token', response.data.token);
+  }
+  return response.data;
 };
 
-const verifyOTP = async (phone, otp) => {
-    try {
-        // First verify OTP with Firebase and get the Firebase user
-        const firebaseUser = auth.currentUser;
-        
-        if (!firebaseUser) {
-            throw new Error('No Firebase user found. Please try again.');
-        }
-
-        // Get Firebase ID token
-        const firebaseToken = await firebaseUser.getIdToken();
-        
-        // Send Firebase token to backend for verification and user creation/login
-        const response = await api.post('/auth/verify-otp', { 
-            phone, 
-            otp,
-            firebaseToken 
-        });
-        
-        if (response.data.token) {
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            localStorage.setItem('token', response.data.token);
-        }
-        
-        return response.data;
-    } catch (error) {
-        console.error('OTP verification failed:', error);
-        throw error;
-    }
-};
-
-// send token to backend
-
+/**
+ * Handles admin login with email and password
+ * @param {string} email - Admin's email address
+ * @param {string} password - Admin's password
+ * @returns {Promise<Object>} User data and auth token
+ */
 const adminLogin = async (email, password) => {
-    const response = await api.post('/auth/admin/login', { email, password });
-    if (response.data.token) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
+  const response = await api.post('/auth/admin/login', { email, password });
+  if (response.data.token) {
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    localStorage.setItem('token', response.data.token);
+  }
+  return response.data;
 };
 
+/**
+ * Handles superadmin login with email and password
+ * @param {string} email - Superadmin's email address
+ * @param {string} password - Superadmin's password
+ * @returns {Promise<Object>} User data and auth token
+ */
 const superAdminLogin = async (email, password) => {
-    const response = await api.post('/auth/superadmin/login', { email, password });
-    if (response.data.token) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-        localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
+  const response = await api.post('/auth/superadmin/login', { email, password });
+  if (response.data.token) {
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    localStorage.setItem('token', response.data.token);
+  }
+  return response.data;
 };
 
+/**
+ * Logs out the current user by clearing local storage
+ */
 const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
 };
 
+/**
+ * Gets the currently logged-in user from local storage
+ * @returns {Object|null} The current user object or null if not logged in
+ */
 const getCurrentUser = () => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
 };
 
 const authService = {
-    login,
-    verifyOTP,
-    adminLogin,
-    superAdminLogin,
-    logout,
-    getCurrentUser,
+  login,
+  adminLogin,
+  superAdminLogin,
+  logout,
+  getCurrentUser,
 };
 
 export default authService;

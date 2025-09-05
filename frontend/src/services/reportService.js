@@ -132,8 +132,6 @@ export const getAcademicTerms = async () => {
 const REPORT_ENDPOINTS = {
   ATTENDANCE: '/reports/attendance',
   ACADEMIC: '/reports/academic',
-  BEHAVIOR: '/reports/behavior',
-  ENROLLMENT: '/reports/enrollment',
   CUSTOM: '/reports/custom',
 };
 
