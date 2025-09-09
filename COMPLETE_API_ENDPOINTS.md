@@ -533,8 +533,8 @@ description: "Term 1 Mathematics Report" // Report description
 ---
 
 ## 🎓 STUDENT ENDPOINTS
-- Get /currentUser instead of GET /student/profile
-### GET /student/profile
+
+### GET /currentUser
 **Description:** Get student's profile information
 **Request:** No body
 **Response:**
@@ -549,8 +549,8 @@ description: "Term 1 Mathematics Report" // Report description
   "parentId": "parent123"
 }
 ```
-- PUT /currentUser instead of PUT /student/profile
-### PUT /student/profile
+
+### PUT /currentUser
 **Description:** Update student profile
 **Request Body:**
 ```json
@@ -722,7 +722,7 @@ description: "Term 1 Mathematics Report" // Report description
 }
 ```
 -Coming Soon
-### GET /api/parent/children/{childId}/events/upcoming
+### GET /api/parent/events/upcoming
 **Description:** Get upcoming events for a child
 **Request:** No body
 
@@ -1194,4 +1194,3 @@ Standard error format:
    - JWT token implementation
    - Firebase Admin SDK for OTP verification
    - Role-based access control (RBAC)
-
