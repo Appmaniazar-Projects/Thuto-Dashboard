@@ -1,12 +1,12 @@
 import api from './api';
 
 /**
- * Student Profile
+ * Student Profile - Updated to match backend API structure
  */
 
-export const getMyProfile = async () => {
+export const getMyProfile = async (phoneNumber) => {
   try {
-    const response = await api.get('/student/profile');
+    const response = await api.get(`/api/student/${phoneNumber}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student profile:', error);
@@ -14,36 +14,12 @@ export const getMyProfile = async () => {
   }
 };
 
-export const updateProfile = async (profileData) => {
+export const updateProfile = async (studentData) => {
   try {
-    const response = await api.put('/student/profile', profileData);
+    const response = await api.put('/api/student/updateStudent', studentData);
     return response.data;
   } catch (error) {
     console.error('Failed to update student profile:', error);
-    throw error;
-  }
-};
-
-/**
- * Attendance
- */
-
-export const getMyAttendance = async (params = {}) => {
-  try {
-    const response = await api.get('/student/attendance', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch attendance:', error);
-    throw error;
-  }
-};
-
-export const getAttendanceStats = async () => {
-  try {
-    const response = await api.get('/student/attendance/stats');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch attendance stats:', error);
     throw error;
   }
 };
@@ -110,16 +86,11 @@ export const getTimetable = async (weekStart) => {
   }
 };
 
-
 // Export all functions as default object
 const studentService = {
   // Profile
   getMyProfile,
   updateProfile,
-  
-  // Attendance
-  getMyAttendance,
-  getAttendanceStats,
   
   // Resources
   getAvailableResources,

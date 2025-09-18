@@ -1,14 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer, Box, Typography, TextField, Button, Select, MenuItem, FormControl, InputLabel, IconButton
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import gradeService from '../../../services/gradeService';
 
-const EventMessageSidebar = ({ open, onClose, subjects, grades, onSubmit }) => {
+const EventMessageSidebar = ({ open, onClose, subjects, onSubmit }) => {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      loadGrades();
+    }
+  }, [open]);
+
+  const loadGrades = async () => {
+    try {
+      setLoading(true);
+      const gradesData = await gradeService.getSchoolGrades();
+      setGrades(gradesData);
+    } catch (error) {
+      console.error('Failed to load grades:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -19,6 +40,8 @@ const EventMessageSidebar = ({ open, onClose, subjects, grades, onSubmit }) => {
     setGrade('');
     onClose();
   };
+
+  if (!open) return null;
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
@@ -73,9 +96,10 @@ const EventMessageSidebar = ({ open, onClose, subjects, grades, onSubmit }) => {
             label="Grade"
             onChange={e => setGrade(e.target.value)}
             required
+            disabled={loading}
           >
             {grades.map((g) => (
-              <MenuItem key={g} value={g}>{g}</MenuItem>
+              <MenuItem key={g.id} value={g.name}>{g.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -87,4 +111,4 @@ const EventMessageSidebar = ({ open, onClose, subjects, grades, onSubmit }) => {
   );
 };
 
-export default EventMessageSidebar; 
+export default EventMessageSidebar;

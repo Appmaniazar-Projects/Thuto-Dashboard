@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
+import attendanceService from '../../services/attendanceService';
 import studentService from '../../services/studentService';
 import StatCard from '../common/StatCard';
 
@@ -41,7 +42,7 @@ const StudentDashboard = () => {
         setLoading(true);
         
         // Fetch attendance stats
-        const attendanceStats = await studentService.getAttendanceStats();
+        const attendanceStats = await attendanceService.getAttendanceStats();
         
         // Fetch resources count
         const resources = await studentService.getAvailableResources();

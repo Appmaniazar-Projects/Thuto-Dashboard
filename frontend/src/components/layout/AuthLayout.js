@@ -30,9 +30,6 @@ const AuthLayout = ({ children, title }) => {
       <StyledContainer component="main" maxWidth={false}>
         <ContentContainer>
           <LogoContainer>
-            <Typography variant="h4" component="h1" color="primary" fontWeight="bold">
-              {process.env.REACT_APP_SITE_NAME || APP_CONFIG.SITE_NAME}
-            </Typography>
             {title && (
               <Typography variant="h5" component="h2" mt={2}>
                 {title}

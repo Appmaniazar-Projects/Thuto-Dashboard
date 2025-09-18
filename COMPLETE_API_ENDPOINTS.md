@@ -14,13 +14,13 @@ This document contains all API endpoints with their exact request payloads, resp
 
 ## 🔐 AUTHENTICATION ENDPOINTS
 
-### POST /auth/login
+### POST /api/auth/login
 **Description:** Phone + Firebase token authentication for Teachers/Students/Parents
 **Request Body:**
 ```json
 {
-  "phoneNumber": "0761234567", // digits only, no spaces/formatting
-  "firebaseToken": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..." // Firebase ID token from getIdToken()
+  "phoneNumber": "0761234567", // optional - extracted from Firebase token
+  "idToken": "firebase_id_token_string" // Firebase ID token - required
 }
 ```
 **Response:**
@@ -32,18 +32,19 @@ This document contains all API endpoints with their exact request payloads, resp
     "name": "John Doe",
     "role": "Student", // or "Teacher", "Parent"
     "phoneNumber": "0761234567",
+    "email": "john@example.com", // optional for students/parents
     "schoolId": "school123"
   }
 }
 ```
 
-### POST /auth/admin/login
-**Description:** Email/password authentication for Admins
+### POST /api/auth/superadmin/login
+**Description:** Email/password authentication for Admins, Super Admins and Master users
 **Request Body:**
 ```json
 {
-  "email": "admin@school.com",
-  "password": "adminpassword123"
+  "email": "admin@school.com", // or "superadmin@thuto.com"
+  "password": "password123"
 }
 ```
 **Response:**
@@ -54,40 +55,82 @@ This document contains all API endpoints with their exact request payloads, resp
     "id": "admin123",
     "name": "Admin User",
     "email": "admin@school.com",
-    "role": "Admin",
-    "schoolId": "school123"
-  }
-}
-```
-
-### POST /auth/superadmin/login
-**Description:** Email/password authentication for Super Admins
-**Request Body:**
-```json
-{
-  "email": "superadmin@thuto.com",
-  "password": "superadminpassword123"
-}
-```
-**Response:**
-```json
-{
-  "token": "jwt_token_here",
-  "user": {
-    "id": "superadmin123",
-    "name": "Super Admin",
-    "email": "superadmin@thuto.com",
-    "role": "SuperAdmin"
+    "role": "admin", // or "superadmin"
+    "schoolId": "school123", // null for superadmins
+    "level": "provincial", // only for superadmins: "master" or "provincial"
+    "province": "Gauteng" // only for superadmins: required for provincial, optional for master
   }
 }
 ```
 
 ---
 
+## 🏆 MASTER ROLE ENDPOINTS
+
+### GET /api/master/superadmins
+**Description:** Get all provincial superadmins (Master users only)
+**Request:** No body
+**Response:**
+```json
+[
+  {
+    "id": "superadmin123",
+    "name": "John Smith",
+    "email": "john@gauteng.gov.za",
+    "province": "Gauteng",
+    "level": "provincial",
+    "isActive": true,
+    "createdAt": "2023-01-15T00:00:00Z",
+    "lastLogin": "2023-10-27T10:00:00Z"
+  }
+]
+```
+
+### POST /api/master/superadmins
+**Description:** Create a new provincial superadmin (Master users only)
+**Request Body:**
+```json
+{
+  "name": "Jane Doe",
+  "email": "jane@western-cape.gov.za",
+  "password": "securepassword123",
+  "province": "Western Cape",
+  "role": "superadmin",
+  "level": "provincial"
+}
+```
+**Response:**
+```json
+{
+  "message": "Provincial superadmin created successfully",
+  "superadminId": "superadmin456"
+}
+```
+
+### PUT /api/master/superadmins/{superadminId}
+**Description:** Update a provincial superadmin (Master users only)
+**Request Body:**
+```json
+{
+  "name": "Updated Name",
+  "email": "updated@province.gov.za",
+  "province": "KwaZulu-Natal",
+  "isActive": true
+}
+```
+
+### DELETE /api/master/superadmins/{superadminId}
+**Description:** Delete a provincial superadmin (Master users only)
+**Request:** No body
+**Response:** 204 No Content
+
+---
+
 ## 👑 SUPER ADMIN ENDPOINTS
 
-### GET /superadmin/schools/allSchools
-**Description:** Get all schools in the system
+### GET /api/superadmin/schools/allSchools
+**Description:** Get all schools in the system (with optional province filtering for Master users)
+**Query Parameters:** `province` (optional, for Master users to filter by province)
 **Request:** No body
 **Response:**
 ```json
@@ -95,25 +138,33 @@ This document contains all API endpoints with their exact request payloads, resp
   {
     "id": "school123",
     "name": "Greenwood High School",
-    "location": "Springfield",
-    "contactEmail": "contact@greenwood.edu",
+    "address": "123 School Street, Springfield",
+    "province": "Gauteng",
+    "email": "contact@greenwood.edu",
+    "phoneNumber": "0123456789",
+    "principalName": "Dr. Smith",
     "adminCount": 3,
     "userCount": 540,
+    "subjects": ["Mathematics", "English", "Science"],
+    "grades": ["Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12"],
     "createdAt": "2023-01-15T00:00:00Z"
   }
 ]
 ```
 
-### POST /superadmin/createSchool
+### POST /api/superadmin/createSchool
 **Description:** Create a new school
 **Request Body:**
 ```json
 {
   "name": "Northwood Academy",
-  "location": "Northwood City",
-  "contactEmail": "contact@northwood.edu",
-  "address": "123 School Street",
-  "phoneNumber": "0123456789"
+  "address": "123 School Street, Northwood City",
+  "province": "Western Cape",
+  "email": "contact@northwood.edu",
+  "phoneNumber": "0123456789",
+  "principalName": "Dr. Johnson",
+  "subjects": ["subject_id_1", "subject_id_2"],
+  "grades": ["grade_id_1", "grade_id_2"]
 }
 ```
 **Response:**
@@ -124,25 +175,28 @@ This document contains all API endpoints with their exact request payloads, resp
 }
 ```
 
-### PUT /superadmin/updateSchool/{schoolId}
+### PUT /api/superadmin/updateSchool/{schoolId}
 **Description:** Update an existing school
 **Request Body:**
 ```json
 {
   "name": "Updated School Name",
-  "location": "Updated Location",
-  "contactEmail": "updated@email.com",
   "address": "Updated Address",
-  "phoneNumber": "0987654321"
+  "province": "Updated Province",
+  "email": "updated@email.com",
+  "phoneNumber": "0987654321",
+  "principalName": "Updated Principal",
+  "subjects": ["updated_subject_ids"],
+  "grades": ["updated_grade_ids"]
 }
 ```
 
-### DELETE /superadmin/deleteSchool/{schoolId}
+### DELETE /api/superadmin/deleteSchool/{schoolId}
 **Description:** Delete a school
 **Request:** No body
 **Response:** 204 No Content
 
-### GET /superadmin/school/{schoolId}
+### GET /api/superadmin/school/{schoolId}
 **Description:** Get detailed school information
 **Request:** No body
 **Response:**
@@ -150,7 +204,8 @@ This document contains all API endpoints with their exact request payloads, resp
 {
   "id": "school123",
   "name": "Greenwood High School",
-  "location": "Springfield",
+  "address": "123 School Street, Springfield",
+  "province": "Gauteng",
   "stats": {
     "admins": 3,
     "teachers": 45,
@@ -167,8 +222,9 @@ This document contains all API endpoints with their exact request payloads, resp
 }
 ```
 
-### GET /superadmin/admins
-**Description:** Get all administrators across all schools
+### GET /api/superadmin/admins
+**Description:** Get all administrators across all schools (with optional province filtering)
+**Query Parameters:** `province` (optional, for Master users to filter by province)
 **Request:** No body
 **Response:**
 ```json
@@ -183,7 +239,7 @@ This document contains all API endpoints with their exact request payloads, resp
 ]
 ```
 
-### POST /superadmin/admins
+### POST /api/superadmin/admins
 **Description:** Create a new administrator
 **Request Body:**
 ```json
@@ -191,35 +247,35 @@ This document contains all API endpoints with their exact request payloads, resp
   "name": "Bob Williams",
   "email": "bob@northwood.edu",
   "password": "strongpassword123",
+  "phoneNumber": "0761234567",
   "schoolId": "school456"
 }
 ```
 
-### PUT /superadmin/admins/{adminId}
+### PUT /api/superadmin/admins/{adminId}
 **Description:** Update an administrator
 **Request Body:**
 ```json
 {
   "name": "Updated Name",
   "email": "updated@email.com",
-  //This school's id shouldn't change but should the backend handle this.
+  "phoneNumber": "0987654321",
   "schoolId": "different_school_id"
 }
 ```
 
-### DELETE /superadmin/admins/{adminId}
+### DELETE /api/superadmin/admins/{adminId}
 **Description:** Delete an administrator
 **Request:** No body
 **Response:** 204 No Content
 
-### GET /superadmin/schools/{schoolId}/admins
+### GET /api/superadmin/schools/{schoolId}/admins
 **Description:** Get administrators for a specific school
 **Request:** No body
 
-
-### GET /superadmin/stats
-- This should come from what we already have acess to and the frontend should do this calculations.
-**Description:** Get system-wide statistics
+### GET /api/superadmin/stats
+**Description:** Get system-wide statistics (with optional province filtering for Master users)
+**Query Parameters:** `province` (optional, for Master users to filter by province)
 **Request:** No body
 **Response:**
 ```json
@@ -229,20 +285,113 @@ This document contains all API endpoints with their exact request payloads, resp
   "totalAdmins": 45,
   "totalTeachers": 600,
   "totalStudents": 7200,
-  "totalParents": 655
+  "totalParents": 655,
+  "province": "Gauteng"
 }
 ```
-- Comming soon feature
-### GET /superadmin/analytics
-**Description:** Get platform usage analytics
+
+### GET /api/superadmin/analytics
+**Description:** Get platform usage analytics (with optional province filtering for Master users)
+**Query Parameters:** `province` (optional, for Master users to filter by province)
+**Request:** No body
+
+---
+
+## 🎓 GRADE MANAGEMENT ENDPOINTS
+
+### POST /api/grades
+**Description:** Create a new grade/class
+**Request Body:**
+```json
+{
+  "name": "Grade 10A",
+  "description": "Grade 10 Mathematics class"
+}
+```
+
+### PUT /api/grades/{gradeId}
+**Description:** Update an existing grade
+**Request Body:**
+```json
+{
+  "name": "Updated Grade Name",
+  "description": "Updated description"
+}
+```
+
+### GET /api/grades/grades
+**Description:** Get all grades in the system (system-wide for superadmins)
+**Request:** No body
+
+### GET /api/grades
+**Description:** Get grades for current school
+**Request:** No body
+
+### GET /api/grades/{gradeId}/students
+**Description:** Get students by grade
+**Request:** No body
+
+### GET /api/grades/teacher/{teacherId}
+**Description:** Get grades assigned to a specific teacher
+**Request:** No body
+
+### POST /api/grades/{gradeId}/assign-student/{studentId}
+**Description:** Assign a student to a grade
+**Request:** No body
+
+### POST /api/grades/{gradeId}/assign-teacher/{teacherId}
+**Description:** Assign a teacher to a grade
+**Request:** No body
+
+### DELETE /api/grades/{gradeId}
+**Description:** Delete a grade
+**Request:** No body
+
+---
+
+## 📚 SUBJECT MANAGEMENT ENDPOINTS
+
+### POST /api/subjects
+**Description:** Create a new subject
+**Request Body:**
+```json
+{
+  "name": "Mathematics",
+  "description": "Advanced Mathematics curriculum"
+}
+```
+
+### PUT /api/subjects/{subjectId}
+**Description:** Update an existing subject
+**Request Body:**
+```json
+{
+  "name": "Updated Subject Name",
+  "description": "Updated description"
+}
+```
+
+### GET /api/subjects
+**Description:** Get subjects for current school
+**Request:** No body
+
+### GET /api/subjects/teacher/{teacherId}
+**Description:** Get subjects assigned to a specific teacher
+**Request:** No body
+
+### POST /api/subjects/{subjectId}/assign-teacher/{teacherId}
+**Description:** Assign a teacher to a subject
+**Request:** No body
+
+### DELETE /api/subjects/{subjectId}
+**Description:** Delete a subject
 **Request:** No body
 
 ---
 
 ## 🏫 ADMIN ENDPOINTS
--Instead of /admin/students - GET /admin/allRoleSpecificUsers/{role}- students:
 
-### GET /admin/students
+### GET /api/admin/students
 **Description:** Get all students (with frontend filtering)
 **Query Parameters:** `grade`, `gender`, `status` (applied on frontend)
 **Request:** No body
@@ -260,27 +409,25 @@ This document contains all API endpoints with their exact request payloads, resp
 ]
 ```
 
-### GET /admin/attendance
+### GET /api/admin/attendance
 **Description:** Get attendance data (with frontend filtering)
 **Query Parameters:** `startDate`, `endDate` (applied on frontend)
 **Request:** No body
 
-- Instead of /admin/staff - GET /admin/allRoleSpecificUsers/{role}- teachers:
-### GET /admin/staff
+### GET /api/admin/staff
 **Description:** Get staff data (with frontend filtering)
 **Query Parameters:** `role`, `department` (applied on frontend)
 **Request:** No body
 
--Coming Soon
-### GET /admin/calendar
+### GET /api/admin/calendar
 **Description:** Get calendar events
 **Request:** No body
 
-### GET /admin/messages
+### GET /api/admin/messages
 **Description:** Get messages
 **Request:** No body
 
-### GET /admin/allRoleSpecificUsers/all
+### GET /api/admin/allRoleSpecificUsers/all
 **Description:** Get all users with role-specific details
 **Request:** No body
 **Response:**
@@ -292,34 +439,33 @@ This document contains all API endpoints with their exact request payloads, resp
     "email": "john@example.com",
     "phoneNumber": "0761234567",
     "role": "Student",
-    "grade": "10A", // for students
-    "subjects": ["Math", "Physics"], // for teachers
-    "parentId": "parent123" // for students
+    "grade": "10A",
+    "subjects": ["Math", "Physics"],
+    "parentId": "parent123"
   }
 ]
 ```
 
-### GET /admin/allRoleSpecificUsers/{role}
+### GET /api/admin/allRoleSpecificUsers/{role}
 **Description:** Get users filtered by role (Teacher, Student, Parent)
 **Request:** No body
-shouldn't it use POST   /createUser insead of admin/users
-### POST /admin/users
+
+### POST /api/admin/users
 **Description:** Create a new user
 **Request Body:**
 ```json
 {
   "name": "Jane Doe",
-  "email": "jane@example.com", // optional for students/parents
-  "phoneNumber": "0761234567", // required for students/parents
-  "role": "Student", // "Teacher", "Student", "Parent"
-  "grade": "10A", // required for students
-  "subjects": ["Mathematics", "Physics"], // required for teachers
-  "parentId": "parent123", // required for students
-  //not needed - "password": "temppassword123" // for teachers/admins
+  "email": "jane@example.com",
+  "phoneNumber": "0761234567",
+  "role": "Student",
+  "grade": "10A",
+  "subjects": ["Mathematics", "Physics"],
+  "parentId": "parent123"
 }
 ```
 
-### PATCH /admin/users/{userId}
+### PATCH /api/admin/users/{userId}
 **Description:** Update an existing user
 **Request Body:**
 ```json
@@ -327,42 +473,26 @@ shouldn't it use POST   /createUser insead of admin/users
   "name": "Updated Name",
   "email": "updated@email.com",
   "phoneNumber": "0987654321",
-  "grade": "11A", // for students
-  "subjects": ["Chemistry", "Biology"] // for teachers
+  "grade": "11A",
+  "subjects": ["Chemistry", "Biology"]
 }
 ```
 
-### DELETE /admin/users/{userId}
+### DELETE /api/admin/users/{userId}
 **Description:** Delete a user
 **Request:** No body
 **Response:** 204 No Content
 
-
-### GET /attendance/submissions
+### GET /api/attendance/submissions
 **Description:** Get attendance submissions for review
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "submission123",
-    "teacherId": "teacher123",
-    "teacherName": "Ms. Smith",
-    "classId": "class123",
-    "className": "Mathematics - Grade 10A",
-    "date": "2023-10-27",
-    "status": "Pending", // "Approved", "Rejected"
-    "submittedAt": "2023-10-27T10:00:00Z"
-  }
-]
-```
 
-### PUT /attendance/submissions/{submissionId}
+### PUT /api/attendance/submissions/{submissionId}
 **Description:** Update attendance submission status
 **Request Body:**
 ```json
 {
-  "status": "Approved", // or "Rejected"
+  "status": "Approved",
   "comments": "Attendance approved"
 }
 ```
@@ -371,288 +501,113 @@ shouldn't it use POST   /createUser insead of admin/users
 
 ## 👨‍🏫 TEACHER ENDPOINTS
 
-### GET /teacher/students
+### GET /api/teacher/students
 **Description:** Get teacher's assigned students
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "student123",
-    "name": "John Doe",
-    "grade": "10A",
-    "subjects": ["Mathematics"]
-  }
-]
-```
 
-### GET /teacher/resources
+### GET /api/teacher/resources
 **Description:** Get all teacher resources
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "resource123",
-    "fileName": "Chapter1Notes.pdf",
-    "classId": "class123",
-    "className": "Mathematics - Grade 10A",
-    "description": "Chapter 1 study notes",
-    "uploadDate": "2023-10-27T10:00:00Z",
-    "fileUrl": "https://storage.com/file.pdf"
-  }
-]
-```
 
-### POST /teacher/resources/upload
+### POST /api/teacher/resources/upload
 **Description:** Upload a new resource
 **Content-Type:** multipart/form-data
 **Request Body:**
 ```
-file: [File object] // The actual file
-classId: "class123" // ID of the class
-description: "Homework assignment for Chapter 1" // Optional description
-```
-**Response:**
-```json
-{
-  "message": "Resource uploaded successfully",
-  "resourceId": "resource456"
-}
+file: [File object]
+classId: "class123"
+description: "Homework assignment for Chapter 1"
 ```
 
-### DELETE /teacher/resources/{resourceId}
+### DELETE /api/teacher/resources/{resourceId}
 **Description:** Delete a resource
 **Request:** No body
-**Response:** 204 No Content
 
-### GET /teacher/classes
+### GET /api/teacher/classes
 **Description:** Get teacher's classes
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "class123",
-    "name": "Mathematics - Grade 10A",
-    "grade": "10A",
-    "subject": "Mathematics",
-    "studentCount": 30,
-    //coming soon - "schedule": "Mon, Wed, Fri - 9:00 AM"
-  }
-]
-```
--This is for on the dashboard but we already are getting the resources so it should just use that to show the last 5 resources
-### GET /teacher/resources/recent
-**Description:** Get recent resources
-**Query Parameters:** `limit` (default: 5)
-**Request:** No body
 
-### GET /teacher/classes/{classId}/attendance
+### GET /api/teacher/classes/{classId}/attendance
 **Description:** Get class details for attendance taking
 **Request:** No body
-**Response:**
-```json
-{
-  "classId": "class123",
-  "className": "Mathematics - Grade 10A",
-  "students": [
-    {
-      "studentId": "student123",
-      "name": "John Doe",
-      "studentNumber": "2023001"
-    }
-  ]
-}
-```
 
-### GET /teacher/classes/{classId}/attendance/{date}
+### GET /api/teacher/classes/{classId}/attendance/{date}
 **Description:** Get attendance for specific date
 **Request:** No body
-**Response:**
-```json
-{
-  "classId": "class123",
-  "date": "2023-10-27",
-  "attendance": [
-    {
-      "studentId": "student123",
-      "isPresent": true
-    }
-  ]
-}
-```
 
-### POST /teacher/attendance
+### POST /api/teacher/attendance
 **Description:** Submit class attendance
 **Request Body:**
 ```json
 {
   "classId": "class123",
-  "date": "2023-10-27", // YYYY-MM-DD format
-  "attendanceType": "full_day", // "morning", "afternoon", "full_day"
+  "date": "2023-10-27",
+  "attendanceType": "full_day",
   "schoolId": "school123",
   "students": [
     {
       "studentId": "student123",
       "isPresent": true
-    },
-    {
-      "studentId": "student456",
-      "isPresent": false
     }
   ]
 }
 ```
-**Response:**
-```json
-{
-  "message": "Attendance submitted successfully",
-  "submissionId": "submission123"
-}
-```
-- Coming soon
-### GET /teacher/classes/{classId}/attendance/history
-**Description:** Get attendance history for a class
-**Query Parameters:** `startDate`, `endDate` (YYYY-MM-DD format)
-**Request:** No body
 
-### GET /teacher/students/{studentId}/reports
+### GET /api/teacher/students/{studentId}/reports
 **Description:** Get reports for a specific student
 **Request:** No body
 
-### POST /teacher/students/{studentId}/reports
+### POST /api/teacher/students/{studentId}/reports
 **Description:** Upload a report for a student
 **Content-Type:** multipart/form-data
-**Request Body:**
-```
-file: [File object] // The report file
-description: "Term 1 Mathematics Report" // Report description
-```
 
 ---
 
 ## 🎓 STUDENT ENDPOINTS
 
-### GET /currentUser
-**Description:** Get student's profile information
+### GET /api/student/{phoneNumber}
+**Description:** Get student details by phone number
 **Request:** No body
-**Response:**
+
+### PUT /api/student/updateStudent
+**Description:** Update student information
+**Request Body:**
 ```json
 {
   "id": "student123",
   "name": "John Doe",
+  "lastName": "Doe",
   "grade": "10A",
-  "studentNumber": "2023001",
-  "email": "john@example.com",
   "phoneNumber": "0761234567",
-  "parentId": "parent123"
+  "email": "john@example.com"
 }
 ```
 
-### PUT /currentUser
-**Description:** Update student profile
-**Request Body:**
-```json
-{
-  "name": "Updated Name",
-  "email": "updated@email.com",
-  "phoneNumber": "0987654321"
-}
-```
+### GET /api/student/{studentId}/reports
+**Description:** Get student's own reports
+**Request:** No body
 
-### GET /student/attendance
+### GET /api/student/attendance
 **Description:** Get student's attendance records
 **Query Parameters:** `month`, `year`, `startDate`, `endDate`
 **Request:** No body
-**Response:**
-```json
-{
-  "summary": {
-    "presentDays": 18,
-    "absentDays": 2,
-    "attendanceRate": 90
-  },
-  "records": [
-    {
-      "date": "2023-10-27",
-      "status": "Present", // "Present", "Absent"
-      "subject": "Mathematics",
-      "teacher": "Ms. Smith"
-    }
-  ]
-}
-```
-- Use the attendance endpoint instead of GET /student/attendance/stats
-### GET /student/attendance/stats
-**Description:** Get attendance statistics
-**Request:** No body
-**Response:**
-```json
-{
-  "summary": {
-    "presentDays": 18,
-    "absentDays": 2,
-    "attendanceRate": 90
-  }
-}
-```
-### GET /student/resources
+
+### GET /api/student/resources
 **Description:** Get available resources
 **Query Parameters:** `subject`, `searchTerm`
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "resource123",
-    "title": "Chapter 1 Notes",
-    "subject": "Mathematics",
-    "description": "Study notes for Chapter 1",
-    "uploadDate": "2023-10-27T10:00:00Z",
-    "fileName": "chapter1.pdf",
-    "teacherName": "Ms. Smith"
-  }
-]
-```
 
-### GET /student/resources/{resourceId}/download
+### GET /api/student/resources/{resourceId}/download
 **Description:** Download a resource file
 **Request:** No body
 **Response:** File blob
 
--Coming soon
-### GET /student/schedule
-**Description:** Get student's class schedule
-**Query Parameters:** `week`, `date`
-**Request:** No body
-
--Coming soon
-### GET /student/timetable
-**Description:** Get student's timetable
-**Query Parameters:** `weekStart` (YYYY-MM-DD)
-**Request:** No body
-
-### GET /student/reports
+### GET /api/student/reports
 **Description:** Get student's academic reports
 **Query Parameters:** `term`, `subject`
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "report123",
-    "title": "Term 1 Report",
-    "type": "Academic",
-    "issueDate": "2023-04-15T00:00:00Z",
-    "teacher": "Ms. Smith",
-    "subject": "Mathematics",
-    "fileName": "term1_report.pdf"
-  }
-]
-```
 
-### GET /student/reports/{reportId}/download
+### GET /api/student/reports/{reportId}/download
 **Description:** Download a report file
 **Request:** No body
 **Response:** File blob
@@ -660,100 +615,21 @@ description: "Term 1 Mathematics Report" // Report description
 ---
 
 ## 👨‍👩‍👧‍👦 PARENT ENDPOINTS
-- This should be phoneNumber/children instead of GET /api/parent/children
+
 ### GET /api/parent/children
 **Description:** Get parent's children
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "student123",
-    "name": "John Doe",
-    "grade": "10A",
-    "school": "Greenwood High School",
-    "studentNumber": "2023001"
-  }
-]
-```
-- This should be phoneNumber/children/{childId}/dashboard instead of GET /api/parent/children/{childId}/dashboard
+
 ### GET /api/parent/children/{childId}/dashboard
 **Description:** Get dashboard data for a specific child
 **Request:** No body
-**Response:**
-```json
-{
-  "stats": {
-    "attendance": "95%",
-    "feesDue": "R1500",
-    "upcomingEvents": 3,
-    "newAnnouncements": 2
-  },
-  "recentActivity": [
-    {
-      "type": "attendance",
-      "message": "Present in Mathematics class",
-      "date": "2023-10-27"
-    }
-  ]
-}
-```
-- This should be phoneNumber/children/{childId}/attendance instead of GET /api/parent/children/{childId}/attendance
+
 ### GET /api/parent/children/{childId}/attendance
 **Description:** Get child's attendance records
 **Query Parameters:** `month`, `year`
 **Request:** No body
-**Response:**
-```json
-{
-  "summary": {
-    "presentDays": 18,
-    "absentDays": 2,
-    "attendanceRate": 90
-  },
-  "records": [
-    {
-      "date": "2023-10-27",
-      "status": "Present",
-      "subject": "Mathematics",
-      "teacher": "Ms. Smith"
-    }
-  ]
-}
-```
--Coming Soon
-### GET /api/parent/events/upcoming
-**Description:** Get upcoming events for a child
-**Request:** No body
 
--Coming soon
-### GET /api/parent/events/upcoming
-**Description:** Get all upcoming events
-**Request:** No body
-
--Coming soon
-### GET /api/parent/children/{childId}/fees
-**Description:** Get fee information for a child
-**Request:** No body
-**Response:**
-```json
-{
-  "totalDue": "R1500",
-  "dueDate": "2023-11-30",
-  "breakdown": [
-    {
-      "description": "School Fees",
-      "amount": "R1200"
-    },
-    {
-      "description": "Transport",
-      "amount": "R300"
-    }
-  ]
-}
-```
-- This is just suppose to show all the reports of your children then frontend needs to filter according to children id maybe even this endpoint ### GET /reports/student/{studentId}
-### GET /api/parent/children/reports
+### GET /api/parent/children/{childId}/reports
 **Description:** Get child's reports
 **Request:** No body
 
@@ -766,88 +642,36 @@ description: "Term 1 Mathematics Report" // Report description
 
 ## 📊 REPORT ENDPOINTS
 
-### POST /reports/student/upload
+### POST /api/reports/student/upload
 **Description:** Upload a student report
 **Content-Type:** multipart/form-data
-**Request Body:**
-```
-file: [File object] // Optional report file
-studentId: "student123"
-academicTerm: "Term 1 2024"
-grade: "10A"
-comments: "Excellent progress in mathematics"
-overallPerformance: "Excellent" // "Excellent", "Good", "Satisfactory", "Needs Improvement"
-grades: '[{"subject": "Mathematics", "grade": "A", "comments": "Outstanding work"}]' // JSON string
-```
 
-### GET /reports/student/{studentId}
+### GET /api/reports/student/{studentId}
 **Description:** Get reports for a student
 **Request:** No body
 
-### GET /reports/class/{classId}
+### GET /api/reports/class/{classId}
 **Description:** Get reports for a class
-**Query Parameters:** `term`
 **Request:** No body
 
-### PUT /reports/{reportId}
+### PUT /api/reports/{reportId}
 **Description:** Update a report
-**Request Body:**
-```json
-{
-  "comments": "Updated comments",
-  "overallPerformance": "Good",
-  "grades": [
-    {
-      "subject": "Mathematics",
-      "grade": "B+",
-      "comments": "Good improvement"
-    }
-  ]
-}
-```
+**Request:** No body
 
-### DELETE /reports/{reportId}
+### DELETE /api/reports/{reportId}
 **Description:** Delete a report
 **Request:** No body
 
-### GET /reports/{reportId}/download
+### GET /api/reports/{reportId}/download
 **Description:** Download a report file
 **Request:** No body
 **Response:** File blob
 
-### GET /reports/class/{classId}/stats
-**Description:** Get class report statistics
-**Query Parameters:** `term`
-**Request:** No body
-
-### GET /reports/terms
+### GET /api/reports/terms
 **Description:** Get available academic terms
 **Request:** No body
 
-### POST /reports/attendance
-**Description:** Generate attendance report
-**Request Body:**
-```json
-{
-  "startDate": "2023-10-01",
-  "endDate": "2023-10-31",
-  "classId": "class123", // optional
-  "format": "pdf" // or "csv"
-}
-```
-
-### POST /reports/academic
-**Description:** Generate academic report
-**Request Body:**
-```json
-{
-  "term": "Term 1 2024",
-  "classId": "class123", // optional
-  "format": "pdf"
-}
-```
-
-### POST /reports/attendance/download
+### POST /api/reports/attendance/download
 **Description:** Download attendance report
 **Request Body:**
 ```json
@@ -859,7 +683,7 @@ grades: '[{"subject": "Mathematics", "grade": "A", "comments": "Outstanding work
 ```
 **Response:** File blob
 
-### POST /reports/academic/download
+### POST /api/reports/academic/download
 **Description:** Download academic report
 **Request Body:**
 ```json
@@ -870,33 +694,16 @@ grades: '[{"subject": "Mathematics", "grade": "A", "comments": "Outstanding work
 ```
 **Response:** File blob
 
-### GET /reports/filters
-**Description:** Get available report filters
-**Request:** No body
-
 ---
-- Coming soon
+
 ## 📅 CALENDAR ENDPOINTS
 
-### GET /calendar
+### GET /api/calendar
 **Description:** Get calendar events
 **Query Parameters:** `startDate`, `endDate` (YYYY-MM-DD format)
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "event123",
-    "title": "Parent-Teacher Meeting",
-    "start": "2023-11-15T09:00:00Z",
-    "end": "2023-11-15T17:00:00Z",
-    "type": "meeting",
-    "description": "Quarterly parent-teacher meetings"
-  }
-]
-```
 
-### POST /calendar
+### POST /api/calendar
 **Description:** Create a new event
 **Request Body:**
 ```json
@@ -905,75 +712,41 @@ grades: '[{"subject": "Mathematics", "grade": "A", "comments": "Outstanding work
   "start": "2023-12-01T08:00:00Z",
   "end": "2023-12-01T16:00:00Z",
   "type": "sports",
-  "description": "Annual sports day event",
-  "location": "School Grounds"
+  "description": "Annual sports day event"
 }
 ```
 
-### PUT /calendar/{eventId}
+### PUT /api/calendar/{eventId}
 **Description:** Update an event
-**Request Body:**
-```json
-{
-  "title": "Updated Event Title",
-  "start": "2023-12-01T09:00:00Z",
-  "end": "2023-12-01T17:00:00Z",
-  "description": "Updated description"
-}
-```
+**Request:** No body
 
-### DELETE /calendar/{eventId}
+### DELETE /api/calendar/{eventId}
 **Description:** Delete an event
 **Request:** No body
-**Response:** 204 No Content
 
-### GET /calendar/event-types
+### GET /api/calendar/event-types
 **Description:** Get available event types
 **Request:** No body
-**Response:**
-```json
-[
-  "meeting",
-  "sports",
-  "academic",
-  "holiday",
-  "exam"
-]
-```
 
 ---
-- Coming soon
+
 ## 📢 ANNOUNCEMENT ENDPOINTS
 
-### GET /announcements
+### GET /api/announcements
 **Description:** Get announcements
-**Query Parameters:** `limit`, `type` (parent, teacher, student)
+**Query Parameters:** `limit`, `type`
 **Request:** No body
-**Response:**
-```json
-[
-  {
-    "id": "announcement123",
-    "title": "School Closure Notice",
-    "content": "School will be closed on November 1st for maintenance",
-    "type": "general",
-    "priority": "high",
-    "createdAt": "2023-10-27T10:00:00Z",
-    "author": "Principal"
-  }
-]
-```
 
-### POST /announcements
+### POST /api/announcements
 **Description:** Create an announcement
 **Request Body:**
 ```json
 {
   "title": "New Announcement",
   "content": "This is the announcement content",
-  "type": "general", // "general", "academic", "sports", "emergency"
-  "priority": "medium", // "low", "medium", "high"
-  "targetAudience": ["students", "parents"] // array of roles
+  "type": "general",
+  "priority": "medium",
+  "targetAudience": ["students", "parents"]
 }
 ```
 
@@ -981,141 +754,14 @@ grades: '[{"subject": "Mathematics", "grade": "A", "comments": "Outstanding work
 
 ## 📊 ATTENDANCE ENDPOINTS
 
-### GET /attendance/student
+### GET /api/attendance/student
 **Description:** Get student attendance records
 **Query Parameters:** `studentId`, `startDate`, `endDate`
 **Request:** No body
 
-- Instead use what we already have and filter it by children id
-### GET /attendance/student/{studentId}/stats
+### GET /api/attendance/student/{studentId}/stats
 **Description:** Get attendance statistics for a student
 **Request:** No body
-
----
-
-## 💬 MESSAGE ENDPOINTS - Coming Soon
-
-### GET /admin/system-messages
-**Description:** Get system messages
-**Request:** No body
-
-### POST /admin/system-messages
-**Description:** Send a system message
-**Request Body:**
-```json
-{
-  "title": "System Maintenance",
-  "content": "System will be down for maintenance",
-  "recipients": ["all"], // or specific user IDs
-  "priority": "high",
-  "type": "system"
-}
-```
-
-### DELETE /admin/system-messages/{messageId}
-**Description:** Delete a system message
-**Request:** No body
-
-### GET /admin/message-templates
-**Description:** Get message templates
-**Request:** No body
-
-### POST /admin/message-templates
-**Description:** Create a message template
-**Request Body:**
-```json
-{
-  "name": "Welcome Message",
-  "subject": "Welcome to {{schoolName}}",
-  "content": "Dear {{studentName}}, welcome to our school!",
-  "type": "welcome"
-}
-```
-
-### PUT /admin/message-templates/{templateId}
-**Description:** Update a message template
-**Request Body:**
-```json
-{
-  "name": "Updated Template",
-  "subject": "Updated Subject",
-  "content": "Updated content"
-}
-```
-
-### DELETE /admin/message-templates/{templateId}
-**Description:** Delete a message template
-**Request:** No body
-
-### GET /admin/messages/analytics
-**Description:** Get message analytics
-**Request:** No body
-
-### PATCH /messages/{messageId}/status
-**Description:** Update message status
-**Request Body:**
-```json
-{
-  "status": "read", // "read", "unread", "archived"
-  "readAt": "2023-10-27T10:00:00Z"
-}
-```
-
-### POST /admin/broadcast
-**Description:** Broadcast a message
-**Request Body:**
-```json
-{
-  "title": "Important Notice",
-  "content": "This is an important broadcast message",
-  "recipients": "all", // or "teachers", "students", "parents"
-  "priority": "high"
-}
-```
-
-### POST /admin/emergency-alerts
-**Description:** Send emergency alert
-**Request Body:**
-```json
-{
-  "title": "Emergency Alert",
-  "content": "This is an emergency alert message",
-  "recipients": "all",
-  "alertType": "emergency"
-}
-```
-
-### GET /messages/search
-**Description:** Search messages
-**Query Parameters:** `query`, `type`, `dateFrom`, `dateTo`
-**Request:** No body
-
-### PATCH /messages/bulk-update
-**Description:** Bulk update messages
-**Request Body:**
-```json
-{
-  "messageIds": ["msg1", "msg2", "msg3"],
-  "status": "read",
-  "action": "mark_read" // "mark_read", "archive", "delete"
-}
-```
-
-### GET /admin/messages/statistics
-**Description:** Get message statistics
-**Query Parameters:** `timeRange` (default: "30d")
-**Request:** No body
-
----
-
-## 🔔 NOTIFICATION ENDPOINTS - Coming soon
-
-**Note:** Notification service uses WebSocket connections and mock implementations. Real-time notifications would be handled via WebSocket events rather than REST endpoints.
-
-### WebSocket Events:
-- `connection_changed`: Connection status updates
-- `new_notification`: New notification received
-- `notification_read`: Notification marked as read
 
 ---
 
@@ -1155,19 +801,6 @@ Standard error format:
 }
 ```
 
-### Pagination (where applicable)
-```json
-{
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "totalPages": 5
-  }
-}
-```
-
 ---
 
 ## 🚀 DEPLOYMENT NOTES
@@ -1180,17 +813,12 @@ Standard error format:
    - Allow frontend domain
    - Include credentials for authentication
 
-3. **File Storage:**
-   - Configure file upload limits
-   - Set up cloud storage (AWS S3, Google Cloud Storage, etc.)
-
-4. **Database Schema:**
-   - Users table with role-based fields
-   - Schools table for multi-tenancy
-   - Attendance, Reports, Resources tables
-   - Proper foreign key relationships
-
-5. **Authentication:**
+3. **Authentication:**
    - JWT token implementation
    - Firebase Admin SDK for OTP verification
-   - Role-based access control (RBAC)
+   - Role-based access control with level/province support
+
+4. **Province-Based Access Control:**
+   - Master users: National access with province filtering
+   - Provincial superadmins: Locked to assigned province
+   - Regular users: School-scoped access

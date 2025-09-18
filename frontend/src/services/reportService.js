@@ -1,7 +1,7 @@
 import api from './api';
 
 /**
- * Upload an individual student's academic report
+ * Upload an individual student's academic report (teacher/admin view)
  * @param {Object} reportData - Report data including file and metadata
  * @param {File} reportData.file - The report file (PDF/DOCX)
  * @param {string} reportData.studentId - Student ID
@@ -66,16 +66,6 @@ export const getClassReports = async (classId, academicTerm = '') => {
 };
 
 /**
- * Get a single report by ID
- * @param {string} reportId - Report ID
- * @returns {Promise<Object>} Report details
- */
-export const getReport = async (reportId) => {
-  const response = await api.get(`/reports/${reportId}`);
-  return response.data;
-};
-
-/**
  * Update a student's report
  * @param {string} reportId - Report ID to update
  * @param {Object} updates - Fields to update
@@ -132,7 +122,6 @@ export const getAcademicTerms = async () => {
 const REPORT_ENDPOINTS = {
   ATTENDANCE: '/reports/attendance',
   ACADEMIC: '/reports/academic',
-  CUSTOM: '/reports/custom',
 };
 
 /**

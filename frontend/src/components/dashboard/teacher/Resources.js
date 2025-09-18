@@ -207,7 +207,7 @@ const TeacherResources = () => {
               : 'Drag & drop a file here, or click to select'}
         </Typography>
         <Typography variant="caption" color="text.secondary" display="block">
-          PDF, DOC, PPT, TXT, or Images (Max: 10MB)
+          PDF, DOC, PPT, TXT, or Images (Max: 5MB)
         </Typography>
       </Box>
 

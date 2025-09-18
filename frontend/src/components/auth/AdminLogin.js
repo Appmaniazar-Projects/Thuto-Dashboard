@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Container, Paper, Typography, TextField, Button,
-  Box, Alert
-} from '@mui/material';
+import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import Logo from '../../assets/Logo.png';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -25,7 +23,8 @@ const AdminLogin = () => {
       setAuthData(user, token);
       navigate('/admin/users');
     } catch (err) {
-      setError(err.message || 'Login failed');
+      console.error('Admin login failed:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -34,18 +33,30 @@ const AdminLogin = () => {
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h4" align="center" sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <img 
+            src={Logo} 
+            alt="Thuto Dashboard" 
+            style={{ 
+              height: '80px', 
+              width: 'auto',
+              objectFit: 'contain'
+            }} 
+          />
+        </Box>
+        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
           Admin Login
         </Typography>
 
-        {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: '100%' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <TextField
             required
             fullWidth
             label="Email"
             name="email"
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             margin="normal"

@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import app from '../services/firebase';
 import api from '../services/api';
+
+const auth = getAuth(app);
 
 const AuthContext = createContext();
 
@@ -16,6 +21,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(user));
     if (user.schoolId) {
       localStorage.setItem('schoolId', user.schoolId);
+    }
+    // Store level and province for Master/Superadmin roles
+    if (user.level) {
+      localStorage.setItem('userLevel', user.level);
+    }
+    if (user.province) {
+      localStorage.setItem('userProvince', user.province);
     }
 
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -61,44 +73,6 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const resetPassword = async (email) => {
-    // Mock password reset - replace with real API when backend is ready
-    try {
-      setError('');
-      setLoading(true);
-      await api.post('/auth/reset-password', { email });
-      enqueueSnackbar('Password reset email sent. Please check your inbox.', { variant: 'success' });
-      return true;
-    } catch (err) {
-      console.error('Password Reset Error:', err);
-      setError(err.message);
-      enqueueSnackbar('Failed to send password reset email', { variant: 'error' });
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmPasswordReset = async (oobCode, newPassword) => {
-    // Mock password reset confirmation - replace with real API when backend is ready
-    try {
-      setError('');
-      setLoading(true);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      enqueueSnackbar('Your password has been reset successfully!', { variant: 'success' });
-      return true;
-    } catch (err) {
-      console.error('Password Reset Confirmation Error:', err);
-      setError(err.message);
-      enqueueSnackbar('Failed to reset password', { variant: 'error' });
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const logout = async () => {
     try {
@@ -108,6 +82,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('schoolId');
       localStorage.removeItem('user');
+      localStorage.removeItem('userLevel');
+      localStorage.removeItem('userProvince');
       
       // Clear API authorization header
       delete api.defaults.headers.common['Authorization'];
@@ -152,6 +128,8 @@ export const AuthProvider = ({ children }) => {
         id: userData.id,
         email: userData.email,
         role: userData.role?.toLowerCase() || 'student',
+        level: userData.level || null,
+        province: userData.province || null,
         displayName: userData.name || userData.displayName || 'User',
         phoneNumber: userData.phoneNumber
       });
@@ -160,17 +138,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const isMaster = () => currentUser?.level === 'master';
+  const isSuperAdmin = () => currentUser?.role === 'superadmin';
+  const isProvincialSuperAdmin = () => currentUser?.level === 'provincial';
+
   const value = {
     user: currentUser,
     currentUser,
     loading,
     error,
-    resetPassword,
     logout,
     updateUserProfile,
     setUser,
     setAuthData,
-    isAuthenticated: !!currentUser
+    isAuthenticated: !!currentUser,
+    isMaster,
+    isSuperAdmin,
+    isProvincialSuperAdmin
   };
 
   return (

@@ -4,10 +4,12 @@ import api from './api';
 
 /**
  * Fetches all schools in the system
+ * @param {Object} params - Optional query parameters
+ * @param {string} params.province - Province filter for Masters
  */
-export const getAllSchools = async () => {
+export const getAllSchools = async (params = {}) => {
   try {
-    const response = await api.get('/superadmin/schools/allSchools');
+    const response = await api.get('/api/superadmin/schools/allSchools', { params });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch schools:', error);

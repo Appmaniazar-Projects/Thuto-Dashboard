@@ -1,5 +1,6 @@
 import api from './api';
 import { auth } from './firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 /**
  * Handles OTP-based login for Teachers, Students, and Parents
@@ -11,7 +12,7 @@ const login = async (phoneNumber) => {
   if (!firebaseUser) throw new Error('No Firebase user found');
   
   const firebaseToken = await firebaseUser.getIdToken();
-  const response = await api.post('/auth/login', { 
+  const response = await api.post('/api/auth/login', { 
     phoneNumber: phoneNumber.replace(/\s+/g, ''), 
     firebaseToken 
   });
@@ -24,7 +25,7 @@ const login = async (phoneNumber) => {
 };
 
 /**
- * Handles admin login with email and password
+ * Handles admin login with Firebase email/password authentication
  * @param {string} email - Admin's email address
  * @param {string} password - Admin's password
  * @returns {Promise<Object>} User data and auth token
@@ -45,7 +46,7 @@ const adminLogin = async (email, password) => {
  * @returns {Promise<Object>} User data and auth token
  */
 const superAdminLogin = async (email, password) => {
-  const response = await api.post('/auth/superadmin/login', { email, password });
+  const response = await api.post('/api/auth/superadmin/login', { email, password });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);
@@ -54,11 +55,44 @@ const superAdminLogin = async (email, password) => {
 };
 
 /**
- * Logs out the current user by clearing local storage
+ * Logs out the current user by notifying the backend and clearing local storage.
  */
-const logout = () => {
-  localStorage.removeItem('user');
-  localStorage.removeItem('token');
+const logout = async () => {
+  try {
+    // Notify the backend to invalidate the token on the server side.
+    await api.post('/api/auth/logout');
+  } catch (error) {
+    // Log the error but proceed with client-side cleanup regardless.
+    console.error('Server logout failed:', error);
+  } finally {
+    // Always clear local storage to log the user out on the client side.
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken'); // Also clear refresh token
+  }
+};
+
+/**
+ * Refreshes the authentication token using the stored refresh token.
+ * @returns {Promise<Object>} The new token data.
+ */
+const refreshToken = async () => {
+  const currentRefreshToken = localStorage.getItem('refreshToken');
+  if (!currentRefreshToken) {
+    throw new Error('No refresh token available.');
+  }
+
+  const response = await api.post('/api/auth/refresh-token', { refreshToken: currentRefreshToken });
+  
+  if (response.data.token) {
+    localStorage.setItem('token', response.data.token);
+    // The backend might also issue a new refresh token.
+    if (response.data.refreshToken) {
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+    }
+  }
+  
+  return response.data;
 };
 
 /**
@@ -76,6 +110,7 @@ const authService = {
   superAdminLogin,
   logout,
   getCurrentUser,
+  refreshToken,
 };
 
 export default authService;

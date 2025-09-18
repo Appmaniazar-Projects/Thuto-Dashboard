@@ -21,7 +21,7 @@ import {
   MenuItem
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getAttendanceSubmissions } from '../../../services/adminService';
+import { getAttendanceSubmissions } from '../../../services/attendanceService';
 import StatCard from '../../common/StatCard';
 import { Assignment, CheckCircle, Schedule, Cancel } from '@mui/icons-material';
 

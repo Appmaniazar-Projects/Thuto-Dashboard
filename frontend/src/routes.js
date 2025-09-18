@@ -7,8 +7,6 @@ import Layout from './components/layout/Layout';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
-const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
@@ -28,7 +26,6 @@ const ParentAcademicReportsPage = lazy(() => import('./pages/parent/Academic'));
 const ParentReports = lazy(() => import('./pages/parent/ParentReportsPage'));
 
 const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
-const TeacherFeed = lazy(() => import('./components/dashboard/teacher/Feed'));
 const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
 const UploadedResources = lazy(() => import('./components/dashboard/teacher/Resources'));
 
@@ -41,6 +38,8 @@ const AttendanceSubmissions = lazy(() => import('./components/admin/reports/Atte
 const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettings'));
 const SystemMessagesPanel = lazy(() => import('./components/admin/SystemMessagesPanel'));
 const AdminAttendancePage = lazy(() => import('./pages/admin/AdminAttendancePage'));
+const GradeManagement = lazy(() => import('./components/admin/GradeManagement'));
+const SubjectManagement = lazy(() => import('./components/admin/SubjectManagement'));
 const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
 const AnnouncementsPage = lazy(() => import('./pages/common/AnnouncementsPage'));
 const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncementPage'));
@@ -66,8 +65,6 @@ export const publicRoutes = [
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
-  { path: '/forgot-password', element: <ForgotPasswordPage /> },
-  { path: '/reset-password', element: <ResetPasswordPage /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
@@ -97,7 +94,6 @@ const protectedRoutes = [
 
   // Teacher
   { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
-  { path: '/teacher/feed', element: <TeacherFeed /> },
   { path: '/teacher/resources', element: <UploadedResources /> },
   { path: '/teacher/upload-report', element: <UploadReportPage /> },
   
@@ -110,12 +106,13 @@ const protectedRoutes = [
   { path: '/admin/settings', element: <SystemSettingsPage /> },
   { path: '/admin/messages', element: <SystemMessagesPanel /> },
   { path: '/admin/attendance', element: <AdminAttendancePage /> },
+  { path: '/admin/grades', element: <GradeManagement /> },
+  { path: '/admin/subjects', element: <SubjectManagement /> },
 
 
   // Redirects
   { path: '/my-subjects', element: <Navigate to="/student/subjects" replace /> },
   { path: '/student-reports', element: <Navigate to="/student/reports" replace /> },
-  { path: '/feed', element: <Navigate to="/teacher/feed" replace /> },
   { path: '/children', element: <Navigate to="/parent/children" replace /> },
   { path: '/academic', element: <Navigate to="/parent/academic" replace /> },
   { path: '/academic-reports', element: <Navigate to="/parent/academic" replace /> },

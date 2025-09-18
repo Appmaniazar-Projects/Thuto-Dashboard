@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { Container, Paper, Typography, TextField, Button, Box, Alert, img } from '@mui/material';
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import app from '../../services/firebase';
+import Logo from '../../assets/Logo.png';
+
+const auth = getAuth(app);
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -30,13 +34,24 @@ const Login = () => {
 
   // Initialize reCAPTCHA
   useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-      'size': 'invisible',
-    }, auth);
+    try {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          // Response expired
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing recaptcha:', error);
+    }
 
     return () => {
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
       }
     };
   }, []);
@@ -93,7 +108,17 @@ const Login = () => {
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h4" sx={{ mb: 3 }}>Login</Typography>
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+          <img 
+            src={Logo} 
+            alt="Thuto Dashboard" 
+            style={{ 
+              height: '80px', 
+              width: 'auto',
+              objectFit: 'contain'
+            }} 
+          />
+        </Box>
         {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
 
         {step === 'phone' ? (

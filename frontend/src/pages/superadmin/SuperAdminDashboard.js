@@ -36,9 +36,13 @@ import {
   Delete as DeleteIcon,
   School as SchoolIcon,
   AdminPanelSettings as AdminIcon,
-  People as PeopleIcon
+  People as PeopleIcon,
+  SupervisorAccount as MasterIcon
 } from '@mui/icons-material';
 import PageTitle from '../../components/common/PageTitle';
+import ProvinceFilter from '../../components/common/ProvinceFilter';
+import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
+import { useAuth } from '../../context/AuthContext';
 import { 
   getAllSchools, 
   createSchool, 
@@ -46,49 +50,16 @@ import {
   deleteSchool,
   createAdmin
 } from '../../services/superAdminService';
-
-const subjects = [
-  { id: 'eng', name: 'English' },
-  { id: 'afr', name: 'Afrikaans' },
-  { id: 'math', name: 'Mathematics' },
-  { id: 'mathlit', name: 'Mathematical Literacy' },
-  { id: 'phy', name: 'Physical Sciences' },
-  { id: 'chem', name: 'Chemistry' },
-  { id: 'bio', name: 'Biology' },
-  { id: 'geo', name: 'Geography' },
-  { id: 'his', name: 'History' },
-  { id: 'eco', name: 'Economics' },
-  { id: 'bus', name: 'Business Studies' },
-  { id: 'acc', name: 'Accounting' },
-  { id: 'life', name: 'Life Orientation' },
-  { id: 'lifeskills', name: 'Life Skills' },
-  { id: 'science', name: 'Natural Science' },
-  { id: 'tech', name: 'Technology' },
-  { id: 'it', name: 'Information Technology' },
-  { id: 'art', name: 'Arts and Culture' },
-  { id: 'pe', name: 'Physical Education' },
-  { id: 'music', name: 'Music' },
-  { id: 'dance', name: 'Dance' }
-];
-
-const grades = [
-  { id: 'grade_1', name: 'Grade 1' },
-  { id: 'grade_2', name: 'Grade 2' },
-  { id: 'grade_3', name: 'Grade 3' },
-  { id: 'grade_4', name: 'Grade 4' },
-  { id: 'grade_5', name: 'Grade 5' },
-  { id: 'grade_6', name: 'Grade 6' },
-  { id: 'grade_7', name: 'Grade 7' },
-  { id: 'grade_8', name: 'Grade 8' },
-  { id: 'grade_9', name: 'Grade 9' },
-  { id: 'grade_10', name: 'Grade 10' },
-  { id: 'grade_11', name: 'Grade 11' },
-  { id: 'grade_12', name: 'Grade 12' }
-];
+import gradeService from '../../services/gradeService';
+import subjectService from '../../services/subjectService';
 
 const SuperAdminDashboard = () => {
+  const { isMaster, isProvincialSuperAdmin, currentUser } = useAuth();
+  const [selectedProvince, setSelectedProvince] = useState(null);
   const [schools, setSchools] = useState([]);
   const [admins, setAdmins] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('schools');
@@ -105,8 +76,9 @@ const SuperAdminDashboard = () => {
     phoneNumber: '',
     email: '',
     principalName: '',
-    subjects: [],  // Array of selected subject values
-    grades: []     // Array of selected grade values
+    province: '',    // Add province field
+    subjects: [],  // Array of selected subject IDs
+    grades: []     // Array of selected grade IDs
   });
   
   const [adminForm, setAdminForm] = useState({
@@ -119,19 +91,50 @@ const SuperAdminDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    loadGrades();
+    loadSubjects();
+  }, [selectedProvince]); // Add selectedProvince as dependency
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const schoolsData = await getAllSchools();
+      
+      // Build query params for province filtering
+      const params = {};
+      if (isMaster() && selectedProvince) {
+        params.province = selectedProvince;
+      }
+      
+      const [schoolsData, gradesData] = await Promise.all([
+        getAllSchools(params), // Pass province filter for Masters
+        gradeService.getAllGrades()
+      ]);
       setSchools(schoolsData);
+      setGrades(gradesData);
       setAdmins([]); // Admin fetching not supported yet
     } catch (err) {
       setError('Failed to load data');
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGrades = async () => {
+    try {
+      const gradesData = await gradeService.getAllGrades();
+      setGrades(gradesData);
+    } catch (error) {
+      console.error('Error loading grades:', error);
+    }
+  };
+
+  const loadSubjects = async () => {
+    try {
+      const subjectsData = await subjectService.getAllSubjects();
+      setSubjects(subjectsData);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
     }
   };
 
@@ -145,7 +148,16 @@ const SuperAdminDashboard = () => {
       }
       setSchoolDialogOpen(false);
       setEditingSchool(null);
-      setSchoolForm({ name: '', address: '', phoneNumber: '', email: '', principalName: '', subjects: [], grades: [] });
+      setSchoolForm({ 
+        name: '', 
+        address: '', 
+        phoneNumber: '', 
+        email: '', 
+        principalName: '', 
+        province: '',
+        subjects: [], 
+        grades: []
+      });
       fetchData();
     } catch (err) {
       setError('Failed to save school');
@@ -168,12 +180,23 @@ const SuperAdminDashboard = () => {
       setEditingSchool(school);
       setSchoolForm({
         ...school,
-        subjects: school.subjects.map(s => ({ id: s.id, name: s.name })),
-        grades: school.grades.map(g => ({ id: g.id, name: g.name }))
+        subjects: school.subjects || [],
+        grades: school.grades || []
       });
     } else {
       setEditingSchool(null);
-      setSchoolForm({ name: '', address: '', phoneNumber: '', email: '', principalName: '', subjects: [], grades: []});
+      // Default province to current user's province for new schools
+      const defaultProvince = isProvincialSuperAdmin() ? currentUser?.province : '';
+      setSchoolForm({ 
+        name: '', 
+        address: '', 
+        phoneNumber: '', 
+        email: '', 
+        principalName: '', 
+        province: defaultProvince,
+        subjects: [], 
+        grades: []
+      });
     }
     setSchoolDialogOpen(true);
   };
@@ -195,6 +218,10 @@ const SuperAdminDashboard = () => {
     setAdminDialogOpen(true);
   };
 
+  const handleProvinceChange = (province) => {
+    setSelectedProvince(province);
+  };
+
   if (loading) return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
       <CircularProgress />
@@ -209,6 +236,43 @@ const SuperAdminDashboard = () => {
       />
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {/* Province Filter - Show for Masters only */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Box />
+        <ProvinceFilter
+          selectedProvince={selectedProvince}
+          onProvinceChange={handleProvinceChange}
+        />
+      </Box>
+
+      {/* Tab Navigation */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+        <Button
+          variant={activeTab === 'schools' ? 'contained' : 'outlined'}
+          onClick={() => setActiveTab('schools')}
+          startIcon={<SchoolIcon />}
+        >
+          Schools
+        </Button>
+        <Button
+          variant={activeTab === 'admins' ? 'contained' : 'outlined'}
+          onClick={() => setActiveTab('admins')}
+          startIcon={<AdminIcon />}
+        >
+          Administrators
+        </Button>
+        {/* Master-only Superadmin Management Tab */}
+        {isMaster() && (
+          <Button
+            variant={activeTab === 'superadmins' ? 'contained' : 'outlined'}
+            onClick={() => setActiveTab('superadmins')}
+            startIcon={<MasterIcon />}
+          >
+            Superadmin Management
+          </Button>
+        )}
+      </Box>
 
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -252,24 +316,6 @@ const SuperAdminDashboard = () => {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Tab Navigation */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
-        <Button
-          variant={activeTab === 'schools' ? 'contained' : 'outlined'}
-          onClick={() => setActiveTab('schools')}
-          startIcon={<SchoolIcon />}
-        >
-          Schools
-        </Button>
-        <Button
-          variant={activeTab === 'admins' ? 'contained' : 'outlined'}
-          onClick={() => setActiveTab('admins')}
-          startIcon={<AdminIcon />}
-        >
-          Administrators
-        </Button>
-      </Box>
 
       {/* Schools Tab */}
       {activeTab === 'schools' && (
@@ -340,6 +386,15 @@ const SuperAdminDashboard = () => {
         </Card>
       )}
 
+      {/* Superadmins Tab */}
+      {activeTab === 'superadmins' && isMaster() && (
+        <Card>
+          <CardContent>
+            <SuperadminManagement />
+          </CardContent>
+        </Card>
+      )}
+
       {/* School Dialog */}
       <Dialog open={schoolDialogOpen} onClose={() => setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingSchool ? 'Edit School' : 'Add New School'}</DialogTitle>
@@ -349,44 +404,55 @@ const SuperAdminDashboard = () => {
           <TextField label="Phone Number" fullWidth margin="dense" value={schoolForm.phoneNumber} onChange={(e) => setSchoolForm({ ...schoolForm, phoneNumber: e.target.value })} />
           <TextField label="Email" type="email" fullWidth margin="dense" value={schoolForm.email} onChange={(e) => setSchoolForm({ ...schoolForm, email: e.target.value })} />
           <TextField label="Principal Name" fullWidth margin="dense" value={schoolForm.principalName} onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} />
+          
+          {/* Province Field */}
+          <TextField 
+            label="Province" 
+            fullWidth 
+            margin="dense" 
+            value={schoolForm.province} 
+            onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
+            disabled={isProvincialSuperAdmin()} // Lock province for Provincial Superadmins
+            helperText={isProvincialSuperAdmin() ? "Province is locked to your assigned province" : "Select the province for this school"}
+          />
+          
           <FormControl fullWidth margin="dense">
-          <InputLabel id="subjects-label">Subjects</InputLabel>
-          <Select
-            labelId="subjects-label"
-            multiple
-            value={schoolForm.subjects}
-            onChange={(e) => setSchoolForm({ ...schoolForm, subjects: e.target.value })}
-            input={<Input />}
-            renderValue={(selected) => selected.map(s => s.name).join(', ')}
-          >
-            {subjects.map((subject) => (
-              <MenuItem key={subject.id} value={subject}>
-                <Checkbox checked={schoolForm.subjects.some(s => s.id === subject.id)} />
-                <ListItemText primary={subject.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <InputLabel id="subjects-label">Subjects</InputLabel>
+            <Select
+              labelId="subjects-label"
+              multiple
+              value={schoolForm.subjects}
+              onChange={(e) => setSchoolForm({ ...schoolForm, subjects: e.target.value })}
+              input={<Input />}
+              renderValue={(selected) => selected.map(s => s.name || s).join(', ')}
+            >
+              {subjects.map((subject) => (
+                <MenuItem key={subject.id} value={subject.id}>
+                  <Checkbox checked={schoolForm.subjects.includes(subject.id)} />
+                  <ListItemText primary={subject.name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        {/* Grades multi-select */}
-        <FormControl fullWidth margin="dense">
-          <InputLabel id="grades-label">Grades</InputLabel>
-          <Select
-            labelId="grades-label"
-            multiple
-            value={schoolForm.grades}
-            onChange={(e) => setSchoolForm({ ...schoolForm, grades: e.target.value })}
-            input={<Input />}
-            renderValue={(selected) => selected.map(g => g.name).join(', ')}
-          >
-            {grades.map((grade) => (
-              <MenuItem key={grade.id} value={grade}>
-                <Checkbox checked={schoolForm.grades.some(g => g.id === grade.id)} />
-                <ListItemText primary={grade.name} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel id="grades-label">Grades</InputLabel>
+            <Select
+              labelId="grades-label"
+              multiple
+              value={schoolForm.grades}
+              onChange={(e) => setSchoolForm({ ...schoolForm, grades: e.target.value })}
+              input={<Input />}
+              renderValue={(selected) => selected.map(g => g.name || g).join(', ')}
+            >
+              {grades.map((grade) => (
+                <MenuItem key={grade.id} value={grade.id}>
+                  <Checkbox checked={schoolForm.grades.includes(grade.id)} />
+                  <ListItemText primary={grade.name} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSchoolDialogOpen(false)}>Cancel</Button>

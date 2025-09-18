@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { getTeacherClasses, getRecentResources, getClassAttendance } from '../../services/teacherService';
+import gradeService from '../../services/gradeService';
 import StatCard from '../common/StatCard';
 
 const TeacherDashboard = () => {
@@ -28,6 +29,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [resources, setResources] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -47,13 +49,15 @@ const TeacherDashboard = () => {
         setError(null);
         
         // Fetch classes and resources in parallel
-        const [classData, resourceData] = await Promise.all([
+        const [classData, resourceData, gradesData] = await Promise.all([
           getTeacherClasses(),
-          getRecentResources(10) // Get more resources for filtering
+          getRecentResources(10), // Get more resources for filtering
+          gradeService.getSchoolGrades()
         ]);
         
         setClasses(classData || []);
         setResources(resourceData || []);
+        setGrades(gradesData);
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -203,8 +207,8 @@ const TeacherDashboard = () => {
                 size="small"
               >
                 <MenuItem value="">All Grades</MenuItem>
-                {Array.from(new Set(classes.map(c => c.grade))).sort().map(grade => (
-                  <MenuItem key={grade} value={grade}>Grade {grade}</MenuItem>
+                {grades.map(grade => (
+                  <MenuItem key={grade.id} value={grade.name}>{grade.name}</MenuItem>
                 ))}
               </TextField>
             </Grid>

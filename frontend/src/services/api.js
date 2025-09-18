@@ -86,30 +86,6 @@ export const fetchAllStudents = (filters = {}) =>
   });
 
 /**
- * Fetches all attendance data for frontend filtering
- * @param {Object} filters - Optional filters to apply on the frontend
- */
-export const fetchAllAttendance = (filters = {}) => 
-  api.get("/admin/attendance").then(response => {
-    // Apply date range filter on the frontend
-    let filteredData = [...(response.data || [])];
-    
-    if (filters.startDate) {
-      filteredData = filteredData.filter(record => 
-        new Date(record.date) >= new Date(filters.startDate)
-      );
-    }
-    
-    if (filters.endDate) {
-      filteredData = filteredData.filter(record => 
-        new Date(record.date) <= new Date(filters.endDate)
-      );
-    }
-    
-    return { data: filteredData };
-  });
-
-/**
  * Fetches all staff data for frontend filtering
  * @param {Object} filters - Optional filters to apply on the frontend
  */
@@ -134,8 +110,5 @@ export const fetchMessages = () => api.get("/admin/messages");
 
 export const fetchStudentsForTeacher = ({ grade, subject }) =>
   api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
-
-export const submitAttendance = ({ grade, subject, date, attendance }) =>
-  api.post("/teacher/attendance", { grade, subject, date, attendance });
 
 export default api;

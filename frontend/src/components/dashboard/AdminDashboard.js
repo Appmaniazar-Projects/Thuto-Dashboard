@@ -19,6 +19,7 @@ import {
   fetchAllAttendance, 
   fetchAllStaff 
 } from '../../services/api';
+import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
 import CalendarPanel from './admin/CalendarPanel';
 import StatCard from '../common/StatCard';
@@ -38,6 +39,7 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRole, setSelectedRole] = useState('All');
   const [error, setError] = useState(null);
@@ -61,15 +63,17 @@ const AdminDashboard = () => {
         setError(null);
         
         // Fetch all data in parallel
-        const [studentsRes, attendanceRes, staffRes] = await Promise.all([
+        const [studentsRes, attendanceRes, staffRes, gradesRes] = await Promise.all([
           fetchAllStudents(),
           fetchAllAttendance(),
-          fetchAllStaff()
+          fetchAllStaff(),
+          gradeService.getSchoolGrades()
         ]);
         
         setStudents(studentsRes.data || []);
         setAttendance(attendanceRes.data || []);
         setStaff(staffRes.data || []);
+        setGrades(gradesRes || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data. Please try again.');
@@ -184,8 +188,8 @@ const AdminDashboard = () => {
                 size="small"
               >
                 <MenuItem value="">All Grades</MenuItem>
-                {Array.from(new Set(students.map(s => s.grade))).map(grade => (
-                  <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                {grades.map(grade => (
+                  <MenuItem key={grade.id} value={grade.name}>{grade.name}</MenuItem>
                 ))}
               </TextField>
             </Grid>

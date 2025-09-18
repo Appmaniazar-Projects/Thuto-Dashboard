@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Button, 
@@ -27,9 +27,9 @@ import InsertChartIcon from '@mui/icons-material/InsertChart';
 import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
 import { Link } from 'react-router-dom';
+import gradeService from '../../services/gradeService';
 
 // Sample data - would come from API in production
-const grades = [6, 7, 8, 9, 10, 11, 12];
 const reportTypes = [
   { id: 'attendance', name: 'Attendance Report', icon: <PeopleIcon /> },
   { id: 'enrollment', name: 'Enrollment Report', icon: <SchoolIcon /> },
@@ -37,6 +37,8 @@ const reportTypes = [
 ];
 
 const PDFReportGenerator = () => {
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [reportSettings, setReportSettings] = useState({
     grade: '',
     reportType: '',
@@ -46,6 +48,26 @@ const PDFReportGenerator = () => {
     message: '',
     severity: 'success'
   });
+
+  useEffect(() => {
+    loadGrades();
+  }, []);
+
+  const loadGrades = async () => {
+    try {
+      const gradesData = await gradeService.getSchoolGrades();
+      setGrades(gradesData);
+    } catch (error) {
+      console.error('Failed to load grades:', error);
+      setNotification({
+        open: true,
+        message: 'Failed to load grades',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,6 +109,14 @@ const PDFReportGenerator = () => {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography>Loading grades...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -133,7 +163,7 @@ const PDFReportGenerator = () => {
               >
                 <MenuItem value=""><em>All Grades</em></MenuItem>
                 {grades.map((grade) => (
-                  <MenuItem key={grade} value={grade}>Grade {grade}</MenuItem>
+                  <MenuItem key={grade.id} value={grade.id}>{grade.name}</MenuItem>
                 ))}
               </Select>
             </FormControl>

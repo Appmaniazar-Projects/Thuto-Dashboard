@@ -1,63 +1,30 @@
 import api from './api';
 
 /**
- * Fetches all attendance submissions for the admin.
- */
-export const getAttendanceSubmissions = async () => {
-  try {
-    const response = await api.get('attendance/submissions');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch attendance submissions:', error);
-    throw error;
-  }
-};
-
-/**
- * Updates the status of a specific attendance submission.
- * @param {string} submissionId - The ID of the attendance submission to update.
- * @param {object} updateData - An object containing the new status.
- */
-export const updateAttendanceSubmission = async (submissionId, updateData) => {
-  try {
-    const response = await api.put(`attendance/submissions/${submissionId}`, updateData);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to update attendance submission ${submissionId}:`, error);
-    throw error;
-  }
-};
-
-// ========== USER MANAGEMENT ==========
-
-/**
- * Get all users with role-specific details
- * @returns {Promise<Array>} Array of user objects with their role-specific data
+ * Fetches all users for the admin
+ * @returns {Promise<Array>} Array of user objects
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admin/allRoleSpecificUsers/all');
+    const response = await api.get('/admin/users');
     return response.data;
   } catch (error) {
-    console.error('Error fetching all users:', error);
+    console.error('Failed to fetch users:', error);
     throw error;
   }
 };
 
 /**
- * Get users filtered by a specific role
- * @param {string} role - Role to filter by (Teacher, Student, or Parent)
- * @returns {Promise<Array>} Array of user objects for the specified role
+ * Fetches users by role
+ * @param {string} role - User role to filter by
+ * @returns {Promise<Array>} Array of user objects with specified role
  */
 export const getUsersByRole = async (role) => {
   try {
-    if (!['Teacher', 'Student', 'Parent'].includes(role)) {
-      throw new Error('Invalid role. Must be one of: Teacher, Student, Parent');
-    }
-    const response = await api.get(`/admin/allRoleSpecificUsers/${role}`);
+    const response = await api.get(`/admin/users/role/${role}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching ${role}s:`, error);
+    console.error(`Failed to fetch users with role ${role}:`, error);
     throw error;
   }
 };
@@ -79,7 +46,7 @@ export const createUser = async (userData) => {
 
 /**
  * Updates an existing user
- * @param {string} userId - The ID of the user to update
+ * @param {string} userId - User ID to update
  * @param {object} userData - Updated user information
  * @returns {Promise<object>} Updated user object
  */
@@ -88,29 +55,26 @@ export const updateUser = async (userId, userData) => {
     const response = await api.patch(`/admin/users/${userId}`, userData);
     return response.data;
   } catch (error) {
-    console.error(`Failed to update user ${userId}:`, error);
+    console.error('Failed to update user:', error);
     throw error;
   }
 };
 
 /**
  * Deletes a user
- * @param {string} userId - The ID of the user to delete
- * @returns {Promise<object>} Deletion status
+ * @param {string} userId - User ID to delete
+ * @returns {Promise<void>}
  */
 export const deleteUser = async (userId) => {
   try {
-    const response = await api.delete(`/admin/users/${userId}`);
-    return response.data;
+    await api.delete(`/admin/users/${userId}`);
   } catch (error) {
-    console.error(`Failed to delete user ${userId}:`, error);
+    console.error('Failed to delete user:', error);
     throw error;
   }
 };
 
 export default {
-  getAttendanceSubmissions,
-  updateAttendanceSubmission,
   getAllUsers,
   getUsersByRole,
   createUser,

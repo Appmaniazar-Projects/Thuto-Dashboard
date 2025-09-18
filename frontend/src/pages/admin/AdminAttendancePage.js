@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { useSnackbar } from 'notistack';
-import { getAttendanceSubmissions, updateAttendanceSubmission } from '../../services/adminService';
+import { getAttendanceSubmissions, updateAttendanceSubmission } from '../../services/attendanceService';
 import PageTitle from '../../components/common/PageTitle';
 
 const style = {

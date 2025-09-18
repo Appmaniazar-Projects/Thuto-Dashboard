@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import {
-  Container, Paper, Typography, TextField, Button,
-  Box, Alert
-} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import Logo from '../../assets/Logo.png';
+
+const auth = getAuth();
 
 const SuperAdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -42,10 +43,18 @@ const SuperAdminLogin = () => {
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h4" align="center" sx={{ mb: 1 }}>
-          Thuto Dashboard
-        </Typography>
-        <Typography variant="h6" align="center" color="text.secondary" sx={{ mb: 3 }}>
+         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+           <img 
+             src={Logo} 
+             alt="Thuto Dashboard" 
+             style={{ 
+               height: '80px', 
+               width: 'auto',
+               objectFit: 'contain'
+             }} 
+          />
+        </Box>
+        <Typography variant="h4" align="center" color="text.secondary" sx={{ mb: 3 }}>
           Super Admin Login
         </Typography>
 

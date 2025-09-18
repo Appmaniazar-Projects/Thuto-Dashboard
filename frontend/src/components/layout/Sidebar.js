@@ -30,6 +30,8 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import SchoolIcon from '@mui/icons-material/School';
+import SubjectIcon from '@mui/icons-material/Subject';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -72,12 +74,16 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
     const roleSpecificItems = {
       admin: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },
+        { path: '/admin/grades', icon: <SchoolIcon />, text: 'Grade Management' },
+        { path: '/admin/subjects', icon: <SubjectIcon />, text: 'Subject Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
         { path: '/admin/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/admin/settings', icon: <SettingsIcon />, text: 'System Settings' },
       ],
       administrator: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },
+        { path: '/admin/grades', icon: <SchoolIcon />, text: 'Grade Management' },
+        { path: '/admin/subjects', icon: <SubjectIcon />, text: 'Subject Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
         { path: '/admin/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/admin/settings', icon: <SettingsIcon />, text: 'System Settings' },

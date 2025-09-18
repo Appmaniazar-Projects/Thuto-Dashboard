@@ -106,71 +106,24 @@ export const getRecentResources = async (limit = 5) => {
   }
 };
 
-/**
- * Get class details and students for attendance
- * @param {string} classId - The ID of the class
- */
-export const getClassForAttendance = async (classId) => {
-  try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch class ${classId} for attendance:`, error);
-    throw error;
-  }
+const teacherService = {
+  getMyStudents,
+  getTeacherResources,
+  uploadResource,
+  deleteResource,
+  getTeacherClasses,
+  getTeacherStudents,
+  getRecentResources
 };
 
-/**
- * Get attendance for a specific class and date
- * @param {string} classId - The ID of the class
- * @param {string} date - Date in YYYY-MM-DD format
- */
-export const getClassAttendance = async (classId, date) => {
-  try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance/${date}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch attendance for class ${classId} on ${date}:`, error);
-    throw error;
-  }
+export {
+  getMyStudents,
+  getTeacherResources,
+  uploadResource,
+  deleteResource,
+  getTeacherClasses,
+  getTeacherStudents,
+  getRecentResources
 };
 
-/**
- * Submit attendance for a class
- * @param {Object} attendanceData - The attendance data to submit
- * @param {string} attendanceData.classId - The ID of the class
- * @param {string} attendanceData.date - Date in YYYY-MM-DD format
- * @param {string} attendanceData.attendanceType - Type of attendance (full_day, morning, afternoon)
- * @param {Array} attendanceData.students - Array of student attendance records
- * @param {string} attendanceData.students[].studentId - The ID of the student
- * @param {boolean} attendanceData.students[].isPresent - Whether the student is present
- * @returns {Promise<Object>} Response data from the server
- */
-export const submitAttendance = async (attendanceData) => {
-  try {
-    const response = await api.post('/teacher/attendance', attendanceData);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to submit attendance:', error);
-    throw error;
-  }
-};
-
-/**
- * Get attendance history for a class
- * @param {string} classId - The ID of the class
- * @param {Object} filters - Optional filters for the query
- * @param {string} filters.startDate - Start date in YYYY-MM-DD format
- * @param {string} filters.endDate - End date in YYYY-MM-DD format
- */
-export const getAttendanceHistory = async (classId, filters = {}) => {
-  try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance/history`, {
-      params: filters
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch attendance history for class ${classId}:`, error);
-    throw error;
-  }
-};
+export default teacherService;

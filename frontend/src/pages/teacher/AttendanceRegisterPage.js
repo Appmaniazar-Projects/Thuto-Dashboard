@@ -13,7 +13,7 @@ import {
   getClassForAttendance, 
   getClassAttendance, 
   submitAttendance 
-} from '../../services/teacherService';
+} from '../../services/attendanceService';
 
 const AttendanceRegisterPage = () => {
   const { classId } = useParams();
@@ -65,9 +65,15 @@ const AttendanceRegisterPage = () => {
   }, [classId, attendanceDate]);
 
   const handleSave = async () => {
+    const attendanceRecords = classData.students.map(student => ({
+      studentId: student.id,
+      date: selectedDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+      status: student.attendanceStatus || false,     // true/false for present/absent
+      remarks: student.remarks || ''
+    }));
     try {
       setSaving(true);
-      await submitClassAttendance({
+      await submitAttendance({
         classId,
         date: format(attendanceDate, 'yyyy-MM-dd'),
         attendanceType,

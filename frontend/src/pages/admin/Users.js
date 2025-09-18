@@ -38,12 +38,16 @@ import {
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole } from '../../services/adminService';
+import gradeService from '../../services/gradeService';
+import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
     const [admins, setAdmins] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const [grades, setGrades] = useState([]);
+    const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState(0);
@@ -58,6 +62,7 @@ const Users = () => {
         email: '',
         phoneNumber: '',
         role: '',
+        password: '',
         subjects: [],
         grade: '',
         schoolId: '',
@@ -69,17 +74,30 @@ const Users = () => {
         { value: 'teacher', label: 'Teacher' },
         { value: 'admin', label: 'Administrator' }
     ];
-// Change to objects
-    const subjects = [
-        'Mathematics', 'English', 'Science', 'History', 'Geography', 
-        'Physics', 'Chemistry', 'Biology', 'Art', 'Music', 'Physical Education'
-    ];
-
-    const grades = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
     useEffect(() => {
         fetchUsers();
+        loadGrades();
+        loadSubjects();
     }, []);
+
+    const loadGrades = async () => {
+        try {
+            const gradesData = await gradeService.getSchoolGrades();
+            setGrades(gradesData);
+        } catch (error) {
+            console.error('Failed to load grades:', error);
+        }
+    };
+
+    const loadSubjects = async () => {
+        try {
+            const subjectsData = await subjectService.getSchoolSubjects();
+            setSubjects(subjectsData);
+        } catch (error) {
+            console.error('Failed to load subjects:', error);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -453,8 +471,8 @@ const Users = () => {
                                 sx={{ mb: 2 }}
                             >
                                 {subjects.map((subject) => (
-                                    <MenuItem key={subject} value={subject}>
-                                        {subject}
+                                    <MenuItem key={subject.id} value={subject.name}>
+                                        {subject.name}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -469,8 +487,8 @@ const Users = () => {
                                 sx={{ mb: 2 }}
                             >
                                 {grades.map((grade) => (
-                                    <MenuItem key={grade} value={grade}>
-                                        {grade}
+                                    <MenuItem key={grade.id} value={grade.name}>
+                                        {grade.name}
                                     </MenuItem>
                                 ))}
                             </TextField>
