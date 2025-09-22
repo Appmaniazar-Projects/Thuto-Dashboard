@@ -280,7 +280,7 @@ export const uploadTeacherStudentReport = async (studentId, file, description) =
  */
 export const getParentChildReports = async (childId) => {
   try {
-    const response = await api.get(`/api/parent/children/${childId}/reports`);
+    const response = await api.get(`/parent/children/${childId}/reports`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch reports for child ${childId}:`, error);
@@ -295,7 +295,7 @@ export const getParentChildReports = async (childId) => {
  */
 export const downloadParentReport = async (reportId) => {
   try {
-    const response = await api.get(`/api/parent/reports/${reportId}/download`, {
+    const response = await api.get(`/parent/reports/${reportId}/download`, {
       responseType: 'blob'
     });
     return response.data;

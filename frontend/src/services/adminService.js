@@ -6,7 +6,7 @@ import api from './api';
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admin/users');
+    const response = await api.get('/admin/allRoleSpecificUsers/all');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch users:', error);
@@ -21,7 +21,7 @@ export const getAllUsers = async () => {
  */
 export const getUsersByRole = async (role) => {
   try {
-    const response = await api.get(`/admin/users/role/${role}`);
+    const response = await api.get(`/admin/allRoleSpecificUsers/${role}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch users with role ${role}:`, error);
@@ -36,7 +36,7 @@ export const getUsersByRole = async (role) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await api.post('/admin/users', userData);
+    const response = await api.post('/admin/createUser', userData);
     return response.data;
   } catch (error) {
     console.error('Failed to create user:', error);

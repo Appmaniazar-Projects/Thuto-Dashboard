@@ -7,7 +7,7 @@ const parentService = {
    */
   getMyChildren: async () => {
     try {
-      const response = await api.get('/api/parent/children');
+      const response = await api.get('/parent/children');
       return response.data || [];
     } catch (error) {
       console.error('Failed to fetch children:', error);
@@ -22,7 +22,7 @@ const parentService = {
    */
   getDashboardData: async (childId) => {
     try {
-      const response = await api.get(`/api/parent/children/${childId}/dashboard`);
+      const response = await api.get(`/parent/children/${childId}/dashboard`);
       return response.data || {};
     } catch (error) {
       console.error(`Failed to fetch dashboard data for child ${childId}:`, error);
@@ -38,7 +38,7 @@ const parentService = {
    */
   getChildAttendance: async (childId, params = {}) => {
     try {
-      const response = await api.get(`/api/parent/children/${childId}/attendance`, { 
+      const response = await api.get(`/parent/children/${childId}/attendance`, { 
         params 
       });
       return response.data || {};
@@ -56,8 +56,8 @@ const parentService = {
   getUpcomingEvents: async (childId) => {
     try {
       const url = childId 
-        ? `/api/parent/children/${childId}/events/upcoming`
-        : '/api/parent/events/upcoming';
+        ? `/parent/children/${childId}/events/upcoming`
+        : '/parent/events/upcoming';
       
       const response = await api.get(url);
       return response.data?.events || [];
@@ -74,7 +74,7 @@ const parentService = {
    */
   getAnnouncements: async (limit = 5) => {
     try {
-      const response = await api.get('/api/announcements', {
+      const response = await api.get('/announcements', {
         params: { limit, type: 'parent' }
       });
       return response.data?.announcements || [];
@@ -91,7 +91,7 @@ const parentService = {
    */
   getFeeInfo: async (childId) => {
     try {
-      const response = await api.get(`/api/parent/children/${childId}/fees`);
+      const response = await api.get(`/parent/children/${childId}/fees`);
       return response.data || {};
     } catch (error) {
       console.error(`Failed to fetch fee info for child ${childId}:`, error);

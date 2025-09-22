@@ -168,7 +168,7 @@ export const submitTeacherAttendance = async ({ grade, subject, date, attendance
  */
 export const getChildAttendance = async (childId, params = {}) => {
   try {
-    const response = await api.get(`/api/parent/children/${childId}/attendance`, { 
+    const response = await api.get(`/parent/children/${childId}/attendance`, { 
       params 
     });
     return response.data || {};

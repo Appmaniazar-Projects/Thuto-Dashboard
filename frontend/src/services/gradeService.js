@@ -12,7 +12,7 @@ import api from './api';
  * @returns {Promise<Object>} Created grade object
  */
 export const createGrade = async (gradeData) => {
-  const response = await api.post('/api/grades', gradeData);
+  const response = await api.post('/grades', gradeData);
   return response.data;
 };
 
@@ -23,7 +23,7 @@ export const createGrade = async (gradeData) => {
  * @returns {Promise<Object>} Updated grade object
  */
 export const updateGrade = async (gradeId, gradeData) => {
-  const response = await api.put(`/api/grades/${gradeId}`, gradeData);
+  const response = await api.put(`/grades/${gradeId}`, gradeData);
   return response.data;
 };
 
@@ -32,7 +32,7 @@ export const updateGrade = async (gradeId, gradeData) => {
  * @returns {Promise<Array>} Array of grade objects
  */
 export const getAllGrades = async () => {
-  const response = await api.get('/api/grades/grades');
+  const response = await api.get('/grades/grades');
   return response.data;
 };
 
@@ -41,7 +41,7 @@ export const getAllGrades = async () => {
  * @returns {Promise<Array>} Array of grade objects for current school
  */
 export const getSchoolGrades = async () => {
-  const response = await api.get('/api/grades');
+  const response = await api.get('/grades');
   return response.data;
 };
 
@@ -51,7 +51,7 @@ export const getSchoolGrades = async () => {
  * @returns {Promise<Array>} Array of student objects in the grade
  */
 export const getStudentsByGrade = async (gradeId) => {
-  const response = await api.get(`/api/grades/${gradeId}/students`);
+  const response = await api.get(`/grades/${gradeId}/students`);
   return response.data;
 };
 
@@ -61,7 +61,7 @@ export const getStudentsByGrade = async (gradeId) => {
  * @returns {Promise<Array>} Array of grade objects assigned to teacher
  */
 export const getGradesByTeacher = async (teacherId) => {
-  const response = await api.get(`/api/grades/teacher/${teacherId}`);
+  const response = await api.get(`/grades/teacher/${teacherId}`);
   return response.data;
 };
 
@@ -72,7 +72,7 @@ export const getGradesByTeacher = async (teacherId) => {
  * @returns {Promise<Object>} Assignment result
  */
 export const assignStudentToGrade = async (gradeId, studentId) => {
-  const response = await api.post(`/api/grades/${gradeId}/assign-student/${studentId}`);
+  const response = await api.post(`/grades/${gradeId}/assign-student/${studentId}`);
   return response.data;
 };
 
@@ -83,7 +83,7 @@ export const assignStudentToGrade = async (gradeId, studentId) => {
  * @returns {Promise<Object>} Assignment result
  */
 export const assignTeacherToGrade = async (gradeId, teacherId) => {
-  const response = await api.post(`/api/grades/assign-teacher/${gradeId}/assign-teacher/${teacherId}`);
+  const response = await api.post(`/grades/assign-teacher/${gradeId}/assign-teacher/${teacherId}`);
   return response.data;
 };
 
@@ -93,7 +93,7 @@ export const assignTeacherToGrade = async (gradeId, teacherId) => {
  * @returns {Promise<Object>} Deletion result
  */
 export const deleteGrade = async (gradeId) => {
-  const response = await api.delete(`/api/grades/${gradeId}`);
+  const response = await api.delete(`/grades/${gradeId}`);
   return response.data;
 };
 

@@ -13,7 +13,7 @@ import api from './api';
  * @returns {Promise<Object>} Created subject object
  */
 export const createSubject = async (subjectData) => {
-  const response = await api.post('/api/subjects', subjectData);
+  const response = await api.post('/subjects', subjectData);
   return response.data;
 };
 
@@ -24,7 +24,7 @@ export const createSubject = async (subjectData) => {
  * @returns {Promise<Object>} Updated subject object
  */
 export const updateSubject = async (subjectId, subjectData) => {
-  const response = await api.put(`/api/subjects/${subjectId}`, subjectData);
+  const response = await api.put(`/subjects/${subjectId}`, subjectData);
   return response.data;
 };
 
@@ -33,7 +33,7 @@ export const updateSubject = async (subjectId, subjectData) => {
  * @returns {Promise<Array>} Array of subject objects for current school
  */
 export const getSchoolSubjects = async () => {
-  const response = await api.get('/api/subjects');
+  const response = await api.get('/subjects');
   return response.data;
 };
 
@@ -43,7 +43,7 @@ export const getSchoolSubjects = async () => {
  * @returns {Promise<Array>} Array of subject objects assigned to teacher
  */
 export const getSubjectsByTeacher = async (teacherId) => {
-  const response = await api.get(`/api/subjects/teacher/${teacherId}`);
+  const response = await api.get(`/subjects/teacher/${teacherId}`);
   return response.data;
 };
 
@@ -53,7 +53,7 @@ export const getSubjectsByTeacher = async (teacherId) => {
  * @returns {Promise<Object>} Deletion result
  */
 export const deleteSubject = async (subjectId) => {
-  const response = await api.delete(`/api/subjects/${subjectId}`);
+  const response = await api.delete(`/subjects/${subjectId}`);
   return response.data;
 };
 
@@ -64,7 +64,7 @@ export const deleteSubject = async (subjectId) => {
  * @returns {Promise<Object>} Assignment result
  */
 export const assignTeacherToSubject = async (subjectId, teacherId) => {
-  const response = await api.post(`/api/subjects/${subjectId}/assign-teacher/${teacherId}`);
+  const response = await api.post(`/subjects/${subjectId}/assign-teacher/${teacherId}`);
   return response.data;
 };
 

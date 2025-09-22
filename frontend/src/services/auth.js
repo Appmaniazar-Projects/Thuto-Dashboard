@@ -25,13 +25,13 @@ const login = async (phoneNumber) => {
 };
 
 /**
- * Handles admin login with Firebase email/password authentication
+ * Handles admin login with email and password
  * @param {string} email - Admin's email address
  * @param {string} password - Admin's password
  * @returns {Promise<Object>} User data and auth token
  */
 const adminLogin = async (email, password) => {
-  const response = await api.post('/auth/admin/login', { email, password });
+  const response = await api.post('/api/auth/superadmin/login', { email, password });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);

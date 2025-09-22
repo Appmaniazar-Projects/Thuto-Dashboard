@@ -9,7 +9,7 @@ import api from './api';
  */
 export const getAllSchools = async (params = {}) => {
   try {
-    const response = await api.get('/api/superadmin/schools/allSchools', { params });
+    const response = await api.get('/superadmin/schools/allSchools', { params });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch schools:', error);

@@ -6,7 +6,7 @@ import api from './api';
 
 export const getMyProfile = async (phoneNumber) => {
   try {
-    const response = await api.get(`/api/student/${phoneNumber}`);
+    const response = await api.get(`/student/${phoneNumber}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student profile:', error);
@@ -16,7 +16,7 @@ export const getMyProfile = async (phoneNumber) => {
 
 export const updateProfile = async (studentData) => {
   try {
-    const response = await api.put('/api/student/updateStudent', studentData);
+    const response = await api.put('/student/updateStudent', studentData);
     return response.data;
   } catch (error) {
     console.error('Failed to update student profile:', error);
