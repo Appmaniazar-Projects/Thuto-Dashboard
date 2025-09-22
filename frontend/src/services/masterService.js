@@ -3,12 +3,12 @@ import api from './api';
 // ========== SUPERADMIN MANAGEMENT (Master-only) ==========
 
 /**
- * Get all provincial superadmins
- * @returns {Promise<Array>} List of superadmin users
+ * Fetches all provincial superadmins for Master role
+ * @returns {Promise<Array>} List of provincial superadmins
  */
 export const getAllSuperadmins = async () => {
   try {
-    const response = await api.get('/api/master/superadmins');
+    const response = await api.get('/master/superadmins');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch superadmins:', error);
@@ -17,22 +17,23 @@ export const getAllSuperadmins = async () => {
 };
 
 /**
- * Create a new provincial superadmin
+ * Creates a new provincial superadmin
  * @param {Object} superadminData - Superadmin information
  * @param {string} superadminData.name - Full name
  * @param {string} superadminData.email - Email address
  * @param {string} superadminData.province - Assigned province
  * @param {string} superadminData.password - Password
- * @returns {Promise<Object>} Created superadmin data
+ * @returns {Promise<Object>} Created superadmin object
  */
 export const createSuperadmin = async (superadminData) => {
   try {
+    // Ensure the correct role and level are set
     const payload = {
       ...superadminData,
       role: 'superadmin',
       level: 'provincial'
     };
-    const response = await api.post('/api/master/superadmins', payload);
+    const response = await api.post('/master/superadmins', payload);
     return response.data;
   } catch (error) {
     console.error('Failed to create superadmin:', error);
@@ -41,14 +42,14 @@ export const createSuperadmin = async (superadminData) => {
 };
 
 /**
- * Update an existing superadmin
+ * Updates an existing provincial superadmin
  * @param {string} superadminId - ID of the superadmin to update
  * @param {Object} updateData - Updated superadmin information
- * @returns {Promise<Object>} Updated superadmin data
+ * @returns {Promise<Object>} Updated superadmin object
  */
 export const updateSuperadmin = async (superadminId, updateData) => {
   try {
-    const response = await api.put(`/api/master/superadmins/${superadminId}`, updateData);
+    const response = await api.put(`/master/superadmins/${superadminId}`, updateData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update superadmin ${superadminId}:`, error);
@@ -57,13 +58,13 @@ export const updateSuperadmin = async (superadminId, updateData) => {
 };
 
 /**
- * Delete a superadmin
+ * Deletes a provincial superadmin
  * @param {string} superadminId - ID of the superadmin to delete
- * @returns {Promise<Object>} Deletion confirmation
+ * @returns {Promise<Object>} Deletion result
  */
 export const deleteSuperadmin = async (superadminId) => {
   try {
-    const response = await api.delete(`/api/master/superadmins/${superadminId}`);
+    const response = await api.delete(`/master/superadmins/${superadminId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete superadmin ${superadminId}:`, error);

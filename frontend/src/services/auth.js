@@ -12,7 +12,7 @@ const login = async (phoneNumber) => {
   if (!firebaseUser) throw new Error('No Firebase user found');
   
   const firebaseToken = await firebaseUser.getIdToken();
-  const response = await api.post('/api/auth/login', { 
+  const response = await api.post('/auth/login', { 
     phoneNumber: phoneNumber.replace(/\s+/g, ''), 
     firebaseToken 
   });
@@ -31,7 +31,7 @@ const login = async (phoneNumber) => {
  * @returns {Promise<Object>} User data and auth token
  */
 const adminLogin = async (email, password) => {
-  const response = await api.post('/api/auth/superadmin/login', { email, password });
+  const response = await api.post('/auth/superadmin/login', { email, password });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);
@@ -46,7 +46,7 @@ const adminLogin = async (email, password) => {
  * @returns {Promise<Object>} User data and auth token
  */
 const superAdminLogin = async (email, password) => {
-  const response = await api.post('/api/auth/superadmin/login', { email, password });
+  const response = await api.post('/auth/superadmin/login', { email, password });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);
@@ -60,7 +60,7 @@ const superAdminLogin = async (email, password) => {
 const logout = async () => {
   try {
     // Notify the backend to invalidate the token on the server side.
-    await api.post('/api/auth/logout');
+    await api.post('/auth/logout');
   } catch (error) {
     // Log the error but proceed with client-side cleanup regardless.
     console.error('Server logout failed:', error);
@@ -82,7 +82,7 @@ const refreshToken = async () => {
     throw new Error('No refresh token available.');
   }
 
-  const response = await api.post('/api/auth/refresh-token', { refreshToken: currentRefreshToken });
+  const response = await api.post('/auth/refresh-token', { refreshToken: currentRefreshToken });
   
   if (response.data.token) {
     localStorage.setItem('token', response.data.token);
