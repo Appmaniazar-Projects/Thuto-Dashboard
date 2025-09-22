@@ -104,6 +104,34 @@ export const fetchAllStaff = (filters = {}) =>
     return { data: filteredData };
   });
 
+/**
+ * Fetches all attendance data for frontend filtering
+ * @param {Object} filters - Optional filters to apply on the frontend
+ */
+export const fetchAllAttendance = (filters = {}) => 
+  api.get("/admin/attendance").then(response => {
+    let filteredData = [...(response.data || [])];
+    
+    if (filters.startDate) {
+      filteredData = filteredData.filter(record => 
+        new Date(record.date) >= new Date(filters.startDate)
+      );
+    }
+    
+    if (filters.endDate) {
+      filteredData = filteredData.filter(record => 
+        new Date(record.date) <= new Date(filters.endDate)
+      );
+    }
+    
+    return { data: filteredData };
+  });
+
+/**
+ * Fetches attendance statistics
+ */
+export const fetchAttendanceStats = () => api.get("/admin/attendance/stats");
+
 export const fetchCalendarEvents = () => api.get("/admin/calendar");
 
 export const fetchMessages = () => api.get("/admin/messages");
