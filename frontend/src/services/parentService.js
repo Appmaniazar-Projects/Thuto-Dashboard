@@ -97,6 +97,21 @@ const parentService = {
       console.error(`Failed to fetch fee info for child ${childId}:`, error);
       throw new Error('Failed to load fee information.');
     }
+  },
+
+  /**
+   * Fetches academic reports for a specific child
+   * @param {string} childId - The ID of the child
+   * @returns {Promise<Array>} List of academic reports
+   */
+  getChildAcademicReports: async (childId) => {
+    try {
+      const response = await api.get(`/parent/children/${childId}/reports`);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Failed to fetch academic reports for child ${childId}:`, error);
+      throw new Error('Failed to load academic reports.');
+    }
   }
 };
 

@@ -26,7 +26,17 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+
+// Initialize Analytics only if measurementId is provided and not in demo mode
+let analytics = null;
+try {
+  if (firebaseConfig.measurementId && firebaseConfig.measurementId !== "G-XXXXXXXXXX") {
+    analytics = getAnalytics(app);
+  }
+} catch (error) {
+  console.warn('Firebase Analytics initialization failed:', error);
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);

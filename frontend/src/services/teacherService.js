@@ -116,14 +116,4 @@ const teacherService = {
   getRecentResources
 };
 
-export {
-  getMyStudents,
-  getTeacherResources,
-  uploadResource,
-  deleteResource,
-  getTeacherClasses,
-  getTeacherStudents,
-  getRecentResources
-};
-
 export default teacherService;
