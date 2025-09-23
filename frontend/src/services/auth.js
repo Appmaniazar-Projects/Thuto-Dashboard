@@ -24,20 +24,6 @@ const login = async (phoneNumber) => {
   return response.data;
 };
 
-/**
- * Handles admin login with email and password
- * @param {string} email - Admin's email address
- * @param {string} password - Admin's password
- * @returns {Promise<Object>} User data and auth token
- */
-const adminLogin = async (email, password) => {
-  const response = await api.post('/auth/superadmin/login', { email, password });
-  if (response.data.token) {
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    localStorage.setItem('token', response.data.token);
-  }
-  return response.data;
-};
 
 /**
  * Handles superadmin login with email and password
@@ -46,11 +32,28 @@ const adminLogin = async (email, password) => {
  * @returns {Promise<Object>} User data and auth token
  */
 const superAdminLogin = async (email, password) => {
-  const response = await api.post('/auth/superadmin/login', { email, password });
+  const response = await api.post('/superadmin/auth/login', { email, password });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);
   }
+  return response.data;
+};
+
+/**
+ * Handles superadmin registration
+ * @param {Object} registrationData - Super admin registration data
+ * @param {string} registrationData.phoneNumber - Phone number
+ * @param {string} registrationData.name - First name
+ * @param {string} registrationData.lastName - Last name
+ * @param {string} registrationData.email - Email address
+ * @param {string} registrationData.password - Password
+ * @param {string} registrationData.role - Role (SUPERADMIN_NATIONAL or SUPERADMIN_PROVINCIAL)
+ * @param {string} [registrationData.province] - Province (required for SUPERADMIN_PROVINCIAL)
+ * @returns {Promise<Object>} Registration response
+ */
+const superAdminRegister = async (registrationData) => {
+  const response = await api.post('/superadmin/auth/register', registrationData);
   return response.data;
 };
 
@@ -106,8 +109,8 @@ const getCurrentUser = () => {
 
 const authService = {
   login,
-  adminLogin,
   superAdminLogin,
+  superAdminRegister,
   logout,
   getCurrentUser,
   refreshToken,

@@ -60,11 +60,28 @@ Your Firebase project must have:
 
 ### Running the Application
 
+#### Development Mode (Local)
 ```bash
+npm run dev
+# or
 npm start
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:3000` with hot reloading enabled.
+
+#### Production Build
+```bash
+npm run build
+# or  
+npm run build:prod
+```
+
+#### Serve Production Build Locally
+```bash
+npm run serve
+```
+
+This serves the production build locally at `http://localhost:3000` for testing.
 
 ## 🏗️ Architecture
 
@@ -143,8 +160,11 @@ Each role has dedicated service files:
 
 ### Available Scripts
 
-- `npm start` - Development server
-- `npm build` - Production build
+- `npm run dev` - Start development server with hot reloading
+- `npm start` - Start development server (same as dev)
+- `npm run build` - Create production build
+- `npm run build:prod` - Create production build (explicit)
+- `npm run serve` - Serve production build locally
 - `npm test` - Run tests
 - `npm run eject` - Eject from Create React App
 

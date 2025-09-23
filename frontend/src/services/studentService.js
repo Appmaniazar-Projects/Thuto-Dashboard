@@ -26,11 +26,12 @@ export const updateProfile = async (studentData) => {
 
 /**
  * Resources
+ * 
  */
 
 export const getAvailableResources = async (filters = {}) => {
   try {
-    const response = await api.get('/student/resources', { params: filters });
+    const response = await api.get('/resources/my-resources', { params: filters });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch resources:', error);
@@ -61,30 +62,30 @@ export const downloadResource = async (resourceId, filename) => {
   }
 };
 
-/**
- * Schedule & Timetable
- */
+// /**
+//  * Schedule & Timetable
+//  */
 
-export const getMySchedule = async (params = {}) => {
-  try {
-    const response = await api.get('/student/schedule', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch schedule:', error);
-    throw error;
-  }
-};
+// export const getMySchedule = async (params = {}) => {
+//   try {
+//     const response = await api.get('/student/schedule', { params });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Failed to fetch schedule:', error);
+//     throw error;
+//   }
+// };
 
-export const getTimetable = async (weekStart) => {
-  try {
-    const params = weekStart ? { weekStart } : {};
-    const response = await api.get('/student/timetable', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch timetable:', error);
-    throw error;
-  }
-};
+// export const getTimetable = async (weekStart) => {
+//   try {
+//     const params = weekStart ? { weekStart } : {};
+//     const response = await api.get('/student/timetable', { params });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Failed to fetch timetable:', error);
+//     throw error;
+//   }
+// };
 
 // Export all functions as default object
 const studentService = {
@@ -95,10 +96,7 @@ const studentService = {
   // Resources
   getAvailableResources,
   downloadResource,
-  
-  // Schedule
-  getMySchedule,
-  getTimetable,
+
 };
 
 export default studentService;

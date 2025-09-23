@@ -76,9 +76,13 @@ const SuperAdminDashboard = () => {
     phoneNumber: '',
     email: '',
     principalName: '',
-    province: '',    // Add province field
-    subjects: [],  // Array of selected subject IDs
-    grades: []     // Array of selected grade IDs
+    province: '',
+    subjects: [],
+    grades: [],
+    primaryColor: '#1976d2',
+    secondaryColor: '#dc004e',
+    accentColor: '#ff9800',
+    logo: null
   });
   
   const [adminForm, setAdminForm] = useState({
@@ -156,7 +160,11 @@ const SuperAdminDashboard = () => {
         principalName: '', 
         province: '',
         subjects: [], 
-        grades: []
+        grades: [],
+        primaryColor: '#1976d2',
+        secondaryColor: '#dc004e',
+        accentColor: '#ff9800',
+        logo: null
       });
       fetchData();
     } catch (err) {
@@ -195,7 +203,11 @@ const SuperAdminDashboard = () => {
         principalName: '', 
         province: defaultProvince,
         subjects: [], 
-        grades: []
+        grades: [],
+        primaryColor: '#1976d2',
+        secondaryColor: '#dc004e',
+        accentColor: '#ff9800',
+        logo: null
       });
     }
     setSchoolDialogOpen(true);
@@ -453,6 +465,35 @@ const SuperAdminDashboard = () => {
               ))}
             </Select>
           </FormControl>
+
+          <TextField 
+            label="Primary Color" 
+            fullWidth 
+            margin="dense" 
+            value={schoolForm.primaryColor} 
+            onChange={(e) => setSchoolForm({ ...schoolForm, primaryColor: e.target.value })}
+          />
+          <TextField 
+            label="Secondary Color" 
+            fullWidth 
+            margin="dense" 
+            value={schoolForm.secondaryColor} 
+            onChange={(e) => setSchoolForm({ ...schoolForm, secondaryColor: e.target.value })}
+          />
+          <TextField 
+            label="Accent Color" 
+            fullWidth 
+            margin="dense" 
+            value={schoolForm.accentColor} 
+            onChange={(e) => setSchoolForm({ ...schoolForm, accentColor: e.target.value })}
+          />
+          <TextField 
+            label="Logo" 
+            fullWidth 
+            margin="dense" 
+            value={schoolForm.logo} 
+            onChange={(e) => setSchoolForm({ ...schoolForm, logo: e.target.value })}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSchoolDialogOpen(false)}>Cancel</Button>

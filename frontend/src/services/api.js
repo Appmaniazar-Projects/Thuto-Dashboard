@@ -2,8 +2,8 @@ import axios from "axios";
 
 // Create axios instance - configured for mock mode (no backend required)
 const api = axios.create({
-  // baseURL removed for frontend-only mode
-  baseURL: process.env.REACT_APP_API_URL,
+  // Automatically prepend /api/ to all requests
+  baseURL: `${process.env.REACT_APP_API_URL || 'http://localhost:8081'}/api`,
   timeout: 10000, // 10 second timeout
   headers: {
     "Content-Type": "application/json",
@@ -86,57 +86,23 @@ export const fetchAllStudents = (filters = {}) =>
   });
 
 /**
- * Fetches all staff data for frontend filtering
- * @param {Object} filters - Optional filters to apply on the frontend
+ * Fetches all staff data
+ * @returns {Promise<Object>} Staff data
  */
-export const fetchAllStaff = (filters = {}) => 
-  api.get("/admin/staff").then(response => {
-    let filteredData = [...(response.data || [])];
-    
-    if (filters.role) {
-      filteredData = filteredData.filter(staff => staff.role === filters.role);
-    }
-    
-    if (filters.department) {
-      filteredData = filteredData.filter(staff => staff.department === filters.department);
-    }
-    
-    return { data: filteredData };
-  });
+export const fetchAllStaff = () => 
+  api.get("/admin/staff").then(response => ({
+    data: response.data || []
+  }));
 
 /**
- * Fetches all attendance data for frontend filtering
- * @param {Object} filters - Optional filters to apply on the frontend
+ * Fetches students for a specific teacher
+ * @param {string} teacherId - The ID of the teacher
  */
-export const fetchAllAttendance = (filters = {}) => 
-  api.get("/admin/attendance").then(response => {
-    let filteredData = [...(response.data || [])];
-    
-    if (filters.startDate) {
-      filteredData = filteredData.filter(record => 
-        new Date(record.date) >= new Date(filters.startDate)
-      );
-    }
-    
-    if (filters.endDate) {
-      filteredData = filteredData.filter(record => 
-        new Date(record.date) <= new Date(filters.endDate)
-      );
-    }
-    
-    return { data: filteredData };
-  });
-
-/**
- * Fetches attendance statistics
- */
-export const fetchAttendanceStats = () => api.get("/admin/attendance/stats");
+export const fetchStudentsForTeacher = ({ grade, subject }) =>
+  api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
 
 export const fetchCalendarEvents = () => api.get("/admin/calendar");
 
 export const fetchMessages = () => api.get("/admin/messages");
-
-export const fetchStudentsForTeacher = ({ grade, subject }) =>
-  api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
 
 export default api;

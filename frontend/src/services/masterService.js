@@ -3,8 +3,8 @@ import api from './api';
 // ========== SUPERADMIN MANAGEMENT (Master-only) ==========
 
 /**
- * Fetches all provincial superadmins for Master role
- * @returns {Promise<Array>} List of provincial superadmins
+ * Get all provincial superadmins
+ * @returns {Promise<Array>} List of superadmin users
  */
 export const getAllSuperadmins = async () => {
   try {
@@ -17,17 +17,16 @@ export const getAllSuperadmins = async () => {
 };
 
 /**
- * Creates a new provincial superadmin
+ * Create a new provincial superadmin
  * @param {Object} superadminData - Superadmin information
  * @param {string} superadminData.name - Full name
  * @param {string} superadminData.email - Email address
  * @param {string} superadminData.province - Assigned province
  * @param {string} superadminData.password - Password
- * @returns {Promise<Object>} Created superadmin object
+ * @returns {Promise<Object>} Created superadmin data
  */
 export const createSuperadmin = async (superadminData) => {
   try {
-    // Ensure the correct role and level are set
     const payload = {
       ...superadminData,
       role: 'superadmin',
@@ -42,10 +41,10 @@ export const createSuperadmin = async (superadminData) => {
 };
 
 /**
- * Updates an existing provincial superadmin
+ * Update an existing superadmin
  * @param {string} superadminId - ID of the superadmin to update
  * @param {Object} updateData - Updated superadmin information
- * @returns {Promise<Object>} Updated superadmin object
+ * @returns {Promise<Object>} Updated superadmin data
  */
 export const updateSuperadmin = async (superadminId, updateData) => {
   try {
@@ -58,9 +57,9 @@ export const updateSuperadmin = async (superadminId, updateData) => {
 };
 
 /**
- * Deletes a provincial superadmin
+ * Delete a superadmin
  * @param {string} superadminId - ID of the superadmin to delete
- * @returns {Promise<Object>} Deletion result
+ * @returns {Promise<Object>} Deletion confirmation
  */
 export const deleteSuperadmin = async (superadminId) => {
   try {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
@@ -93,6 +93,15 @@ const SuperAdminLogin = () => {
           >
             {loading ? 'Signing in...' : 'Login'}
           </Button>
+
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="body2">
+              Don't have an account?{' '}
+              <Link to="/superadmin/register" style={{ textDecoration: 'none', color: '#1976d2' }}>
+                Register here
+              </Link>
+            </Typography>
+          </Box>
         </Box>
       </Paper>
     </Container>

@@ -6,7 +6,7 @@ import api from './api';
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admin/allRoleSpecificUsers/all');
+    const response = await api.get('/admins/allRoleSpecificUsers/all');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch users:', error);
@@ -21,7 +21,7 @@ export const getAllUsers = async () => {
  */
 export const getUsersByRole = async (role) => {
   try {
-    const response = await api.get(`/admin/allRoleSpecificUsers/${role}`);
+    const response = await api.get(`/admins/allRoleSpecificUsers/${role}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch users with role ${role}:`, error);
@@ -67,7 +67,7 @@ export const updateUser = async (userId, userData) => {
  */
 export const deleteUser = async (userId) => {
   try {
-    await api.delete(`/admin/users/${userId}`);
+    await api.delete(`/admin/removeUser/${userId}`);
   } catch (error) {
     console.error('Failed to delete user:', error);
     throw error;

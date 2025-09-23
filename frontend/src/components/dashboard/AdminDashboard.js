@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Grid, Paper, Typography, Button, Divider, MenuItem, TextField, FormControl, InputLabel, Select
+  Box, Grid, Paper, Typography, Button, Divider, MenuItem, TextField, FormControl, InputLabel, Select, List
 } from '@mui/material';
 import {
   Group as GroupIcon,
@@ -16,9 +16,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   fetchAllStudents, 
-  fetchAllAttendance, 
   fetchAllStaff 
 } from '../../services/api';
+import { fetchAllAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
 import CalendarPanel from './admin/CalendarPanel';

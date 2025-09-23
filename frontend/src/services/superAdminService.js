@@ -9,7 +9,7 @@ import api from './api';
  */
 export const getAllSchools = async (params = {}) => {
   try {
-    const response = await api.get('/superadmin/schools/allSchools', { params });
+    const response = await api.get('/superadmins/admins/schools/allSchools', { params });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch schools:', error);
@@ -23,7 +23,7 @@ export const getAllSchools = async (params = {}) => {
  */
 export const createSchool = async (schoolData) => {
   try {
-    const response = await api.post('/superadmin/createSchool', schoolData);
+    const response = await api.post('/superadmin/admins/school/createSchool/create', schoolData);
     return response.data;
   } catch (error) {
     console.error('Failed to create school:', error);
@@ -38,7 +38,7 @@ export const createSchool = async (schoolData) => {
  */
 export const updateSchool = async (schoolId, schoolData) => {
   try {
-    const response = await api.put(`/superadmin/updateSchool/${schoolId}`, schoolData);
+    const response = await api.put(`/superadmins/admins/updateSchool/${schoolId}`, schoolData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update school ${schoolId}:`, error);
@@ -52,7 +52,7 @@ export const updateSchool = async (schoolId, schoolData) => {
  */
 export const deleteSchool = async (schoolId) => {
   try {
-    const response = await api.delete(`/superadmin/deleteSchool/${schoolId}`);
+    const response = await api.delete(`/superadmins/admins/removeSchool/${schoolId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete school ${schoolId}:`, error);
@@ -66,7 +66,7 @@ export const deleteSchool = async (schoolId) => {
  */
 export const getSchoolDetails = async (schoolId) => {
   try {
-    const response = await api.get(`/superadmin/school/${schoolId}`);
+    const response = await api.get(`/superadmins/admins/school/${schoolId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to get details for school ${schoolId}:`, error);
@@ -81,7 +81,7 @@ export const getSchoolDetails = async (schoolId) => {
  */
 export const getAllAdmins = async () => {
   try {
-    const response = await api.get('/superadmin/admins');
+    const response = await api.get('/superadmins/admins/allRoleSpecificUsers/role/{role}');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch administrators:', error);
@@ -95,7 +95,7 @@ export const getAllAdmins = async () => {
  */
 export const createAdmin = async (adminData) => {
   try {
-    const response = await api.post('/superadmin/admins', adminData);
+    const response = await api.post('/superadmins/admins/create', adminData);
     return response.data;
   } catch (error) {
     console.error('Failed to create administrator:', error);
@@ -110,7 +110,7 @@ export const createAdmin = async (adminData) => {
  */
 export const updateAdmin = async (adminId, adminData) => {
   try {
-    const response = await api.put(`/superadmin/admins/${adminId}`, adminData);
+    const response = await api.put(`/superadmins/admins/${adminId}`, adminData);
     return response.data;
   } catch (error) {
     console.error(`Failed to update administrator ${adminId}:`, error);
@@ -124,7 +124,7 @@ export const updateAdmin = async (adminId, adminData) => {
  */
 export const deleteAdmin = async (adminId) => {
   try {
-    const response = await api.delete(`/superadmin/admins/${adminId}`);
+    const response = await api.delete(`/superadmins/admins/${adminId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete administrator ${adminId}:`, error);
@@ -138,7 +138,7 @@ export const deleteAdmin = async (adminId) => {
  */
 export const getAdminsBySchool = async (schoolId) => {
   try {
-    const response = await api.get(`/superadmin/schools/${schoolId}/admins`);
+    const response = await api.get(`/superadmins/admins/getadmins/school/${schoolId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to get administrators for school ${schoolId}:`, error);

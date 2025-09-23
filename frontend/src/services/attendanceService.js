@@ -11,9 +11,8 @@ import api from './api';
  */
 export const getStudentAttendance = async (studentId, startDate, endDate) => {
   try {
-    const response = await api.get('/attendance/student', {
+    const response = await api.get(`/attendance/student/${studentId}`, {
       params: { 
-        studentId,
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0]
       }
@@ -25,135 +24,47 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
   }
 };
 
-/**
- * Get attendance statistics for a student
- * @param {string} studentId - The ID of the student
- * @returns {Promise<Object>} Attendance statistics
- */
-export const getAttendanceStatistics = async (studentId) => {
-  try {
-    const response = await api.get(`/attendance/student/${studentId}/stats`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching attendance stats:', error);
-    throw error;
-  }
-};
-
-/**
- * Get my attendance (for current student)
- * @param {Object} params - Query parameters
- * @returns {Promise<Array>} Student's attendance records
- */
-export const getMyAttendance = async (params = {}) => {
-  try {
-    const response = await api.get('/student/attendance', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch attendance:', error);
-    throw error;
-  }
-};
-
-/**
- * Get attendance stats for current student
- * @returns {Promise<Object>} Attendance statistics
- */
-export const getAttendanceStats = async () => {
-  try {
-    const response = await api.get('/student/attendance/stats');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch attendance stats:', error);
-    throw error;
-  }
-};
-
 // ==================== TEACHER ATTENDANCE ====================
 
 /**
- * Get class details and students for attendance
- * @param {string} classId - The ID of the class
- */
-export const getClassForAttendance = async (classId) => {
-  try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch class ${classId} for attendance:`, error);
-    throw error;
-  }
-};
-
-/**
- * Get attendance for a specific class and date
- * @param {string} classId - The ID of the class
- * @param {string} date - Date in YYYY-MM-DD format
- */
-export const getClassAttendance = async (classId, date) => {
-  try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance/${date}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch attendance for class ${classId} on ${date}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Submit attendance for a class
- * @param {Object} attendanceData - The attendance data to submit
- * @param {string} attendanceData.classId - The ID of the class
- * @param {string} attendanceData.date - Date in YYYY-MM-DD format
- * @param {string} attendanceData.attendanceType - Type of attendance (full_day, morning, afternoon)
- * @param {Array} attendanceData.students - Array of student attendance records
- * @param {string} attendanceData.students[].studentId - The ID of the student
- * @param {boolean} attendanceData.students[].isPresent - Whether the student is present
- * @returns {Promise<Object>} Response data from the server
- */
-export const submitAttendance = async (attendanceData) => {
-  try {
-    const response = await api.post('/teacher/attendance', attendanceData);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to submit attendance:', error);
-    throw error;
-  }
-};
-
-/**
  * Get attendance history for a class
- * @param {string} classId - The ID of the class
+ * @param {string} gradeId - The ID of the grade
  * @param {Object} filters - Optional filters for the query
  * @param {string} filters.startDate - Start date in YYYY-MM-DD format
  * @param {string} filters.endDate - End date in YYYY-MM-DD format
  */
-export const getAttendanceHistory = async (classId, filters = {}) => {
+export const getAttendanceHistory = async (gradeId, filters = {}) => {
   try {
-    const response = await api.get(`/teacher/classes/${classId}/attendance/history`, {
+    const response = await api.get(`/attendance/grades/${gradeId}/history`, {
       params: filters
     });
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch attendance history for class ${classId}:`, error);
+    console.error(`Failed to fetch attendance history for grade ${gradeId}:`, error);
     throw error;
   }
 };
 
 /**
- * Submit attendance (alternative endpoint)
+ * Submit attendance for students
  * @param {Object} data - Attendance submission data
  * @param {string} data.grade - Grade level
  * @param {string} data.subject - Subject name
  * @param {string} data.date - Date in YYYY-MM-DD format
  * @param {Array} data.attendance - Array of attendance records
+ * @returns {Promise<Object>} Response from the server
  */
 export const submitTeacherAttendance = async ({ grade, subject, date, attendance }) => {
   try {
-    const response = await api.post("/teacher/attendance", { grade, subject, date, attendance });
+    const response = await api.post("/attendance/submission", { 
+      grade, 
+      subject, 
+      date, 
+      attendance 
+    });
     return response.data;
   } catch (error) {
-    console.error('Failed to submit teacher attendance:', error);
+    console.error('Failed to submit attendance:', error);
     throw error;
   }
 };
@@ -162,18 +73,18 @@ export const submitTeacherAttendance = async ({ grade, subject, date, attendance
 
 /**
  * Fetches attendance records for a specific child
- * @param {string} childId - The ID of the child
+ * @param {string} studentId - The ID of the student
  * @param {Object} [params] - Query parameters (e.g., { month: 1, year: 2023 })
  * @returns {Promise<Object>} Attendance data
  */
-export const getChildAttendance = async (childId, params = {}) => {
+export const getChildAttendance = async (studentId, params = {}) => {
   try {
-    const response = await api.get(`/parent/children/${childId}/attendance`, { 
+    const response = await api.get(`/attendance/student/${studentId}`, { 
       params 
     });
     return response.data || {};
   } catch (error) {
-    console.error(`Failed to fetch attendance for child ${childId}:`, error);
+    console.error(`Failed to fetch attendance for student ${studentId}:`, error);
     throw new Error('Failed to load attendance records.');
   }
 };
@@ -181,14 +92,18 @@ export const getChildAttendance = async (childId, params = {}) => {
 // ==================== ADMIN ATTENDANCE ====================
 
 /**
- * Fetches all attendance submissions for the admin.
+ * Get all attendance submissions for admin review
+ * @param {Object} filters - Optional filters (e.g., status, date range)
+ * @returns {Promise<Array>} List of attendance submissions
  */
-export const getAttendanceSubmissions = async () => {
+export const getAttendanceSubmissions = async (filters = {}) => {
   try {
-    const response = await api.get('attendance/submissions');
-    return response.data;
+    const response = await api.get('/attendance/submissions', {
+      params: filters
+    });
+    return response.data || [];
   } catch (error) {
-    console.error('Failed to fetch attendance submissions:', error);
+    console.error('Error fetching attendance submissions:', error);
     throw error;
   }
 };
@@ -214,7 +129,7 @@ export const updateAttendanceSubmission = async (submissionId, updateData) => {
  */
 export const fetchAllAttendance = async (filters = {}) => {
   try {
-    const response = await api.get("/admin/attendance");
+    const response = await api.get("/attendance");
     // Apply date range filter on the frontend
     let filteredData = [...(response.data || [])];
     
@@ -237,19 +152,72 @@ export const fetchAllAttendance = async (filters = {}) => {
   }
 };
 
+/**
+ * Get attendance statistics for the current student (calculated from attendance data)
+ * @returns {Promise<Object>} Attendance statistics (percentage, present, absent, late counts)
+ */
+export const getAttendanceStats = async () => {
+  try {
+    // Get current date and calculate date range (e.g., current month or semester)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 3); // Last 3 months
+    
+    // Get the current student's ID from token (this should be handled by the backend)
+    // For now, we'll make a call to get current student info
+    const studentResponse = await api.get('/student/profile');
+    const studentId = studentResponse.data.id;
+    
+    // Get attendance records using existing function
+    const attendanceRecords = await getStudentAttendance(studentId, startDate, endDate);
+    
+    // Calculate stats on frontend
+    const stats = {
+      present: 0,
+      absent: 0,
+      late: 0,
+      total: 0
+    };
+    
+    if (Array.isArray(attendanceRecords)) {
+      attendanceRecords.forEach(record => {
+        stats.total++;
+        if (record.status === 'present') {
+          stats.present++;
+        } else if (record.status === 'absent') {
+          stats.absent++;
+        } else if (record.status === 'late') {
+          stats.late++;
+        }
+      });
+    }
+    
+    // Calculate percentage
+    const percentage = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+    
+    return {
+      percentage,
+      present: stats.present,
+      absent: stats.absent,
+      late: stats.late,
+      total: stats.total
+    };
+    
+  } catch (error) {
+    console.error('Failed to calculate attendance stats:', error);
+    // Return default stats to prevent UI breakage
+    return { percentage: 0, present: 0, absent: 0, late: 0, total: 0 };
+  }
+};
+
 // ==================== EXPORTS ====================
 
 const attendanceService = {
   // Student functions
   getStudentAttendance,
-  getAttendanceStatistics,
-  getMyAttendance,
   getAttendanceStats,
   
   // Teacher functions
-  getClassForAttendance,
-  getClassAttendance,
-  submitAttendance,
   getAttendanceHistory,
   submitTeacherAttendance,
   

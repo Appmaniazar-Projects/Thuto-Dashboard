@@ -32,6 +32,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import SchoolIcon from '@mui/icons-material/School';
 import SubjectIcon from '@mui/icons-material/Subject';
+import SchoolLogo from '../common/SchoolLogo';
 
 import { useAuth } from '../../context/AuthContext';
 
@@ -166,17 +167,7 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
           }}
         >
           {open && (
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 'bold',
-                flexGrow: 1,
-                textAlign: 'left',
-                ml: 1,
-              }}
-            >
-              Thuto Dashboard
-            </Typography>
+            <SchoolLogo showName={true} variant="sidebar" size={32} />
           )}
           <IconButton onClick={handleDrawerToggle} sx={{ color: '#fff' }}>
             <MenuIcon />

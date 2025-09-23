@@ -22,6 +22,7 @@ import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SystemMessageProvider } from './context/SystemMessageContext';
 import { DataProvider } from './context/DataContext';
+import { SchoolBrandingProvider } from './context/SchoolBrandingContext';
 
 // Theme
 import theme from './styles/theme';
@@ -60,66 +61,68 @@ function App() {
 
   return (
     <AuthProvider>
-      <DataProvider>
-        <ThemeProvider theme={currentTheme}>
-          <CssBaseline />
-          <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-            <NotificationProvider>
-              <SystemMessageProvider>
-                <EventsProvider>
-                  <BrowserRouter>
-                    <ScrollToTop />
-                    <Routes>
-                      {/* Public routes - AuthLayout */}
-                      {publicRoutes.map((route, i) => (
-                        <Route
-                          key={i}
-                          path={route.path}
-                          element={
-                            <Suspense fallback={<div>Loading...</div>}>
-                              <AuthLayout>{route.element}</AuthLayout>
-                            </Suspense>
-                          }
-                        />
-                      ))}
-
-                      {/* Protected routes - Main Layout */}
-                      <Route element={<Layout />}>
-                        {protectedRoutes.map((route, i) => (
+      <SchoolBrandingProvider>
+        <DataProvider>
+          <ThemeProvider theme={currentTheme}>
+            <CssBaseline />
+            <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+              <NotificationProvider>
+                <SystemMessageProvider>
+                  <EventsProvider>
+                    <BrowserRouter>
+                      <ScrollToTop />
+                      <Routes>
+                        {/* Public routes - AuthLayout */}
+                        {publicRoutes.map((route, i) => (
                           <Route
                             key={i}
                             path={route.path}
                             element={
                               <Suspense fallback={<div>Loading...</div>}>
-                                {route.element}
+                                <AuthLayout>{route.element}</AuthLayout>
                               </Suspense>
                             }
                           />
                         ))}
-                      </Route>
 
-                      {/* Super Admin routes - SuperAdminLayout */}
-                      <Route element={<SuperAdminLayout />}>
-                        {superAdminRoutes.map((route, i) => (
-                          <Route
-                            key={i}
-                            path={route.path}
-                            element={
-                              <Suspense fallback={<div>Loading...</div>}>
-                                {route.element}
-                              </Suspense>
-                            }
-                          />
-                        ))}
-                      </Route>
-                    </Routes>
-                  </BrowserRouter>
-                </EventsProvider>
-              </SystemMessageProvider>
-            </NotificationProvider>
-          </SnackbarProvider>
-        </ThemeProvider>
-      </DataProvider>
+                        {/* Protected routes - Main Layout */}
+                        <Route element={<Layout />}>
+                          {protectedRoutes.map((route, i) => (
+                            <Route
+                              key={i}
+                              path={route.path}
+                              element={
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  {route.element}
+                                </Suspense>
+                              }
+                            />
+                          ))}
+                        </Route>
+
+                        {/* Super Admin routes - SuperAdminLayout */}
+                        <Route element={<SuperAdminLayout />}>
+                          {superAdminRoutes.map((route, i) => (
+                            <Route
+                              key={i}
+                              path={route.path}
+                              element={
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  {route.element}
+                                </Suspense>
+                              }
+                            />
+                          ))}
+                        </Route>
+                      </Routes>
+                    </BrowserRouter>
+                  </EventsProvider>
+                </SystemMessageProvider>
+              </NotificationProvider>
+            </SnackbarProvider>
+          </ThemeProvider>
+        </DataProvider>
+      </SchoolBrandingProvider>
     </AuthProvider>
   );
 }

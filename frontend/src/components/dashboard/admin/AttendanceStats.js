@@ -1,16 +1,22 @@
 // components/dashboard/admin/AttendanceStats.js
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Paper, Typography } from '@mui/material';
-import { fetchAttendanceStats } from '../../../services/api';
 
-const AttendanceStats = () => {
-  const [average, setAverage] = useState(null);
+const AttendanceStats = ({ attendanceData = [] }) => {
+  // Calculate average attendance on frontend
+  const averageAttendance = useMemo(() => {
+    if (!attendanceData || attendanceData.length === 0) {
+      return 0;
+    }
 
-  useEffect(() => {
-    fetchAttendanceStats().then((res) => {
-      setAverage(res.data?.average || 0);
-    }).catch(() => setAverage('Error'));
-  }, []);
+    // Calculate attendance percentage from the data
+    const totalRecords = attendanceData.length;
+    const presentRecords = attendanceData.filter(record => 
+      record.status === 'present' || record.status === 'Present'
+    ).length;
+
+    return totalRecords > 0 ? Math.round((presentRecords / totalRecords) * 100) : 0;
+  }, [attendanceData]);
 
   return (
     <Paper elevation={2} sx={{ p: 2, height: 120, bgcolor: '#f5f5f5', borderLeft: '4px solid #2e7d32' }}>
@@ -18,7 +24,7 @@ const AttendanceStats = () => {
         Average Attendance
       </Typography>
       <Typography variant="h4" component="div" sx={{ fontWeight: 'medium', color: '#2e7d32' }}>
-        {average !== null ? `${average}%` : '...'}
+        {averageAttendance}%
       </Typography>
     </Paper>
   );

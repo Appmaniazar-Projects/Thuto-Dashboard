@@ -46,6 +46,7 @@ const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncem
 
 // Super Admin
 const SuperAdminLogin = lazy(() => import('./components/auth/SuperAdminLogin'));
+const SuperAdminRegister = lazy(() => import('./components/auth/SuperAdminRegister'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
 
 const Loading = () => (
@@ -65,6 +66,7 @@ export const publicRoutes = [
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
+  { path: '/superadmin/register', element: <SuperAdminRegister /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
