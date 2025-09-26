@@ -47,7 +47,7 @@ api.interceptors.response.use(
     if (error.code === "ECONNREFUSED" || error.code === "ERR_NETWORK") {
       console.error("Backend server is not running or not accessible");
       error.message =
-        "Unable to connect to server. Please ensure the backend is running on port 8081.";
+        "Unable to connect to server.";
     } else if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem("token");

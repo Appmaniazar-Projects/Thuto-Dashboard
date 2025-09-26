@@ -12,11 +12,15 @@ import {
   uploadResource,
   deleteResource 
 } from '../../../services/teacherService';
+import subjectService from '../../../services/subjectService';
+import gradeService from '../../../services/gradeService';
 
 const TeacherResources = () => {
   const [resources, setResources] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
+  const [subjects, setSubjects] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -57,16 +61,14 @@ const TeacherResources = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [resourcesData, classesData] = await Promise.all([
+        const [resourcesData, subjectsData, gradesData] = await Promise.all([
           getTeacherResources(),
-          getTeacherClasses()
+          subjectService.getSubjectsByTeacher(),
+          gradeService.getGradesByTeacher()
         ]);
-        setResources(resourcesData);
-        setClasses(classesData);
-        // Set the first class as selected if available
-        if (classesData.length > 0) {
-          setSelectedClass(classesData[0].id);
-        }
+        setResources(resourcesData || []);
+        setSubjects(subjectsData || []);
+        setGrades(gradesData || []);
       } catch (err) {
         console.error('Failed to fetch data:', err);
         setError('Failed to load resources. Please try again later.');
@@ -84,8 +86,8 @@ const TeacherResources = () => {
       return;
     }
     
-    if (!selectedClass) {
-      setError('Please select a class');
+    if (!selectedSubject || !selectedGrade) {
+      setError('Please select a subject and grade');
       return;
     }
     
@@ -96,7 +98,8 @@ const TeacherResources = () => {
       
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('classId', selectedClass);
+      formData.append('subjectId', selectedSubject);
+      formData.append('gradeId', selectedGrade);
       
       const newResource = await uploadResource(formData);
       
