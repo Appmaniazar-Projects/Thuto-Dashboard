@@ -11,7 +11,8 @@ import { format, parseISO } from 'date-fns';
 import { 
   submitTeacherAttendance 
 } from '../../services/attendanceService';
-import { getTeacherClasses } from '../../services/teacherService';
+import gradeService from '../../services/gradeService';
+import subjectService from '../../services/subjectService';
 import { fetchStudentsForTeacher } from '../../services/api';
 
 const AttendanceRegisterPage = () => {
@@ -28,22 +29,35 @@ const AttendanceRegisterPage = () => {
 
   // Fetch teacher's classes on component mount
   useEffect(() => {
-    const fetchTeacherClasses = async () => {
+    const fetchTeacherData = async () => {
       try {
         setLoading(true);
-        const classes = await getTeacherClasses();
-        setTeacherClasses(classes || []);
+        // Fetch teacher's assigned subjects and grades
+        const [subjects, grades] = await Promise.all([
+          subjectService.getSubjectsByTeacher(),
+          gradeService.getGradesByTeacher()
+        ]);
         
-        // Auto-select first class if available
-        if (classes && classes.length > 0) {
-          setSelectedGrade(classes[0].grade);
-          setSelectedSubject(classes[0].subject);
+        // Create class combinations from subjects and grades
+        const classCombinations = subjects.map(subject => grades.map(grade => ({
+          subject: subject.name,
+          grade: grade.name,
+          subjectId: subject.id,
+          gradeId: grade.id
+        }))).flat();
+        
+        setTeacherClasses(classCombinations);
+        
+        // Auto-select first combination if available
+        if (classCombinations.length > 0) {
+          setSelectedGrade(classCombinations[0].grade);
+          setSelectedSubject(classCombinations[0].subject);
         }
       } catch (err) {
-        console.error('Failed to fetch teacher classes:', err);
+        console.error('Failed to fetch teacher data:', err);
         setSnackbar({
           open: true,
-          message: 'Failed to load your classes',
+          message: 'Failed to load your assigned subjects and grades',
           severity: 'error'
         });
       } finally {
@@ -51,7 +65,7 @@ const AttendanceRegisterPage = () => {
       }
     };
 
-    fetchTeacherClasses();
+    fetchTeacherData();
   }, []);
 
   // Fetch students when grade and subject are selected

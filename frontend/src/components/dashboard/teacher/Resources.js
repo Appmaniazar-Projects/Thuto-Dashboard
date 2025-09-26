@@ -9,8 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useDropzone } from 'react-dropzone';
 import { 
   getTeacherResources, 
-  uploadResource, 
-  getTeacherClasses, 
+  uploadResource,
   deleteResource 
 } from '../../../services/teacherService';
 

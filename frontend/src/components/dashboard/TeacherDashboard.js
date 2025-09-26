@@ -16,26 +16,27 @@ import {
   Message as MessageIcon,
   Info as InfoIcon,
   Folder as FolderIcon,
-  FilterAlt as FilterIcon
+  FilterAlt as FilterIcon,
+  School as SchoolIcon  
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { getTeacherClasses, getRecentResources, getClassAttendance } from '../../services/teacherService';
+import { getRecentResources } from '../../services/teacherService';
+import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import StatCard from '../common/StatCard';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [classes, setClasses] = useState([]);
+  const [teacherSubjects, setTeacherSubjects] = useState([]);
+  const [teacherGrades, setTeacherGrades] = useState([]);
   const [resources, setResources] = useState([]);
-  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
   // Filter states
   const [filters, setFilters] = useState({
-    classId: '',
     subject: '',
     grade: '',
     dateRange: 'thisWeek' // thisWeek, thisMonth, custom
@@ -49,15 +50,14 @@ const TeacherDashboard = () => {
         setError(null);
         
         // Fetch classes and resources in parallel
-        const [classData, resourceData, gradesData] = await Promise.all([
-          getTeacherClasses(),
+        const [resourceData, gradesData] = await Promise.all([
           getRecentResources(10), // Get more resources for filtering
-          gradeService.getSchoolGrades()
+          subjectService.getSubjectsByTeacher(), // Get teacher's subjects
+          gradeService.getGradesByTeacher() // Get teacher's grades
         ]);
-        
-        setClasses(classData || []);
         setResources(resourceData || []);
-        setGrades(gradesData);
+        setTeacherSubjects(subjectsData || []);
+        setTeacherGrades(gradesData || []);
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -74,7 +74,6 @@ const TeacherDashboard = () => {
   const filteredClasses = useMemo(() => {
     return classes.filter(cls => {
       return (
-        (!filters.classId || cls.id === filters.classId) &&
         (!filters.subject || cls.subject === filters.subject) &&
         (!filters.grade || cls.grade === filters.grade)
       );
@@ -82,29 +81,23 @@ const TeacherDashboard = () => {
   }, [classes, filters]);
 
   // Apply filters to resources
-  const filteredResources = useMemo(() => {
-    return resources.filter(resource => {
-      if (filters.classId && resource.classId !== filters.classId) return false;
-      if (filters.subject && resource.subject !== filters.subject) return false;
-      return true;
-    });
-  }, [resources, filters]);
+const filteredResources = useMemo(() => {
+  return resources.filter(resource => {
+    if (filters.subject && resource.subjectId !== filters.subject) return false;
+    if (filters.grade && resource.gradeId !== filters.grade) return false;
+    return true;
+  });
+}, [resources, filters]);
 
   // Calculate stats based on filtered data
   const stats = useMemo(() => {
-    const totalStudents = filteredClasses.reduce((sum, cls) => sum + (cls.students || 0), 0);
-    const totalAssignments = filteredClasses.reduce((sum, cls) => sum + (cls.assignments || 0), 0);
-    
     return {
-      totalClasses: filteredClasses.length,
-      totalStudents,
+      totalSubjects: teacherSubjects.length,
+      totalGrades: teacherGrades.length,
       totalResources: filteredResources.length,
-      averageClassSize: filteredClasses.length > 0 
-        ? Math.round(totalStudents / filteredClasses.length) 
-        : 0,
-      totalAssignments
+      subjectGradeCombinations: teacherSubjects.length * teacherGrades.length
     };
-  }, [filteredClasses, filteredResources]);
+  }, [teacherSubjects, teacherGrades, filteredResources]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -161,28 +154,6 @@ const TeacherDashboard = () => {
               <TextField
                 fullWidth
                 select
-                label="Class"
-                name="classId"
-                value={filters.classId}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                <MenuItem value="">All Classes</MenuItem>
-                {Array.from(new Set(classes.map(c => c.id))).map(classId => {
-                  const cls = classes.find(c => c.id === classId);
-                  return (
-                    <MenuItem key={classId} value={classId}>
-                      {cls ? `${cls.name} (${cls.grade})` : classId}
-                    </MenuItem>
-                  );
-                })}
-              </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
                 label="Subject"
                 name="subject"
                 value={filters.subject}
@@ -190,27 +161,27 @@ const TeacherDashboard = () => {
                 size="small"
               >
                 <MenuItem value="">All Subjects</MenuItem>
-                {Array.from(new Set(classes.map(c => c.subject))).map(subject => (
-                  <MenuItem key={subject} value={subject}>{subject}</MenuItem>
+                {teacherSubjects.map(subject => (
+                  <MenuItem key={subject.id} value={subject.id}>{subject.name}</MenuItem>
                 ))}
               </TextField>
             </Grid>
             
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                label="Grade"
-                name="grade"
-                value={filters.grade}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                <MenuItem value="">All Grades</MenuItem>
-                {grades.map(grade => (
-                  <MenuItem key={grade.id} value={grade.name}>{grade.name}</MenuItem>
-                ))}
-              </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Grade"
+              name="grade"
+              value={filters.grade}
+              onChange={handleFilterChange}
+              size="small"
+            >
+              <MenuItem value="">All Grades</MenuItem>
+              {teacherGrades.map(grade => (
+                <MenuItem key={grade.id} value={grade.id}>{grade.name}</MenuItem>
+              ))}
+            </TextField>
             </Grid>
             
             <Grid item xs={12} sm={6} md={3}>
@@ -219,7 +190,6 @@ const TeacherDashboard = () => {
                 fullWidth 
                 sx={{ height: '40px' }}
                 onClick={() => setFilters({
-                  classId: '',
                   subject: '',
                   grade: '',
                   dateRange: 'thisWeek'
@@ -236,10 +206,16 @@ const TeacherDashboard = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Classes" 
-            value={stats.totalClasses} 
-            icon={<GroupIcon />}
-            onClick={() => navigate('/teacher/classes')}
+            title="Subjects" 
+            value={stats.totalSubjects} 
+            icon={<BookIcon />}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Grades" 
+            value={stats.totalGrades} 
+            icon={<SchoolIcon />}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -256,13 +232,6 @@ const TeacherDashboard = () => {
             value={stats.totalResources} 
             icon={<FolderIcon />}
             onClick={() => navigate('/teacher/resources')}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard 
-            title="Avg. Class Size" 
-            value={stats.averageClassSize} 
-            icon={<SchoolIcon />}
           />
         </Grid>
       </Grid>
