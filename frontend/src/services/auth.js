@@ -53,7 +53,7 @@ const superAdminLogin = async (email, password) => {
  * @returns {Promise<Object>} Registration response
  */
 const superAdminRegister = async (registrationData) => {
-  const response = await api.post('/superadmin/auth/register', registrationData);
+  const response = await api.post('/superadmins/auth/super/register', registrationData);
   return response.data;
 };
 

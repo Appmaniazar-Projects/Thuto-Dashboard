@@ -97,7 +97,7 @@ const SuperAdminLogin = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Don't have an account?{' '}
-              <Link to="/superadmin/register" style={{ textDecoration: 'none', color: '#1976d2' }}>
+              <Link to="/superadmins/auth/super/register" style={{ textDecoration: 'none', color: '#1976d2' }}>
                 Register here
               </Link>
             </Typography>

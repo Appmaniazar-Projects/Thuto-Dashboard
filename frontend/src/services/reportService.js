@@ -22,6 +22,7 @@ export const uploadStudentReport = async (reportData) => {
   
   // Append report metadata
   formData.append('studentId', reportData.studentId);
+  formData.append('gradeId', reportData.gradeId);
   formData.append('academicTerm', reportData.academicTerm);
   formData.append('grade', reportData.grade);
   formData.append('comments', reportData.comments || '');
@@ -56,14 +57,12 @@ export const getStudentReportsByTeacher = async (studentId) => {
  * @param {string} [academicTerm] - Optional term filter
  * @returns {Promise<Array>} List of reports for the class
  */
-export const getClassReports = async (classId, academicTerm = '') => {
-  const params = {};
-  if (academicTerm) {
-    params.term = academicTerm;
-  }
-  const response = await api.get(`/reports/class/${classId}`, { params });
-  return response.data;
-};
+  export const getSubjectGradeReports = async (subjectId, gradeId, academicTerm = '') => {
+    const params = { subjectId, gradeId };
+    if (academicTerm) params.term = academicTerm;
+    const response = await api.get('/reports/subject-grade', { params });
+    return response.data;
+  };
 
 /**
  * Update a student's report
@@ -98,17 +97,7 @@ export const downloadReport = async (reportId) => {
   return response.data;
 };
 
-/**
- * Get report statistics for a class
- * @param {string} classId - Class ID
- * @param {string} [academicTerm] - Optional term filter
- * @returns {Promise<Object>} Statistics including averages, distribution, etc.
- */
-export const getClassReportStats = async (classId, academicTerm = '') => {
-  const params = academicTerm ? { term: academicTerm } : {};
-  const response = await api.get(`/reports/class/${classId}/stats`, { params });
-  return response.data;
-};
+
 
 /**
  * Get academic terms with reports
