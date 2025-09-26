@@ -1,9 +1,9 @@
 import axios from "axios";
 
-// Create axios instance - configured for mock mode (no backend required)
+// Create axios instance - configured to use Railway backend
 const api = axios.create({
-  // Automatically prepend /api/ to all requests
-  baseURL: `${process.env.REACT_APP_API_URL || 'http://localhost:8081'}/api`,
+  // Use Railway backend URL
+  baseURL: `${process.env.REACT_APP_API_URL || 'https://soothing-magic-production-efff.up.railway.app'}/api`,
   timeout: 10000, // 10 second timeout
   headers: {
     "Content-Type": "application/json",
