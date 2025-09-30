@@ -23,7 +23,7 @@ api.interceptors.request.use(
     // Add schoolId as a query parameter to requests that need it
     // Exclude super admin and master endpoints since they operate above school level
     const schoolId = localStorage.getItem("schoolId");
-    const isSuperAdminEndpoint = config.url?.includes('/superadmin') || config.url?.includes('/superadmins');
+    const isSuperAdminEndpoint = config.url?.includes('/superadmins') || config.url?.includes('/superadmins');
     const isMasterEndpoint = config.url?.includes('/master');
     
     if (schoolId && !isSuperAdminEndpoint && !isMasterEndpoint) {
