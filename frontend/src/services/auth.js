@@ -32,7 +32,9 @@ const login = async (phoneNumber) => {
  * @returns {Promise<Object>} User data and auth token
  */
 const superAdminLogin = async (email, password) => {
-  const response = await api.post('/superadmins/auth/login', { email, password });
+  const response = await api.get('/superadmins/auth/login', {
+    params: { email, password }
+  });
   if (response.data.token) {
     localStorage.setItem('user', JSON.stringify(response.data.user));
     localStorage.setItem('token', response.data.token);

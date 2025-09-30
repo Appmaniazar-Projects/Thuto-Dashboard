@@ -20,42 +20,18 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // // Add schoolId as a query parameter to requests that need it
-    // // Exclude super admin and master endpoints since they operate above school level
-    // const schoolId = localStorage.getItem("schoolId");
-    // const isSuperAdminEndpoint = config.url?.includes('/superadmin') || config.url?.includes('/superadmins');
-    // const isMasterEndpoint = config.url?.includes('/master');
-    
-    // if (schoolId !== undefined && schoolId !== null && !isSuperAdminEndpoint && !isMasterEndpoint) {
-    //   config.params = {
-    //     ...config.params,
-    //     schoolId: schoolId,
-    //   };
-    // }
     // Add schoolId as a query parameter to requests that need it
-// Exclude super admin and master endpoints since they operate above school level
-const schoolId = localStorage.getItem("schoolId");
-const isSuperAdminEndpoint = config.url?.includes('/superadmin') || config.url?.includes('/superadmins');
-const isMasterEndpoint = config.url?.includes('/master');
-
-// DEBUG LOGGING - ADD THESE LINES
-console.log('🔍 API Request Debug:', {
-  url: config.url,
-  isSuperAdminEndpoint,
-  isMasterEndpoint,
-  schoolId,
-  willAddSchoolId: schoolId && !isSuperAdminEndpoint && !isMasterEndpoint
-});
-
-if (schoolId !== undefined && schoolId !== null && !isSuperAdminEndpoint && !isMasterEndpoint) {
-  config.params = {
-    ...config.params,
-    schoolId: schoolId,
-  };
-  console.log('✅ Added schoolId to request:', config.params);
-} else {
-  console.log('❌ Skipped adding schoolId');
-}
+    // Exclude super admin and master endpoints since they operate above school level
+    const schoolId = localStorage.getItem("schoolId");
+    const isSuperAdminEndpoint = config.url?.includes('/superadmin') || config.url?.includes('/superadmins');
+    const isMasterEndpoint = config.url?.includes('/master');
+    
+    if (schoolId !== undefined && schoolId !== null && !isSuperAdminEndpoint && !isMasterEndpoint) {
+      config.params = {
+        ...config.params,
+        schoolId: schoolId,
+      };
+    }
 
     return config;
   },
