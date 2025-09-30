@@ -34,7 +34,27 @@ const SuperAdminLogin = () => {
       setAuthData(user, token);
       navigate('/superadmin/dashboard');
     } catch (err) {
-      setError(err.message || 'Failed to log in.');
+      // Handle specific error responses from backend
+      if (err.response?.data) {
+        const { status, message } = err.response.data;
+        
+        switch (status) {
+          case 401:
+            setError('Invalid email or password. Please try again.');
+            break;
+          case 404:
+            setError('Account not found. Please check your email address.');
+            break;
+          case 500:
+            setError('Server error occurred. Please try again later.');
+            break;
+          default:
+            setError(message || 'Login failed. Please try again.');
+        }
+      } else {
+        // Fallback for network errors or unexpected format
+        setError(err.message || 'Failed to log in.');
+      }
     } finally {
       setLoading(false);
     }

@@ -137,7 +137,32 @@ const SuperAdminRegister = () => {
       }, 2000);
 
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      // Handle specific error responses from backend
+      if (err.response?.data) {
+        const { status, message } = err.response.data;
+        
+        switch (status) {
+          case 409:
+          case 400:
+            if (message?.includes('email already exists') || message?.includes('SuperAdmin with this email already exists')) {
+              setError('An account with this email already exists. Please use a different email.');
+            } else {
+              setError(message || 'Please check your input data and try again.');
+            }
+            break;
+          case 422:
+            setError(message || 'Please check that all required fields are filled correctly.');
+            break;
+          case 500:
+            setError('Server error occurred. Please try again later.');
+            break;
+          default:
+            setError(message || 'Registration failed. Please try again.');
+        }
+      } else {
+        // Fallback for network errors or unexpected format
+        setError(err.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
