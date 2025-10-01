@@ -52,8 +52,6 @@ import {
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
-import { CircularProgress, Snackbar, Alert as MuiAlert } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 
 
 
