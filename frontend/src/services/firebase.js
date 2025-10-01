@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import { getAnalytics } from "firebase/analytics";
 import { 
   getAuth, 
   signInWithPopup,
@@ -8,10 +8,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  setPersistence,
-  browserLocalPersistence
+ 
 } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -28,41 +27,19 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Configure Auth to use local persistence
-const auth = getAuth(app);
-setPersistence(auth, browserLocalPersistence);
-
-// Initialize Firestore with persistence and disable WebSockets
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache(),
-  experimentalAutoDetectLongPolling: true,
-  experimentalForceLongPolling: true,
-  useFetchStreams: false
-});
-
-// Initialize Storage
-const storage = getStorage(app);
-
 // Initialize Analytics only if measurementId is provided and not in demo mode
 let analytics = null;
-const initAnalytics = async () => {
-  try {
-    if (firebaseConfig.measurementId && firebaseConfig.measurementId !== "G-XXXXXXXXXX") {
-      const isSupportedAnalytics = await isSupported();
-      if (isSupportedAnalytics) {
-        analytics = getAnalytics(app);
-        // Disable analytics auto collection if not needed
-        if (analytics.isSupported()) {
-          analytics.setAnalyticsCollectionEnabled(true);
-        }
-      }
-    }
-  } catch (error) {
-    console.warn('Firebase Analytics initialization failed:', error);
+try {
+  if (firebaseConfig.measurementId && firebaseConfig.measurementId !== "G-XXXXXXXXXX") {
+    analytics = getAnalytics(app);
   }
-};
+} catch (error) {
+  console.warn('Firebase Analytics initialization failed:', error);
+}
 
-initAnalytics();
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Export auth and other Firebase services
 export {

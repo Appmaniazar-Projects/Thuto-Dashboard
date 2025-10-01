@@ -11,7 +11,6 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [schoolId, setSchoolId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { enqueueSnackbar } = useSnackbar();
@@ -19,9 +18,7 @@ export const AuthProvider = ({ children }) => {
   const setAuthData = (user, token) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
-    if (user.schoolId) {
-      localStorage.setItem('schoolId', user.schoolId);
-    }
+    
     // Store level and province for Master/Superadmin roles
     if (user.level) {
       localStorage.setItem('userLevel', user.level);
@@ -31,11 +28,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
     setCurrentUser(user);
-    if (user.schoolId) {
-      setSchoolId(user.schoolId);
-    }
   };
 
   useEffect(() => {
@@ -44,7 +37,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(true);
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        const storedSchoolId = localStorage.getItem('schoolId');
 
         if (storedToken && storedUser) {
           // Set API authorization header for future use
@@ -53,17 +45,12 @@ export const AuthProvider = ({ children }) => {
           // Parse stored user data
           const userData = JSON.parse(storedUser);
           setCurrentUser(userData);
-          
-          if (storedSchoolId) {
-            setSchoolId(storedSchoolId);
-          }
         }
       } catch (err) {
         console.error('Error parsing stored auth data:', err);
         // Clear invalid stored data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        localStorage.removeItem('schoolId');
         delete api.defaults.headers.common['Authorization'];
       } finally {
         setLoading(false);
@@ -73,14 +60,12 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-
   const logout = async () => {
     try {
       setLoading(true);
       
       // Clear all stored data
       localStorage.removeItem('token');
-      localStorage.removeItem('schoolId');
       localStorage.removeItem('user');
       localStorage.removeItem('userLevel');
       localStorage.removeItem('userProvince');
@@ -90,7 +75,6 @@ export const AuthProvider = ({ children }) => {
       
       // Reset state
       setCurrentUser(null);
-      setSchoolId(null);
       
       enqueueSnackbar('Logged out successfully!', { variant: 'info' });
     } catch (err) {
