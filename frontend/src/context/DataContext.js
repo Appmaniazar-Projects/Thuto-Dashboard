@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { fetchAllStudents } from '../services/api';
+import api from '../services/api';
 
 const DataContext = createContext();
 
