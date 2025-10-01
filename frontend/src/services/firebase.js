@@ -59,3 +59,5 @@ export {
   onAuthStateChanged,
   updateProfile,
 };
+
+export default app;
