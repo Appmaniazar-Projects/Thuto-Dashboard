@@ -52,6 +52,10 @@ import {
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
+import { CircularProgress, Snackbar, Alert as MuiAlert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+
+
 
 const SuperAdminDashboard = () => {
   const { isMaster, isProvincialSuperAdmin, currentUser } = useAuth();
@@ -61,7 +65,7 @@ const SuperAdminDashboard = () => {
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schools');
   
   // Dialog states
@@ -102,6 +106,7 @@ const SuperAdminDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Build query params for province filtering
       const params = {};

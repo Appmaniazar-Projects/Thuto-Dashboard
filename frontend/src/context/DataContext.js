@@ -3,20 +3,42 @@ import { fetchAllStudents } from '../services/api';
 
 const DataContext = createContext();
 
-export const DataProvider = ({ children }) => {
+const DataProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch all students once when the provider mounts
+  // Fetch all students when the provider mounts or user changes
   useEffect(() => {
     const loadData = async () => {
+      // Don't load if no user is logged in
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) return;
+
+      setLoading(true);
+      setError(null);
+      
       try {
-        const response = await fetchAllStudents();
-        setStudents(response.data || []);
-      } catch (err) {
+        const isSuperAdmin = user?.role?.includes('SUPERADMIN');
+        
+        if (isSuperAdmin) {
+          // For super admin, we might not need to load students
+          // Or we could load a list of schools/admins instead
+          const response = await api.get('/superadmin/dashboard');
+          setDashboardData(response.data);
+          return;
+        }
+
+        // For regular admins, only fetch students if we have a school context
+        if (user.schoolId) {
+          const response = await api.get('/admin/students', {
+            params: { schoolId: user.schoolId }
+          });
+          setStudents(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
         setError('Failed to load student data');
-        console.error('Error fetching students:', err);
       } finally {
         setLoading(false);
       }
