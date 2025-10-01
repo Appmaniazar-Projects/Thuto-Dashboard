@@ -8,9 +8,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
- 
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
@@ -38,7 +37,14 @@ try {
 }
 
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialize Firestore with persistence and disable network
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(),
+  experimentalForceLongPolling: true, // Force long polling instead of WebSockets
+  experimentalAutoDetectLongPolling: true,
+});
+
 const storage = getStorage(app);
 
 // Export auth and other Firebase services
@@ -53,5 +59,3 @@ export {
   onAuthStateChanged,
   updateProfile,
 };
-
-export default app;
