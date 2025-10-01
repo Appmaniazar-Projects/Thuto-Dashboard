@@ -41,10 +41,10 @@ const auth = getAuth(app);
 // Initialize Firestore with persistence and disable network
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache(),
-  experimentalForceLongPolling: true, // Force long polling instead of WebSockets
   experimentalAutoDetectLongPolling: true,
 });
 
+// Initialize Storage
 const storage = getStorage(app);
 
 // Export auth and other Firebase services
