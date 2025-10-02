@@ -23,7 +23,7 @@ export const getAllSchools = async (params = {}) => {
  */
 export const createSchool = async (schoolData) => {
   try {
-    const response = await api.post('/superadmin/admins/school/createSchool/create', schoolData);
+    const response = await api.post('/superadmins/admins/school/createSchool/create', schoolData);
     return response.data;
   } catch (error) {
     console.error('Failed to create school:', error);
