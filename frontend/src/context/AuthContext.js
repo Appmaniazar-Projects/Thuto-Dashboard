@@ -19,12 +19,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     
-    // Store level and province for Master/Superadmin roles
-    if (user.level) {
-      localStorage.setItem('userLevel', user.level);
+    // Store role and province for Superadmin roles
+    if (user.role) {
+      localStorage.setItem('userRole', user.role);
     }
-    if (user.province) {
+    if (user.province && (user.role === 'superadmin_provincial' || user.role === 'superadmin_national')) {
       localStorage.setItem('userProvince', user.province);
+    } else {
+      localStorage.removeItem('userProvince');
     }
 
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -67,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       // Clear all stored data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      localStorage.removeItem('userLevel');
+      localStorage.removeItem('userRole');
       localStorage.removeItem('userProvince');
       
       // Clear API authorization header

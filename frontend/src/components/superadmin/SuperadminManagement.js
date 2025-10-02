@@ -48,6 +48,7 @@ const SuperadminManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    role: 'superadmin_provincial', // Default role
     province: '',
     password: ''
   });
@@ -76,20 +77,33 @@ const SuperadminManagement = () => {
       setFormData({
         name: superadmin.name,
         email: superadmin.email,
-        province: superadmin.province,
+        role: superadmin.role,
+        province: superadmin.province || '',
         password: ''
       });
     } else {
       setEditMode(false);
       setSelectedSuperadmin(null);
-      setFormData({ name: '', email: '', province: '', password: '' });
+      setFormData({ 
+        name: '', 
+        email: '', 
+        role: 'superadmin_provincial',
+        province: '', 
+        password: '' 
+      });
     }
     setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    setFormData({ name: '', email: '', province: '', password: '' });
+    setFormData({ 
+      name: '', 
+      email: '', 
+      role: 'superadmin_provincial',
+      province: '', 
+      password: '' 
+    });
     setSelectedSuperadmin(null);
     setEditMode(false);
   };
@@ -98,12 +112,13 @@ const SuperadminManagement = () => {
     try {
       setLoading(true);
       
-      const payload = {
-        ...formData,
-        role: 'superadmin',
-        level: 'provincial'
-      };
-
+      const payload = { ...formData };
+      
+      // Remove password field if it's empty (edit mode)
+      if (editMode && !payload.password) {
+        delete payload.password;
+      }
+      
       if (editMode) {
         await updateSuperadmin(selectedSuperadmin.id, payload);
         enqueueSnackbar('Superadmin updated successfully', { variant: 'success' });
@@ -115,7 +130,9 @@ const SuperadminManagement = () => {
       handleCloseDialog();
       fetchSuperadmins();
     } catch (error) {
-      enqueueSnackbar(`Failed to ${editMode ? 'update' : 'create'} superadmin`, { variant: 'error' });
+      enqueueSnackbar(error.message || `Failed to ${editMode ? 'update' : 'create'} superadmin`, { 
+        variant: 'error' 
+      });
     } finally {
       setLoading(false);
     }
@@ -128,8 +145,19 @@ const SuperadminManagement = () => {
         enqueueSnackbar('Superadmin deleted successfully', { variant: 'success' });
         fetchSuperadmins();
       } catch (error) {
-        enqueueSnackbar('Failed to delete superadmin', { variant: 'error' });
+        enqueueSnackbar(error.message || 'Failed to delete superadmin', { variant: 'error' });
       }
+    }
+  };
+
+  const getRoleLabel = (role) => {
+    switch(role) {
+      case 'superadmin_national':
+        return 'National Super Admin';
+      case 'superadmin_provincial':
+        return 'Provincial Super Admin';
+      default:
+        return role;
     }
   };
 
@@ -148,93 +176,113 @@ const SuperadminManagement = () => {
             Add Superadmin
           </Button>
         </Box>
-
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Manage provincial superadmins. Each superadmin can only access schools and data within their assigned province.
-        </Alert>
-
+        
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
                 <TableCell>Province</TableCell>
-                <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {superadmins.map((superadmin) => (
-                <TableRow key={superadmin.id}>
-                  <TableCell>{superadmin.name}</TableCell>
-                  <TableCell>{superadmin.email}</TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={superadmin.province} 
-                      color="primary" 
-                      variant="outlined" 
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={superadmin.isActive ? 'Active' : 'Inactive'} 
-                      color={superadmin.isActive ? 'success' : 'default'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(superadmin)}
-                      color="primary"
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(superadmin.id)}
-                      color="error"
-                    >
-                      <Delete />
-                    </IconButton>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    Loading...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : superadmins.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No superadmins found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                superadmins.map((admin) => (
+                  <TableRow key={admin.id}>
+                    <TableCell>{admin.name}</TableCell>
+                    <TableCell>{admin.email}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={getRoleLabel(admin.role)}
+                        color={admin.role === 'superadmin_national' ? 'primary' : 'secondary'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{admin.province || 'N/A'}</TableCell>
+                    <TableCell>
+                      <IconButton onClick={() => handleOpenDialog(admin)}>
+                        <Edit />
+                      </IconButton>
+                      <IconButton 
+                        onClick={() => handleDelete(admin.id)}
+                        color="error"
+                      >
+                        <Delete />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
+      </CardContent>
 
-        {/* Create/Edit Dialog */}
-        <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-          <DialogTitle>
-            {editMode ? 'Edit Superadmin' : 'Create New Superadmin'}
-          </DialogTitle>
-          <DialogContent>
-            <Box mt={1}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                margin="normal"
-                required
-              />
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                margin="normal"
-                required
-              />
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {editMode ? 'Edit Superadmin' : 'Add New Superadmin'}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              margin="normal"
+              required
+              disabled={editMode}
+            />
+            
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={formData.role}
+                label="Role"
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  role: e.target.value,
+                  // Reset province when changing to national
+                  province: e.target.value === 'superadmin_national' ? '' : formData.province
+                })}
+              >
+                <MenuItem value="superadmin_national">National Super Admin</MenuItem>
+                <MenuItem value="superadmin_provincial">Provincial Super Admin</MenuItem>
+              </Select>
+            </FormControl>
+            
+            {formData.role === 'superadmin_provincial' && (
               <FormControl fullWidth margin="normal" required>
                 <InputLabel>Province</InputLabel>
                 <Select
                   value={formData.province}
-                  onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                   label="Province"
+                  onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                 >
                   {PROVINCES.map((province) => (
                     <MenuItem key={province} value={province}>
@@ -243,29 +291,35 @@ const SuperadminManagement = () => {
                   ))}
                 </Select>
               </FormControl>
-              <TextField
-                fullWidth
-                label={editMode ? "New Password (leave blank to keep current)" : "Password"}
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                margin="normal"
-                required={!editMode}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button 
-              onClick={handleSubmit} 
-              variant="contained"
-              disabled={loading}
-            >
-              {editMode ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </CardContent>
+            )}
+            
+            <TextField
+              fullWidth
+              label={editMode ? 'New Password (leave blank to keep current)' : 'Password'}
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              margin="normal"
+              required={!editMode}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            color="primary" 
+            variant="contained"
+            disabled={loading || !formData.name || !formData.email || 
+                     (formData.role === 'superadmin_provincial' && !formData.province) ||
+                     (!editMode && !formData.password)}
+          >
+            {loading ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
