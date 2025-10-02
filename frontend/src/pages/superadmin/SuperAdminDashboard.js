@@ -191,6 +191,14 @@ const SuperAdminDashboard = () => {
         formDataToSubmit.province = currentUser?.province;
       }
       
+      // Add creator's email to the submission data
+      if (!currentUser?.email) {
+        setError('Unable to identify creator. Please log in again.');
+        setSubmitting(false);
+        return;
+      }
+      formDataToSubmit.createdBy = currentUser.email;
+      
       // Validate province is selected
       if (!formDataToSubmit.province) {
         setError('Please select a province');
@@ -210,13 +218,15 @@ const SuperAdminDashboard = () => {
       }
       
       if (editingSchool) {
+        console.log('Updating school with data:', formDataToSubmit);
         await updateSchool(editingSchool.id, formDataToSubmit);
         setError(null);
         alert('School updated successfully!');
       } else {
+        console.log('Creating school with data:', formDataToSubmit);
         await createSchool(formDataToSubmit);
         setError(null);
-        alert('School created successfully!');
+        alert(`School created successfully by ${currentUser.email}!`);
       }
       
       setSchoolDialogOpen(false);
