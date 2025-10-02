@@ -153,19 +153,39 @@ const SuperAdminDashboard = () => {
 
   const loadGrades = async () => {
     try {
-      const gradesData = await gradeService.getAllGrades();
-      setGrades(gradesData);
+      // For superadmins, try to get all grades first, fall back to school grades if needed
+      try {
+        const gradesData = await gradeService.getAllGrades();
+        setGrades(gradesData);
+      } catch (allGradesError) {
+        // If getAllGrades fails, try getSchoolGrades as fallback
+        console.warn('getAllGrades failed, trying getSchoolGrades:', allGradesError);
+        const gradesData = await gradeService.getSchoolGrades();
+        setGrades(gradesData);
+      }
     } catch (error) {
       console.error('Error loading grades:', error);
+      // Set empty array as fallback
+      setGrades([]);
     }
   };
 
   const loadSubjects = async () => {
     try {
-      const subjectsData = await subjectService.getAllSubjects();
-      setSubjects(subjectsData);
+      // For superadmins, try to get all subjects first, fall back to school subjects if needed
+      try {
+        const subjectsData = await subjectService.getAllSubjects();
+        setSubjects(subjectsData);
+      } catch (allSubjectsError) {
+        // If getAllSubjects fails, try getSchoolSubjects as fallback
+        console.warn('getAllSubjects failed, trying getSchoolSubjects:', allSubjectsError);
+        const subjectsData = await subjectService.getSchoolSubjects();
+        setSubjects(subjectsData);
+      }
     } catch (error) {
       console.error('Error loading subjects:', error);
+      // Set empty array as fallback
+      setSubjects([]);
     }
   };
 

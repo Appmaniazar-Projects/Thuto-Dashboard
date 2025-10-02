@@ -4,16 +4,15 @@ import api from './api';
 /**
  * Fetches all administrators across all schools
  */
-export const getAllAdmins = async () => {
+export const getAllAdmins = async (role = 'admin') => {
   try {
-    const response = await api.get('/superadmins/admins/allRoleSpecificUsers/role/admin');
+    const response = await api.get(`/superadmin/allRoleSpecificUsers/role/${role}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch administrators:', error);
     throw error;
   }
 };
-
 /**
  * Fetches all schools in the system
  * @param {Object} params - Optional query parameters
@@ -141,21 +140,6 @@ export const getAdminsBySchool = async (schoolId) => {
     return response.data;
   } catch (error) {
     console.error(`Failed to get administrators for school ${schoolId}:`, error);
-    throw error;
-  }
-};
-
-// ========== SYSTEM STATISTICS ==========
-
-/**
- * Fetches system-wide statistics
- */
-export const getSystemStats = async () => {
-  try {
-    const response = await api.get('/superadmin/stats');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch system statistics:', error);
     throw error;
   }
 };
