@@ -1,7 +1,6 @@
 import api from './api';
 
 // ========== SCHOOL MANAGEMENT ==========
-
 /**
  * Fetches all administrators across all schools
  */

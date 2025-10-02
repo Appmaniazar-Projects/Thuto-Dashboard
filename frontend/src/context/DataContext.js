@@ -5,6 +5,7 @@ const DataContext = createContext();
 
 export const DataProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,8 +25,8 @@ export const DataProvider = ({ children }) => {
         if (isSuperAdmin) {
           // For super admin, we might not need to load students
           // Or we could load a list of schools/admins instead
-          const response = await api.get('/superadmin/dashboard');
-          setDashboardData(response.data);
+          const response = await api.get('/superadmins/dashboard');
+            setDashboardData(response.data);
           return;
         }
 
@@ -64,6 +65,7 @@ export const DataProvider = ({ children }) => {
     <DataContext.Provider
       value={{
         students,
+        dashboardData,
         genderData,
         totalEnrollment,
         loading,
