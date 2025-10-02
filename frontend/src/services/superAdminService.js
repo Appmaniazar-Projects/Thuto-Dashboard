@@ -3,6 +3,19 @@ import api from './api';
 // ========== SCHOOL MANAGEMENT ==========
 
 /**
+ * Fetches all administrators across all schools
+ */
+export const getAllAdmins = async () => {
+  try {
+    const response = await api.get('/superadmins/admins/allRoleSpecificUsers/role/admin');
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch administrators:', error);
+    throw error;
+  }
+};
+
+/**
  * Fetches all schools in the system
  * @param {Object} params - Optional query parameters
  * @param {string} params.province - Province filter for Masters
@@ -75,19 +88,6 @@ export const getSchoolDetails = async (schoolId) => {
 };
 
 // ========== ADMINISTRATOR MANAGEMENT ==========
-
-/**
- * Fetches all administrators across all schools
- */
-export const getAllAdmins = async () => {
-  try {
-    const response = await api.get('/superadmins/admins/allRoleSpecificUsers/role/{role}');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch administrators:', error);
-    throw error;
-  }
-};
 
 /**
  * Creates a new administrator

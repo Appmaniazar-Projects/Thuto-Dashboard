@@ -122,11 +122,26 @@ const SuperAdminDashboard = () => {
       
       const [schoolsData, adminsData, gradesData] = await Promise.all([
         getAllSchools(params), // Pass province filter
-        getAllAdmins(params), // Pass same province filter for admins
+        getAllAdmins(), // Get all admins, filter on frontend
         gradeService.getAllGrades()
       ]);
+      
+      // Filter admins on frontend for provincial superadmins
+      let filteredAdmins = adminsData;
+      if (isProvincialSuperAdmin() && currentUser?.province) {
+        filteredAdmins = adminsData.filter(admin => {
+          const adminSchool = schoolsData.find(school => school.id === admin.schoolId);
+          return adminSchool && adminSchool.province === currentUser.province;
+        });
+      } else if (isMaster() && selectedProvince) {
+        filteredAdmins = adminsData.filter(admin => {
+          const adminSchool = schoolsData.find(school => school.id === admin.schoolId);
+          return adminSchool && adminSchool.province === selectedProvince;
+        });
+      }
+      
       setSchools(schoolsData);
-      setAdmins(adminsData);
+      setAdmins(filteredAdmins);
       setGrades(gradesData);
     } catch (err) {
       setError('Failed to load data');
