@@ -55,6 +55,11 @@ import subjectService from '../../services/subjectService';
 
 
 
+const PROVINCES = [
+  'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
+  'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'
+];
+
 const SuperAdminDashboard = () => {
   const { isMaster, isProvincialSuperAdmin, currentUser } = useAuth();
   const [selectedProvince, setSelectedProvince] = useState(null);
@@ -81,10 +86,7 @@ const SuperAdminDashboard = () => {
     province: '',
     subjects: [],
     grades: [],
-    primaryColor: '#1976d2',
-    secondaryColor: '#dc004e',
-    accentColor: '#ff9800',
-    logo: null
+    logo: ''
   });
   
   const [adminForm, setAdminForm] = useState({
@@ -110,10 +112,13 @@ const SuperAdminDashboard = () => {
       const params = {};
       if (isMaster() && selectedProvince) {
         params.province = selectedProvince;
+      } else if (isProvincialSuperAdmin()) {
+        // Provincial superadmins can only see schools in their province
+        params.province = currentUser?.province;
       }
       
       const [schoolsData, gradesData] = await Promise.all([
-        getAllSchools(params), // Pass province filter for Masters
+        getAllSchools(params), // Pass province filter
         gradeService.getAllGrades()
       ]);
       setSchools(schoolsData);
@@ -148,10 +153,16 @@ const SuperAdminDashboard = () => {
   // School Handlers
   const handleSchoolSubmit = async () => {
     try {
+      // For provincial superadmins, ensure province is set to their province
+      const formDataToSubmit = { ...schoolForm };
+      if (isProvincialSuperAdmin()) {
+        formDataToSubmit.province = currentUser?.province;
+      }
+      
       if (editingSchool) {
-        await updateSchool(editingSchool.id, schoolForm);
+        await updateSchool(editingSchool.id, formDataToSubmit);
       } else {
-        await createSchool(schoolForm);
+        await createSchool(formDataToSubmit);
       }
       setSchoolDialogOpen(false);
       setEditingSchool(null);
@@ -164,10 +175,7 @@ const SuperAdminDashboard = () => {
         province: '',
         subjects: [], 
         grades: [],
-        primaryColor: '#1976d2',
-        secondaryColor: '#dc004e',
-        accentColor: '#ff9800',
-        logo: null
+        logo: ''
       });
       fetchData();
     } catch (err) {
@@ -207,10 +215,7 @@ const SuperAdminDashboard = () => {
         province: defaultProvince,
         subjects: [], 
         grades: [],
-        primaryColor: '#1976d2',
-        secondaryColor: '#dc004e',
-        accentColor: '#ff9800',
-        logo: null
+        logo: ''
       });
     }
     setSchoolDialogOpen(true);
@@ -219,6 +224,15 @@ const SuperAdminDashboard = () => {
   // Admin Handlers
   const handleAdminSubmit = async () => {
     try {
+      // Validate that selected school belongs to the superadmin's province (for provincial superadmins)
+      if (isProvincialSuperAdmin()) {
+        const selectedSchool = schools.find(school => school.id === adminForm.schoolId);
+        if (selectedSchool && selectedSchool.province !== currentUser?.province) {
+          setError('You can only create admins for schools in your assigned province');
+          return;
+        }
+      }
+      
       await createAdmin(adminForm);
       setAdminDialogOpen(false);
       setAdminForm({ name: '', email: '', phoneNumber: '', schoolId: '', password: '' });
@@ -421,15 +435,31 @@ const SuperAdminDashboard = () => {
           <TextField label="Principal Name" fullWidth margin="dense" value={schoolForm.principalName} onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} />
           
           {/* Province Field */}
-          <TextField 
-            label="Province" 
-            fullWidth 
-            margin="dense" 
-            value={schoolForm.province} 
-            onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
-            disabled={isProvincialSuperAdmin()} // Lock province for Provincial Superadmins
-            helperText={isProvincialSuperAdmin() ? "Province is locked to your assigned province" : "Select the province for this school"}
-          />
+          {isProvincialSuperAdmin() ? (
+            <TextField 
+              label="Province" 
+              fullWidth 
+              margin="dense" 
+              value={currentUser?.province || ''} 
+              disabled
+              helperText="Province is locked to your assigned province"
+            />
+          ) : (
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Province</InputLabel>
+              <Select
+                value={schoolForm.province}
+                onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
+                label="Province"
+              >
+                {PROVINCES.map((province) => (
+                  <MenuItem key={province} value={province}>
+                    {province}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
           
           <FormControl fullWidth margin="dense">
             <InputLabel id="subjects-label">Subjects</InputLabel>
@@ -469,34 +499,6 @@ const SuperAdminDashboard = () => {
             </Select>
           </FormControl>
 
-          <TextField 
-            label="Primary Color" 
-            fullWidth 
-            margin="dense" 
-            value={schoolForm.primaryColor} 
-            onChange={(e) => setSchoolForm({ ...schoolForm, primaryColor: e.target.value })}
-          />
-          <TextField 
-            label="Secondary Color" 
-            fullWidth 
-            margin="dense" 
-            value={schoolForm.secondaryColor} 
-            onChange={(e) => setSchoolForm({ ...schoolForm, secondaryColor: e.target.value })}
-          />
-          <TextField 
-            label="Accent Color" 
-            fullWidth 
-            margin="dense" 
-            value={schoolForm.accentColor} 
-            onChange={(e) => setSchoolForm({ ...schoolForm, accentColor: e.target.value })}
-          />
-          <TextField 
-            label="Logo" 
-            fullWidth 
-            margin="dense" 
-            value={schoolForm.logo} 
-            onChange={(e) => setSchoolForm({ ...schoolForm, logo: e.target.value })}
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSchoolDialogOpen(false)}>Cancel</Button>
@@ -512,9 +514,15 @@ const SuperAdminDashboard = () => {
           <TextField label="Email" type="email" fullWidth margin="dense" value={adminForm.email} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
           <TextField label="Phone Number" fullWidth margin="dense" value={adminForm.phoneNumber} onChange={(e) => setAdminForm({ ...adminForm, phoneNumber: e.target.value })} />
           <TextField select label="School" fullWidth margin="dense" value={adminForm.schoolId} onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}>
-            {schools.map((school) => (
-              <MenuItem key={school.id} value={school.id}>{school.name}</MenuItem>
-            ))}
+            {schools
+              .filter(school => 
+                !isProvincialSuperAdmin() || school.province === currentUser?.province
+              )
+              .map((school) => (
+                <MenuItem key={school.id} value={school.id}>
+                  {school.name} {isProvincialSuperAdmin() ? '' : `(${school.province})`}
+                </MenuItem>
+              ))}
           </TextField>
           <TextField label="Password" type="password" fullWidth margin="dense" value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} />
         </DialogContent>

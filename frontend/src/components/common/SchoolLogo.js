@@ -19,14 +19,14 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
         return {
           width: size,
           height: size,
-          bgcolor: branding.primaryColor || '#1976d2',
+          bgcolor: 'primary.main',
           color: 'white'
         };
       case 'login':
         return {
           width: size,
           height: size,
-          bgcolor: branding.primaryColor || '#1976d2',
+          bgcolor: 'primary.main',
           color: 'white',
           mb: 2
         };
@@ -35,7 +35,7 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
         return {
           width: size,
           height: size,
-          bgcolor: branding.primaryColor || '#1976d2',
+          bgcolor: 'primary.main',
           color: 'white'
         };
     }

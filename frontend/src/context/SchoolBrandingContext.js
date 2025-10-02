@@ -14,9 +14,6 @@ export const useSchoolBranding = () => {
 export const SchoolBrandingProvider = ({ children }) => {
   const { user } = useAuth();
   const [branding, setBranding] = useState({
-    primaryColor: '#1976d2',
-    secondaryColor: '#dc004e',
-    accentColor: '#ff9800',
     logo: null,
     schoolName: 'Thuto Dashboard',
     favicon: null
@@ -72,19 +69,6 @@ export const SchoolBrandingProvider = ({ children }) => {
   };
 
   const applyBrandingToDOM = (brandingData) => {
-    // Apply CSS custom properties for dynamic theming
-    const root = document.documentElement;
-    
-    if (brandingData.primaryColor) {
-      root.style.setProperty('--primary-color', brandingData.primaryColor);
-    }
-    if (brandingData.secondaryColor) {
-      root.style.setProperty('--secondary-color', brandingData.secondaryColor);
-    }
-    if (brandingData.accentColor) {
-      root.style.setProperty('--accent-color', brandingData.accentColor);
-    }
-    
     // Update document title
     if (brandingData.schoolName) {
       document.title = `${brandingData.schoolName} - Dashboard`;
@@ -107,9 +91,6 @@ export const SchoolBrandingProvider = ({ children }) => {
 
   const resetToDefault = () => {
     const defaultBranding = {
-      primaryColor: '#1976d2',
-      secondaryColor: '#dc004e',
-      accentColor: '#ff9800',
       logo: null,
       schoolName: 'Thuto Dashboard',
       favicon: null

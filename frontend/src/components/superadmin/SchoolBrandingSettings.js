@@ -18,8 +18,6 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
   const { branding, updateSchoolBranding, refreshBranding } = useSchoolBranding();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    primaryColor: '#1976d2',
-    secondaryColor: '#dc004e',
     logo: null,
     schoolName: schoolName || 'School Name'
   });
@@ -35,8 +33,6 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
   useEffect(() => {
     if (branding) {
       setFormData({
-        primaryColor: branding.primaryColor || '#1976d2',
-        secondaryColor: branding.secondaryColor || '#dc004e',
         logo: branding.logo,
         schoolName: branding.schoolName || schoolName || 'School Name'
       });
@@ -44,7 +40,7 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
     }
   }, [branding, schoolName]);
 
-  const handleColorChange = (field, value) => {
+  const handleFieldChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -91,8 +87,6 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
 
     try {
       const brandingData = {
-        primaryColor: formData.primaryColor,
-        secondaryColor: formData.secondaryColor,
         schoolName: formData.schoolName
       };
 
@@ -191,7 +185,7 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
                   width: 80, 
                   height: 80, 
                   mr: 2,
-                  bgcolor: formData.primaryColor
+                  bgcolor: 'primary.main'
                 }}
               >
                 {formData.schoolName.charAt(0)}
@@ -225,102 +219,11 @@ const SchoolBrandingSettings = ({ schoolId, schoolName }) => {
               fullWidth
               label="School Name"
               value={formData.schoolName}
-              onChange={(e) => handleColorChange('schoolName', e.target.value)}
+              onChange={(e) => handleFieldChange('schoolName', e.target.value)}
               sx={{ mb: 2 }}
             />
           </Grid>
 
-          {/* Color Settings */}
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Color Theme
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <TextField
-                label="Primary Color"
-                type="color"
-                value={formData.primaryColor}
-                onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                sx={{ width: 100 }}
-                InputProps={{
-                  sx: { height: 56 }
-                }}
-              />
-              <TextField
-                fullWidth
-                label="Primary Color (Hex)"
-                value={formData.primaryColor}
-                onChange={(e) => handleColorChange('primaryColor', e.target.value)}
-                placeholder="#1976d2"
-              />
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              Used for buttons, links, and primary elements
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <TextField
-                label="Secondary Color"
-                type="color"
-                value={formData.secondaryColor}
-                onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                sx={{ width: 100 }}
-                InputProps={{
-                  sx: { height: 56 }
-                }}
-              />
-              <TextField
-                fullWidth
-                label="Secondary Color (Hex)"
-                value={formData.secondaryColor}
-                onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
-                placeholder="#dc004e"
-              />
-            </Box>
-            <Typography variant="caption" color="text.secondary">
-              Used for accents and secondary elements
-            </Typography>
-          </Grid>
-
-          {/* Preview */}
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Preview
-            </Typography>
-            
-            <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-              <Button 
-                variant="contained" 
-                sx={{ 
-                  mr: 2, 
-                  bgcolor: formData.primaryColor,
-                  '&:hover': { bgcolor: formData.primaryColor }
-                }}
-              >
-                Primary Button
-              </Button>
-              <Button 
-                variant="outlined" 
-                sx={{ 
-                  borderColor: formData.secondaryColor,
-                  color: formData.secondaryColor,
-                  '&:hover': { 
-                    borderColor: formData.secondaryColor,
-                    bgcolor: formData.secondaryColor + '10'
-                  }
-                }}
-              >
-                Secondary Button
-              </Button>
-            </Box>
-          </Grid>
 
           {/* Save Button */}
           <Grid item xs={12}>
