@@ -17,7 +17,13 @@ export const AuthProvider = ({ children }) => {
 
   const setAuthData = (user, token) => {
     localStorage.setItem('token', token);
+
+    // Store user data based on role type
+    if (user.role && (user.role === 'superadmin' || user.role === 'superadmin_national' || user.role === 'superadmin_provincial')) {
+      localStorage.setItem('superAdmin', JSON.stringify(user));
+    } else {
     localStorage.setItem('user', JSON.stringify(user));
+    }
     
     // Store role and province for Superadmin roles
     if (user.role) {
