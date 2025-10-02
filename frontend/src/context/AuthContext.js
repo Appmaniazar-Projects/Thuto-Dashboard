@@ -16,50 +16,81 @@ export const AuthProvider = ({ children }) => {
   const { enqueueSnackbar } = useSnackbar();
 
   const setAuthData = (user, token) => {
+    if (!user || !user.role) {
+      console.error("Invalid user object passed to setAuthData:", user);
+      throw new Error("User must have a role");
+    }
+  
     localStorage.setItem('token', token);
-
-    // Store user data based on role type
-    if (user.role && (user.role === 'superadmin' || user.role === 'superadmin_national' || user.role === 'superadmin_provincial')) {
+  
+    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user.role)) {
       localStorage.setItem('superAdmin', JSON.stringify(user));
     } else {
-    localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(user));
     }
-    
-    // Store role and province for Superadmin roles
-    if (user.role) {
-      localStorage.setItem('userRole', user.role);
-    }
-    if (user.province && (user.role === 'superadmin_provincial' || user.role === 'superadmin_national')) {
+  
+    localStorage.setItem('userRole', user.role);
+  
+    if (user.province && ['superadmin_provincial', 'superadmin_national'].includes(user.role)) {
       localStorage.setItem('userProvince', user.province);
     } else {
       localStorage.removeItem('userProvince');
     }
-
+  
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setCurrentUser(user);
   };
+  
 
   useEffect(() => {
     const initializeAuth = () => {
       try {
         setLoading(true);
         const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+        
+        // Check for both regular user and superadmin data
+        let storedUser = localStorage.getItem('user');
+        let storedSuperAdmin = localStorage.getItem('superAdmin');
 
-        if (storedToken && storedUser) {
+        if (storedToken && (storedUser || storedSuperAdmin)) {
           // Set API authorization header for future use
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           
-          // Parse stored user data
-          const userData = JSON.parse(storedUser);
-          setCurrentUser(userData);
+          // Parse stored user data - prioritize superAdmin if both exist
+          let userData;
+          if (storedSuperAdmin) {
+            userData = JSON.parse(storedSuperAdmin);
+          } else if (storedUser) {
+            userData = JSON.parse(storedUser);
+          }
+          
+          // Ensure user data has required properties
+          if (userData && typeof userData === 'object' && userData.role) {
+            userData = {
+              id: userData.id || null,
+              email: userData.email || null,
+              role: userData.role.toLowerCase(), // enforce lowercase
+              level: userData.level || null,
+              province: userData.province || null,
+              displayName: userData.name || userData.displayName || 'User',
+              phoneNumber: userData.phoneNumber || null,
+              ...userData
+            };
+            setCurrentUser(userData);
+          } else {
+            throw new Error('User data missing role');
+          }          
         }
       } catch (err) {
         console.error('Error parsing stored auth data:', err);
         // Clear invalid stored data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('superAdmin');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userProvince');
         delete api.defaults.headers.common['Authorization'];
+        setCurrentUser(null);
       } finally {
         setLoading(false);
       }
