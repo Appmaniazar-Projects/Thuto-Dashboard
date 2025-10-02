@@ -70,6 +70,7 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schools');
+  const [submitting, setSubmitting] = useState(false);
   
   // Dialog states
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
@@ -153,17 +154,71 @@ const SuperAdminDashboard = () => {
   // School Handlers
   const handleSchoolSubmit = async () => {
     try {
+      // Set loading state
+      setSubmitting(true);
+      // Clear any previous errors
+      setError(null);
+      
+      // Validate required fields
+      const requiredFields = ['name', 'address', 'phoneNumber', 'email', 'principalName', 'province'];
+      const missingFields = requiredFields.filter(field => !schoolForm[field]?.trim());
+      
+      if (missingFields.length > 0) {
+        setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        setSubmitting(false);
+        return;
+      }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(schoolForm.email)) {
+        setError('Please enter a valid email address');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Validate phone number format (South African format)
+      const phoneRegex = /^(\+27|0)[0-9]{9}$/;
+      if (!phoneRegex.test(schoolForm.phoneNumber.replace(/\s/g, ''))) {
+        setError('Please enter a valid South African phone number (e.g., 0123456789 or +27123456789)');
+        setSubmitting(false);
+        return;
+      }
+      
       // For provincial superadmins, ensure province is set to their province
       const formDataToSubmit = { ...schoolForm };
       if (isProvincialSuperAdmin()) {
         formDataToSubmit.province = currentUser?.province;
       }
       
+      // Validate province is selected
+      if (!formDataToSubmit.province) {
+        setError('Please select a province');
+        setSubmitting(false);
+        return;
+      }
+      
+      // Check if school name already exists (client-side check)
+      const existingSchool = schools.find(school => 
+        school.name.toLowerCase() === formDataToSubmit.name.toLowerCase() && 
+        school.id !== editingSchool?.id
+      );
+      if (existingSchool) {
+        setError('A school with this name already exists');
+        setSubmitting(false);
+        return;
+      }
+      
       if (editingSchool) {
         await updateSchool(editingSchool.id, formDataToSubmit);
+        setError(null);
+        alert('School updated successfully!');
       } else {
         await createSchool(formDataToSubmit);
+        setError(null);
+        alert('School created successfully!');
       }
+      
       setSchoolDialogOpen(false);
       setEditingSchool(null);
       setSchoolForm({ 
@@ -179,7 +234,24 @@ const SuperAdminDashboard = () => {
       });
       fetchData();
     } catch (err) {
-      setError('Failed to save school');
+      console.error('School submission error:', err);
+      
+      // Handle specific error types
+      if (err.response?.status === 400) {
+        setError(err.response.data?.message || 'Invalid school data. Please check all fields.');
+      } else if (err.response?.status === 409) {
+        setError('A school with this name or email already exists');
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to create schools in this province');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later or contact support.');
+      } else if (err.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your internet connection.');
+      } else {
+        setError(err.message || `Failed to ${editingSchool ? 'update' : 'create'} school. Please try again.`);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -195,6 +267,10 @@ const SuperAdminDashboard = () => {
   };
 
   const openSchoolDialog = (school = null) => {
+    // Clear any previous errors
+    setError(null);
+    setSubmitting(false);
+    
     if (school) {
       setEditingSchool(school);
       setSchoolForm({
@@ -425,9 +501,14 @@ const SuperAdminDashboard = () => {
       )}
 
       {/* School Dialog */}
-      <Dialog open={schoolDialogOpen} onClose={() => setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={schoolDialogOpen} onClose={() => !submitting && setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingSchool ? 'Edit School' : 'Add New School'}</DialogTitle>
         <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <TextField label="School Name" fullWidth margin="dense" value={schoolForm.name} onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} />
           <TextField label="Address" fullWidth margin="dense" multiline rows={2} value={schoolForm.address} onChange={(e) => setSchoolForm({ ...schoolForm, address: e.target.value })} />
           <TextField label="Phone Number" fullWidth margin="dense" value={schoolForm.phoneNumber} onChange={(e) => setSchoolForm({ ...schoolForm, phoneNumber: e.target.value })} />
@@ -501,8 +582,17 @@ const SuperAdminDashboard = () => {
 
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSchoolDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSchoolSubmit} variant="contained">{editingSchool ? 'Update' : 'Create'}</Button>
+          <Button onClick={() => setSchoolDialogOpen(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSchoolSubmit} 
+            variant="contained" 
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={20} /> : null}
+          >
+            {submitting ? 'Saving...' : (editingSchool ? 'Update' : 'Create')}
+          </Button>
         </DialogActions>
       </Dialog>
 
