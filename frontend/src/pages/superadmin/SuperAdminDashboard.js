@@ -320,7 +320,15 @@ const SuperAdminDashboard = () => {
         }
       }
       
-      await createAdmin(adminForm);
+      // Add creator's email to the submission data
+      const adminDataToSubmit = { ...adminForm };
+      if (!currentUser?.email) {
+        setError('Unable to identify creator. Please log in again.');
+        return;
+      }
+      adminDataToSubmit.createdBy = currentUser.email;
+      
+      await createAdmin(adminDataToSubmit);
       setAdminDialogOpen(false);
       setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
       alert('Admin created! (Fetching admin list not implemented yet)');
