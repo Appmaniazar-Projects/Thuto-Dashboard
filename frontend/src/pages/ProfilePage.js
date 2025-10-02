@@ -14,7 +14,7 @@ const ProfilePage = () => {
       <div className="profile-sidebar">
         <div className="avatar-section">
           <div className="avatar-placeholder-large"></div>
-          <h3>{user.name || user.displayName || 'N/A'}</h3>
+          <h3>{user.name || user.displayName || 'N/A'} {user.lastName || ''}</h3>
           <p>{user.role || 'N/A'}</p>
         </div>
         <div className="profile-navigation">
@@ -28,8 +28,12 @@ const ProfilePage = () => {
           <h4>Account Details</h4>
           <div className="detail-grid">
             <div className="detail-item">
-              <strong>Full Name:</strong>
+              <strong>First Name:</strong>
               <span>{user.name || user.displayName || 'N/A'}</span>
+            </div>
+            <div className="detail-item">
+              <strong>Last Name:</strong>
+              <span>{user.lastName || 'N/A'}</span>
             </div>
             <div className="detail-item">
               <strong>Email:</strong>

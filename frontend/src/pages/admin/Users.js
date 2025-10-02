@@ -59,12 +59,13 @@ const Users = () => {
     // Form state
     const [userForm, setUserForm] = useState({
         name: '',
+        lastName: '',
         email: '',
         phoneNumber: '',
         role: '',
         password: '',
         subjects: [],
-        grade: '',
+        grade: [],
         schoolId: '',
     });
 
@@ -157,7 +158,7 @@ const Users = () => {
                 role: user.role || '',
                 password: '',
                 subjects: user.subjects || [],
-                grade: user.grade || '',
+                grade: user.grade || [],
                 schoolId: user.schoolId || ''
             });
         } else {
@@ -170,12 +171,13 @@ const Users = () => {
     const resetForm = () => {
         setUserForm({
             name: '',
+            lastName: '',
             email: '',
             phoneNumber: '',
             role: '',
             password: '',
             subjects: [],
-            grade: ''
+            grade: []
         });
     };
 
@@ -190,7 +192,7 @@ const Users = () => {
         }
 
         // Define headers based on the table
-        const headers = ['Name', 'Email', 'Phone Number', 'Role'];
+        const headers = ['Name', 'Last Name', 'Email', 'Phone Number', 'Role'];
         const isTeachersTable = title === 'Teachers';
         if (isTeachersTable) {
             headers.push('Subjects', 'Grade');
@@ -264,7 +266,8 @@ const Users = () => {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Name</TableCell>
+                                <TableCell>First Name</TableCell>
+                                <TableCell>Last Name</TableCell>
                                 <TableCell>Email</TableCell>
                                 <TableCell>Phone Number</TableCell>
                                 <TableCell>Role</TableCell>
@@ -277,6 +280,7 @@ const Users = () => {
                             {userData.map((user) => (
                                 <TableRow key={user.id}>
                                     <TableCell>{user.name}</TableCell>
+                                    <TableCell>{user.lastName || 'N/A'}</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell>{user.phoneNumber}</TableCell>
                                     <TableCell>
@@ -412,11 +416,20 @@ const Users = () => {
                     <TextField
                         autoFocus
                         margin="dense"
-                        label="Full Name"
+                        label="First Name"
                         fullWidth
                         variant="outlined"
                         value={userForm.name}
                         onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                        sx={{ mb: 2 }}
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Last Name"
+                        fullWidth
+                        variant="outlined"
+                        value={userForm.lastName}
+                        onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })}
                         sx={{ mb: 2 }}
                     />
                     <TextField

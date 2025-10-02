@@ -4,14 +4,14 @@ import {
 } from '@mui/material';
 
 const headCells = [
-  { id: 'name', label: 'Name' },
+  { id: 'name', label: 'First Name' },
+  { id: 'lastName', label: 'Last Name' },
   { id: 'attendance', label: 'Attendance (%)' },
 ];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) return -1;
   if (b[orderBy] > a[orderBy]) return 1;
-  return 0;
 }
 
 function getComparator(order, orderBy) {
@@ -56,6 +56,7 @@ const SortableStudentList = ({ students }) => {
             {sortedStudents.map((student) => (
               <TableRow key={student.id}>
                 <TableCell>{student.name}</TableCell>
+                <TableCell>{student.lastName || 'N/A'}</TableCell>
                 <TableCell>{student.attendance}</TableCell>
               </TableRow>
             ))}

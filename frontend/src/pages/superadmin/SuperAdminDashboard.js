@@ -92,6 +92,7 @@ const SuperAdminDashboard = () => {
   
   const [adminForm, setAdminForm] = useState({
     name: '',
+    lastName: '',
     email: '',
     phoneNumber: '',
     schoolId: '',
@@ -321,7 +322,7 @@ const SuperAdminDashboard = () => {
       
       await createAdmin(adminForm);
       setAdminDialogOpen(false);
-      setAdminForm({ name: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
       alert('Admin created! (Fetching admin list not implemented yet)');
     } catch (err) {
       setError('Failed to save admin');
@@ -329,7 +330,7 @@ const SuperAdminDashboard = () => {
   };
 
   const openAdminDialog = () => {
-    setAdminForm({ name: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+    setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
     setAdminDialogOpen(true);
   };
 
@@ -610,7 +611,8 @@ const SuperAdminDashboard = () => {
       <Dialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Administrator</DialogTitle>
         <DialogContent>
-          <TextField label="Full Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
+          <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
+          <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />
           <TextField label="Email" type="email" fullWidth margin="dense" value={adminForm.email} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
           <TextField label="Phone Number" fullWidth margin="dense" value={adminForm.phoneNumber} onChange={(e) => setAdminForm({ ...adminForm, phoneNumber: e.target.value })} />
           <TextField select label="School" fullWidth margin="dense" value={adminForm.schoolId} onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}>

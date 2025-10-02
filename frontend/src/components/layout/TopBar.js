@@ -173,7 +173,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           
           {/* User Profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
-            <Tooltip title={user?.name || 'User Profile'}>
+            <Tooltip title={`${user?.name || 'User'} ${user?.lastName || ''}`.trim() || 'User Profile'}>
               <IconButton
                 onClick={handleProfileMenuOpen}
                 size="small"
@@ -183,7 +183,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
               >
                 {user?.photoURL ? (
                   <Avatar 
-                    alt={user.name} 
+                    alt={`${user?.name || ''} ${user?.lastName || ''}`.trim()} 
                     src={user.photoURL} 
                     sx={{ width: 32, height: 32 }}
                   />
@@ -196,7 +196,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
             </Tooltip>
             {!isMobile && (
               <Typography variant="body2" sx={{ ml: 1 }}>
-                {user?.name || 'User'}
+                {`${user?.name || 'User'} ${user?.lastName || ''}`.trim()}
               </Typography>
             )}
           </Box>
@@ -313,7 +313,9 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
         }}
       >
         <Box sx={{ p: 2, borderBottom: '1px solid #374151' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{user?.name || 'User'}</Typography>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+            {`${user?.name || 'User'} ${user?.lastName || ''}`.trim()}
+          </Typography>
           <Typography variant="body2" sx={{ color: '#9ca3af' }}>{user?.email || ''}</Typography>
         </Box>
         

@@ -47,6 +47,7 @@ const SuperadminManagement = () => {
   const [selectedSuperadmin, setSelectedSuperadmin] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    lastName: '',
     email: '',
     role: 'superadmin_provincial', // Default role
     province: '',
@@ -76,6 +77,7 @@ const SuperadminManagement = () => {
       setSelectedSuperadmin(superadmin);
       setFormData({
         name: superadmin.name,
+        lastName: superadmin.lastName,
         email: superadmin.email,
         role: superadmin.role,
         province: superadmin.province || '',
@@ -86,6 +88,7 @@ const SuperadminManagement = () => {
       setSelectedSuperadmin(null);
       setFormData({ 
         name: '', 
+        lastName: '',
         email: '', 
         role: 'superadmin_provincial',
         province: '', 
@@ -99,6 +102,7 @@ const SuperadminManagement = () => {
     setDialogOpen(false);
     setFormData({ 
       name: '', 
+      lastName: '',
       email: '', 
       role: 'superadmin_provincial',
       province: '', 
@@ -181,7 +185,8 @@ const SuperadminManagement = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
+                <TableCell>First Name</TableCell>
+                <TableCell>Last Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Province</TableCell>
@@ -191,13 +196,13 @@ const SuperadminManagement = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : superadmins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     No superadmins found
                   </TableCell>
                 </TableRow>
@@ -205,6 +210,7 @@ const SuperadminManagement = () => {
                 superadmins.map((admin) => (
                   <TableRow key={admin.id}>
                     <TableCell>{admin.name}</TableCell>
+                    <TableCell>{admin.lastName || 'N/A'}</TableCell>
                     <TableCell>{admin.email}</TableCell>
                     <TableCell>
                       <Chip 
@@ -242,9 +248,17 @@ const SuperadminManagement = () => {
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Full Name"
+              label="First Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Last Name"
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               margin="normal"
               required
             />
