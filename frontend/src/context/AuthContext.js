@@ -107,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
+      localStorage.removeItem('superAdmin');
       localStorage.removeItem('userProvince');
       
       // Clear API authorization header
