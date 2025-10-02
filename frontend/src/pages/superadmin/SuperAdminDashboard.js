@@ -48,6 +48,7 @@ import {
   createSchool, 
   updateSchool, 
   deleteSchool,
+  getAllAdmins,
   createAdmin
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
@@ -119,13 +120,14 @@ const SuperAdminDashboard = () => {
         params.province = currentUser?.province;
       }
       
-      const [schoolsData, gradesData] = await Promise.all([
+      const [schoolsData, adminsData, gradesData] = await Promise.all([
         getAllSchools(params), // Pass province filter
+        getAllAdmins(params), // Pass same province filter for admins
         gradeService.getAllGrades()
       ]);
       setSchools(schoolsData);
+      setAdmins(adminsData);
       setGrades(gradesData);
-      setAdmins([]); // Admin fetching not supported yet
     } catch (err) {
       setError('Failed to load data');
       console.error(err);
@@ -331,7 +333,8 @@ const SuperAdminDashboard = () => {
       await createAdmin(adminDataToSubmit);
       setAdminDialogOpen(false);
       setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
-      alert('Admin created! (Fetching admin list not implemented yet)');
+      fetchData(); // Refresh the admin list
+      alert('Admin created successfully!');
     } catch (err) {
       setError('Failed to save admin');
     }
@@ -503,9 +506,54 @@ const SuperAdminDashboard = () => {
                 Add Administrator
               </Button>
             </Box>
-            <Typography color="text.secondary" sx={{ mb: 2 }}>
-              Admin listing not supported yet. You can create admins.
-            </Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>First Name</TableCell>
+                    <TableCell>Last Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Phone Number</TableCell>
+                    <TableCell>School</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {admins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell>{admin.name}</TableCell>
+                      <TableCell>{admin.lastName || 'N/A'}</TableCell>
+                      <TableCell>{admin.email}</TableCell>
+                      <TableCell>{admin.phoneNumber}</TableCell>
+                      <TableCell>
+                        {schools.find(school => school.id === admin.schoolId)?.name || 'Unknown School'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={admin.status || 'Active'} color={admin.status === 'Active' ? 'success' : 'default'} size="small" />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton onClick={() => console.log('Edit admin:', admin.id)}>
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => console.log('Delete admin:', admin.id)} color="error">
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {admins.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        <Typography color="text.secondary">
+                          No administrators found. Create your first admin using the "Add Administrator" button.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </CardContent>
         </Card>
       )}
