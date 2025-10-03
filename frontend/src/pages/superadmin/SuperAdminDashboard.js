@@ -29,6 +29,7 @@ import {
   Checkbox,
   ListItemText,
   Input,
+  AlertTitle,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -222,10 +223,10 @@ const SuperAdminDashboard = () => {
       // Submit to backend
       if (editingSchool) {
         await updateSchool(editingSchool.id, formDataToSubmit);
-        enqueueSnackbar('School updated successfully!', { variant: 'success' });
+        alert('School updated successfully!');
       } else {
         await createSchool(formDataToSubmit);
-        enqueueSnackbar(`School created successfully by ${currentUser.email}!`, { variant: 'success' });
+        alert(`School created successfully by ${currentUser.email}!`);
       }
   
       // Reset form
