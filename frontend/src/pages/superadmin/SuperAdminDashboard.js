@@ -53,8 +53,6 @@ import {
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 
-
-
 const PROVINCES = [
   'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
   'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'
@@ -102,24 +100,15 @@ const SuperAdminDashboard = () => {
     fetchData();
     loadGrades();
     loadSubjects();
-  }, [selectedProvince]); // Add selectedProvince as dependency
+  }, []); 
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Build query params for province filtering
-      const params = {};
-      if (isMaster() && selectedProvince) {
-        params.province = selectedProvince;
-      } else if (isProvincialSuperAdmin()) {
-        // Provincial superadmins can only see schools in their province
-        params.province = currentUser?.province;
-      }
-      
       const [schoolsData, adminsData, gradesData] = await Promise.all([
-        getAllSchools(params), // Pass province filter
+        getAllSchools(), // Pass province filter
         getAllAdmins(), // Get all admins, filter on frontend
         gradeService.getAllGrades()
       ]);
@@ -176,106 +165,87 @@ const SuperAdminDashboard = () => {
   // School Handlers
   const handleSchoolSubmit = async () => {
     try {
-      // Set loading state
       setSubmitting(true);
-      // Clear any previous errors
       setError(null);
-      
+  
       // Validate required fields
       const requiredFields = ['name', 'address', 'phoneNumber', 'email', 'principalName', 'province'];
       const missingFields = requiredFields.filter(field => !schoolForm[field]?.trim());
       
       if (missingFields.length > 0) {
         setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
-        setSubmitting(false);
         return;
       }
-      
-      // For provincial superadmins, ensure they can only create schools in their province
-      if (isProvincialSuperAdmin && schoolForm.province !== currentUser?.province) {
+  
+      // Enforce province for provincial superadmins
+      if (isProvincialSuperAdmin() && schoolForm.province !== currentUser?.province) {
         setError(`You can only create schools in your assigned province (${currentUser?.province})`);
-        setSubmitting(false);
         return;
       }
-      
-      // Validate email format
+  
+      // Email format validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(schoolForm.email)) {
         setError('Please enter a valid email address');
-        setSubmitting(false);
         return;
       }
-      
-      // Validate phone number format (South African format)
+  
+      // Phone number format (South African)
       const phoneRegex = /^(\+27|0)[0-9]{9}$/;
       if (!phoneRegex.test(schoolForm.phoneNumber.replace(/\s/g, ''))) {
         setError('Please enter a valid South African phone number (e.g., 0123456789 or +27123456789)');
-        setSubmitting(false);
         return;
       }
-      
-      // For provincial superadmins, ensure province is set to their province
+  
+      // Build submission data
       const formDataToSubmit = { ...schoolForm };
       if (isProvincialSuperAdmin()) {
         formDataToSubmit.province = currentUser?.province;
       }
-      
-      // Add creator's email to the submission data
+  
       if (!currentUser?.email) {
         setError('Unable to identify creator. Please log in again.');
-        setSubmitting(false);
         return;
       }
       formDataToSubmit.createdBy = currentUser.email;
-      
-      // Validate province is selected
-      if (!formDataToSubmit.province) {
-        setError('Please select a province');
-        setSubmitting(false);
-        return;
-      }
-      
-      // Check if school name already exists (client-side check)
-      const existingSchool = schools.find(school => 
-        school.name.toLowerCase() === formDataToSubmit.name.toLowerCase() && 
+  
+      // Client-side duplicate check
+      const existingSchool = schools.find(school =>
+        school.name.toLowerCase() === formDataToSubmit.name.toLowerCase() &&
         school.id !== editingSchool?.id
       );
       if (existingSchool) {
         setError('A school with this name already exists');
-        setSubmitting(false);
         return;
       }
-      
+  
+      // Submit to backend
       if (editingSchool) {
-        console.log('Updating school with data:', formDataToSubmit);
         await updateSchool(editingSchool.id, formDataToSubmit);
-        setError(null);
-        alert('School updated successfully!');
+        enqueueSnackbar('School updated successfully!', { variant: 'success' });
       } else {
-        console.log('Creating school with data:', formDataToSubmit);
         await createSchool(formDataToSubmit);
-        setError(null);
-        alert(`School created successfully by ${currentUser.email}!`);
+        enqueueSnackbar(`School created successfully by ${currentUser.email}!`, { variant: 'success' });
       }
-      
+  
+      // Reset form
       setSchoolDialogOpen(false);
       setEditingSchool(null);
-      setSchoolForm({ 
-        name: '', 
-        address: '', 
-        phoneNumber: '', 
-        email: '', 
-        principalName: '', 
-        province: '',
-        subjects: [], 
+      setSchoolForm({
+        name: '',
+        address: '',
+        phoneNumber: '',
+        email: '',
+        principalName: '',
+        province: isProvincialSuperAdmin() ? currentUser?.province : '',
+        subjects: [],
         grades: [],
         logo: ''
       });
       fetchData();
     } catch (err) {
       console.error('School submission error:', err);
-      
-      // Handle specific error types
+  
       if (err.response?.status === 400) {
         setError(err.response.data?.message || 'Invalid school data. Please check all fields.');
       } else if (err.response?.status === 409) {
@@ -293,6 +263,7 @@ const SuperAdminDashboard = () => {
       setSubmitting(false);
     }
   };
+  
 
   const handleDeleteSchool = async (schoolId) => {
     if (window.confirm('Are you sure you want to delete this school?')) {
@@ -318,8 +289,6 @@ const SuperAdminDashboard = () => {
       });
     } else {
       setEditingSchool(null);
-      const isProvincial = isProvincialSuperAdmin();
-      const defaultProvince = isProvincial ? currentUser?.province : '';
       
       setSchoolForm({ 
         name: '', 
@@ -596,34 +565,22 @@ const SuperAdminDashboard = () => {
           <TextField label="Phone Number" fullWidth margin="dense" value={schoolForm.phoneNumber} onChange={(e) => setSchoolForm({ ...schoolForm, phoneNumber: e.target.value })} />
           <TextField label="Email" type="email" fullWidth margin="dense" value={schoolForm.email} onChange={(e) => setSchoolForm({ ...schoolForm, email: e.target.value })} />
           <TextField label="Principal Name" fullWidth margin="dense" value={schoolForm.principalName} onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} />
-          
-          {/* Province Field */}
-          {isProvincialSuperAdmin() ? (
-            <TextField 
-              label="Province" 
-              fullWidth 
-              margin="dense" 
-              value={currentUser?.province || ''} 
-              disabled
-              helperText="Province is locked to your assigned province"
-            />
-          ) : (
-            <FormControl fullWidth margin="dense">
-              <InputLabel>Province</InputLabel>
-              <Select
-                value={schoolForm.province}
-                onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
-                label="Province"
-              >
-                {PROVINCES.map((province) => (
-                  <MenuItem key={province} value={province}>
-                    {province}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-          
+          <TextField
+            select
+            fullWidth
+            margin="normal"
+            label="Province"
+            name="province"
+            value={schoolForm.province}
+            onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
+            required
+          >
+            {PROVINCES.map((province) => (
+              <MenuItem key={province} value={province}>
+                {province}
+              </MenuItem>
+            ))}
+          </TextField>
           <FormControl fullWidth margin="dense">
             <InputLabel id="subjects-label">Subjects</InputLabel>
             <Select

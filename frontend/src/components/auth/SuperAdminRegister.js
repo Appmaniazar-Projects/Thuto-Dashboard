@@ -50,10 +50,15 @@ const SuperAdminRegister = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'role' && value === 'SUPERADMIN_NATIONAL' ? { province: '' } : {})
+    }));
     if (error) setError('');
     if (success) setSuccess('');
   };
+  
 
   const validateForm = () => {
     if (!formData.phoneNumber || !formData.name || !formData.lastName || 
