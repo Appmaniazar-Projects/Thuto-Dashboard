@@ -66,6 +66,7 @@ export const publicRoutes = [
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
+  { path: '/superadmin/forgot-password', element: <ForgotPassword /> },
   { path: '/superadmin/register', element: <SuperAdminRegister /> },
   { path: '*', element: <NotFoundPage /> }
 ];

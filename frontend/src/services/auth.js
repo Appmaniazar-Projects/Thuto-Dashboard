@@ -98,6 +98,16 @@ const refreshToken = async () => {
   return response.data;
 };
 
+/*
+* Sends a password reset email to the specified email address
+* @param {string} email - The email address to send the reset link to
+* @returns {Promise<Object>} Response from the server
+*/
+const forgotPassword = async (email) => {
+ const response = await api.post('/superadmins/auth/forgot-password', { email });
+ return response.data;
+};
+
 /**
  * Gets the currently logged-in user from local storage
  * @returns {Object|null} The current user object or null if not logged in
@@ -111,6 +121,7 @@ const authService = {
   login,
   superAdminLogin,
   superAdminRegister,
+  forgotPassword,
   logout,
   getCurrentUser,
   refreshToken,

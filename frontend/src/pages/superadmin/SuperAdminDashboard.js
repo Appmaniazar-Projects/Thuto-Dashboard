@@ -40,7 +40,6 @@ import {
   SupervisorAccount as MasterIcon
 } from '@mui/icons-material';
 import PageTitle from '../../components/common/PageTitle';
-import ProvinceFilter from '../../components/common/ProvinceFilter';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -63,7 +62,6 @@ const PROVINCES = [
 
 const SuperAdminDashboard = () => {
   const { isMaster, isProvincialSuperAdmin, currentUser } = useAuth();
-  const [selectedProvince, setSelectedProvince] = useState(null);
   const [schools, setSchools] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -193,6 +191,13 @@ const SuperAdminDashboard = () => {
         return;
       }
       
+      // For provincial superadmins, ensure they can only create schools in their province
+      if (isProvincialSuperAdmin && schoolForm.province !== currentUser?.province) {
+        setError(`You can only create schools in your assigned province (${currentUser?.province})`);
+        setSubmitting(false);
+        return;
+      }
+      
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(schoolForm.email)) {
@@ -301,7 +306,6 @@ const SuperAdminDashboard = () => {
   };
 
   const openSchoolDialog = (school = null) => {
-    // Clear any previous errors
     setError(null);
     setSubmitting(false);
     
@@ -314,8 +318,9 @@ const SuperAdminDashboard = () => {
       });
     } else {
       setEditingSchool(null);
-      // Default province to current user's province for new schools
-      const defaultProvince = isProvincialSuperAdmin() ? currentUser?.province : '';
+      const isProvincial = isProvincialSuperAdmin();
+      const defaultProvince = isProvincial ? currentUser?.province : '';
+      
       setSchoolForm({ 
         name: '', 
         address: '', 
@@ -330,7 +335,7 @@ const SuperAdminDashboard = () => {
     }
     setSchoolDialogOpen(true);
   };
-
+  
   // Admin Handlers
   const handleAdminSubmit = async () => {
     try {
@@ -366,9 +371,6 @@ const SuperAdminDashboard = () => {
     setAdminDialogOpen(true);
   };
 
-  const handleProvinceChange = (province) => {
-    setSelectedProvince(province);
-  };
 
   if (loading) return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -385,14 +387,6 @@ const SuperAdminDashboard = () => {
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      {/* Province Filter - Show for Masters only */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box />
-        <ProvinceFilter
-          selectedProvince={selectedProvince}
-          onProvinceChange={handleProvinceChange}
-        />
-      </Box>
 
       {/* Tab Navigation */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>

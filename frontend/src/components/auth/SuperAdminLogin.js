@@ -114,6 +114,12 @@ const SuperAdminLogin = () => {
             {loading ? 'Signing in...' : 'Login'}
           </Button>
 
+          <Box sx={{ textAlign: 'right', mb: 2 }}>
+            <Link to="/superadmin/forgot-password" style={{ textDecoration: 'none', color: '#1976d2', fontSize: '0.875rem' }}>
+              Forgot Password?
+            </Link>
+          </Box>
+
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Don't have an account?{' '}
