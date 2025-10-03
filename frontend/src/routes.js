@@ -59,6 +59,8 @@ const isRedirect = (element) =>
   isValidElement(element) && element.type === Navigate;
 
 // Only wrap in suspense here — layout is handled in App.js
+const ForgotPassword = lazy(() => import('./components/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 
 
 export const publicRoutes = [
@@ -66,7 +68,8 @@ export const publicRoutes = [
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
-  { path: '/superadmin/forgot-password', element: <ForgotPassword /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
+  { path: '/reset-password', element: <ResetPassword /> },
   { path: '/superadmin/register', element: <SuperAdminRegister /> },
   { path: '*', element: <NotFoundPage /> }
 ];

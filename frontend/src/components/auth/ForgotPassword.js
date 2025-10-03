@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
+import { Container, Paper, Typography, TextField, Button, Box, Alert, Link as MuiLink } from '@mui/material';
 import authService from '../../services/auth';
 import Logo from '../../assets/Logo.png';
 
@@ -15,6 +15,12 @@ const ForgotPassword = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -44,27 +50,27 @@ const ForgotPassword = () => {
         <Typography variant="h4" align="center" color="text.secondary" sx={{ mb: 3 }}>
           Forgot Password
         </Typography>
+        <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 3 }}>
+          Enter your email address and we'll send you a link to reset your password.
+        </Typography>
 
         {error && <Alert severity="error" sx={{ mt: 2, width: '100%', mb: 2 }}>{error}</Alert>}
         {success && <Alert severity="success" sx={{ mt: 2, width: '100%', mb: 2 }}>{success}</Alert>}
 
-        <Typography variant="body1" align="center" sx={{ mb: 3 }}>
-          Enter your email address and we'll send you a link to reset your password.
-        </Typography>
-
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: '100%' }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
           <TextField
+            margin="normal"
             required
             fullWidth
+            id="email"
             label="Email Address"
             name="email"
-            type="email"
+            autoComplete="email"
+            autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            margin="normal"
             disabled={loading || !!success}
           />
-
           <Button
             type="submit"
             fullWidth
@@ -74,14 +80,10 @@ const ForgotPassword = () => {
           >
             {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
-
           <Box sx={{ textAlign: 'center', mt: 2 }}>
-            <Typography variant="body2">
-              Remember your password?{' '}
-              <Link to="/superadmin/login" style={{ textDecoration: 'none', color: '#1976d2' }}>
-                Back to Login
-              </Link>
-            </Typography>
+            <MuiLink component={Link} to="/superadmin/login" variant="body2">
+              Back to Login
+            </MuiLink>
           </Box>
         </Box>
       </Paper>
