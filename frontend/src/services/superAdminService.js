@@ -3,10 +3,13 @@ import api from './api';
 // ========== SCHOOL MANAGEMENT ==========
 /**
  * Fetches all administrators across all schools
+ * @param {string} createdBy - Email of the superadmin making the request
  */
-export const getAllAdmins = async (role = 'admin') => {
+export const getAllAdmins = async (role = 'admin', createdBy) => {
   try {
-    const response = await api.get(`/superadmin/allRoleSpecificUsers/role/${role}`);
+    const response = await api.get(`/superadmins/admins/allRoleSpecificUsers/role/${role}`, {
+      params: { createdBy }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch administrators:', error);
@@ -15,12 +18,13 @@ export const getAllAdmins = async (role = 'admin') => {
 };
 /**
  * Fetches all schools in the system
- * @param {Object} params - Optional query parameters
- * @param {string} params.province - Province filter for Masters
+ * @param {string} createdBy - Email of the superadmin making the request
  */
-export const getAllSchools = async (params = {}) => {
+export const getAllSchools = async (createdBy) => {
   try {
-    const response = await api.get('/superadmins/admins/schools/allSchools', { params });
+    const response = await api.get('/superadmins/admins/schools/allSchools', {
+      params: { createdBy }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch schools:', error);
@@ -31,10 +35,14 @@ export const getAllSchools = async (params = {}) => {
 /**
  * Creates a new school
  * @param {object} schoolData - School information
+ * @param {string} createdBy - Email of the superadmin creating the school
  */
-export const createSchool = async (schoolData) => {
+export const createSchool = async (schoolData, createdBy) => {
   try {
-    const response = await api.post('/superadmins/admins/school/createSchool/create', schoolData);
+    const response = await api.post('/superadmins/admins/school/createSchool/create', {
+      ...schoolData,
+      createdBy
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to create school:', error);
@@ -91,9 +99,12 @@ export const getSchoolDetails = async (schoolId) => {
  * Creates a new administrator
  * @param {object} adminData - Administrator information
  */
-export const createAdmin = async (adminData) => {
+export const createAdmin = async (adminData, createdBy) => {
   try {
-    const response = await api.post('/superadmins/admins/create', adminData);
+    const response = await api.post('/superadmins/admins/create', {
+      ...adminData,
+      createdBy
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to create administrator:', error);
