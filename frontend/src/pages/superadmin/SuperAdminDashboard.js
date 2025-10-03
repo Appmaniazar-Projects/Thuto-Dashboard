@@ -296,7 +296,7 @@ const SuperAdminDashboard = () => {
         phoneNumber: '', 
         email: '', 
         principalName: '', 
-        province: defaultProvince,
+        province: isProvincialSuperAdmin() ? currentUser?.province : '',
         subjects: [], 
         grades: [],
         logo: ''
