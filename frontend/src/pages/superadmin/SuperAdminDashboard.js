@@ -62,8 +62,7 @@ const PROVINCES = [
 ];
 
 const SuperAdminDashboard = () => {
-  const { isMaster, isProvincialSuperAdmin, currentUser } = useAuth();
-  const [selectedProvince, setSelectedProvince] = useState(null);
+  const { isMaster } = useAuth();
   const [schools, setSchools] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -104,41 +103,19 @@ const SuperAdminDashboard = () => {
     fetchData();
     loadGrades();
     loadSubjects();
-  }, [selectedProvince]); // Add selectedProvince as dependency
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Build query params for province filtering
-      const params = {};
-      if (isMaster() && selectedProvince) {
-        params.province = selectedProvince;
-      } else if (isProvincialSuperAdmin()) {
-        // Provincial superadmins can only see schools in their province
-        params.province = currentUser?.province;
-      }
-      
       const [schoolsData, adminsData, gradesData] = await Promise.all([
-        getAllSchools(params), // Pass province filter
-        getAllAdmins(), // Get all admins, filter on frontend
+        getAllSchools(),
+        getAllAdmins(),
         gradeService.getAllGrades()
       ]);
       
-      // Filter admins on frontend for provincial superadmins
-      let filteredAdmins = adminsData;
-      if (isProvincialSuperAdmin() && currentUser?.province) {
-        filteredAdmins = adminsData.filter(admin => {
-          const adminSchool = schoolsData.find(school => school.id === admin.schoolId);
-          return adminSchool && adminSchool.province === currentUser.province;
-        });
-      } else if (isMaster() && selectedProvince) {
-        filteredAdmins = adminsData.filter(admin => {
-          const adminSchool = schoolsData.find(school => school.id === admin.schoolId);
-          return adminSchool && adminSchool.province === selectedProvince;
-        });
-      }
+      const filteredAdmins = adminsData;
       
       setSchools(schoolsData);
       setAdmins(filteredAdmins);
@@ -380,9 +357,6 @@ const SuperAdminDashboard = () => {
     setAdminDialogOpen(true);
   };
 
-  const handleProvinceChange = (province) => {
-    setSelectedProvince(province);
-  };
 
   if (loading) return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
@@ -400,13 +374,7 @@ const SuperAdminDashboard = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Province Filter - Show for Masters only */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box />
-        <ProvinceFilter
-          selectedProvince={selectedProvince}
-          onProvinceChange={handleProvinceChange}
-        />
-      </Box>
+      <Box mb={3} />
 
       {/* Tab Navigation */}
       <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>

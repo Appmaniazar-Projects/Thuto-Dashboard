@@ -29,15 +29,6 @@ export const updateSubject = async (subjectId, subjectData) => {
 };
 
 /**
- * Get all subjects across all schools (for superadmins)
- * @returns {Promise<Array>} Array of all subject objects
- */
-export const getAllSubjects = async () => {
-  const response = await api.get('/subjects/subjects');
-  return response.data;
-};
-
-/**
  * Get subjects for current school
  * @returns {Promise<Array>} Array of subject objects for current school
  */
@@ -80,7 +71,6 @@ export const assignTeacherToSubject = async (subjectId, teacherId) => {
 const subjectService = {
   createSubject,
   updateSubject,
-  getAllSubjects,
   getSchoolSubjects,
   getSubjectsByTeacher,
   deleteSubject,
