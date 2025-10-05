@@ -106,13 +106,19 @@ const SuperAdminDashboard = () => {
     try {
       setLoading(true);
       setError(null);
+
+      const createdBy = currentUser?.email;
+      if (!createdBy) {
+      setError('Unable to identify user. Please log in again.');
+      return;
+       }
       
-      const [schoolsData, adminsData, gradesData] = await Promise.all([
-        getAllSchools(), // Pass province filter
-        getAllAdmins(), // Get all admins, filter on frontend
+       const [schoolsData, adminsData, gradesData] = await Promise.all([
+        getAllSchools(createdBy), // Pass createdBy
+        getAllAdmins('admin', createdBy), // Pass role and createdBy
         gradeService.getAllGrades()
       ]);
-        
+      
       setSchools(schoolsData);
       setAdmins(adminsData);
       setGrades(gradesData);

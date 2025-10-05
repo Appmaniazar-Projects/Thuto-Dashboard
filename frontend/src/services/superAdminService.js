@@ -35,13 +35,12 @@ export const getAllSchools = async (createdBy) => {
 /**
  * Creates a new school
  * @param {object} schoolData - School information
- * @param {string} createdBy - Email of the superadmin creating the school
  */
-export const createSchool = async (schoolData, createdBy) => {
+export const createSchool = async (schoolData) => {
   try {
     const response = await api.post('/superadmins/admins/school/createSchool/create', {
       ...schoolData,
-      createdBy
+     
     });
     return response.data;
   } catch (error) {
