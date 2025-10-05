@@ -109,6 +109,29 @@ const forgotPassword = async (email) => {
 };
 
 /**
+ * Gets the current user from localStorage
+ * @returns {Object|null} Current user data or null if not logged in
+ */
+const getCurrentUser = () => {
+  try {
+    // Check for both regular user and superadmin data
+    const storedUser = localStorage.getItem('user');
+    const storedSuperAdmin = localStorage.getItem('superAdmin');
+    
+    if (storedSuperAdmin) {
+      return JSON.parse(storedSuperAdmin);
+    } else if (storedUser) {
+      return JSON.parse(storedUser);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing stored user data:', error);
+    return null;
+  }
+};
+
+/**
  * Resets the password using the reset token
  * @param {string} token - The reset token from the email
  * @param {string} newPassword - The new password
