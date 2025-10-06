@@ -48,7 +48,9 @@ import {
   updateSchool, 
   deleteSchool,
   getAllAdmins,
-  createAdmin
+  createAdmin,
+  updateAdmin,
+  deleteAdmin
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
@@ -73,6 +75,7 @@ const SuperAdminDashboard = () => {
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
+  const [editingAdmin, setEditingAdmin] = useState(null);
   
   // Form states
   const [schoolForm, setSchoolForm] = useState({
@@ -331,20 +334,53 @@ const SuperAdminDashboard = () => {
       }
       adminDataToSubmit.createdBy = currentUser.email;
       
-      await createAdmin(adminDataToSubmit);
+      if (editingAdmin) {
+        await updateAdmin(editingAdmin.id, adminDataToSubmit);
+        alert('Admin updated successfully!');
+      } else {
+        await createAdmin(adminDataToSubmit);
+        alert('Admin created successfully!');
+      }
       setAdminDialogOpen(false);
       setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
       fetchData(); // Refresh the admin list
-      alert('Admin created successfully!');
+      
     } catch (err) {
       setError('Failed to save admin');
     }
   };
 
-  const openAdminDialog = () => {
-    setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+  const handleDeleteAdmin = async (adminId) => {
+    if (window.confirm('Are you sure you want to delete this administrator?')) {
+      try {
+        await deleteAdmin(adminId);
+        fetchData(); // Refresh the admin list
+        alert('Admin deleted successfully!');
+      } catch (err) {
+        setError('Failed to delete administrator');
+      }
+    }
+  };
+  
+  const openAdminDialog = (admin = null) => {
+    if (admin) {
+      setEditingAdmin(admin);
+      setAdminForm({
+        name: admin.name || '',
+        lastName: admin.lastName || '',
+        email: admin.email || '',
+        phoneNumber: admin.phoneNumber || '',
+        schoolId: admin.schoolId || '',
+        password: '' // Don't pre-fill password for security
+      });
+    } else {
+      setEditingAdmin(null);
+      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+    }
     setAdminDialogOpen(true);
   };
+
+  
 
 
   if (loading) return (
@@ -523,12 +559,12 @@ const SuperAdminDashboard = () => {
                         <Chip label={admin.status || 'Active'} color={admin.status === 'Active' ? 'success' : 'default'} size="small" />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton onClick={() => console.log('Edit admin:', admin.id)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton onClick={() => console.log('Delete admin:', admin.id)} color="error">
-                          <DeleteIcon />
-                        </IconButton>
+                      <IconButton onClick={() => openAdminDialog(admin)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteAdmin(admin.id)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -643,7 +679,7 @@ const SuperAdminDashboard = () => {
 
       {/* Admin Dialog */}
       <Dialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Administrator</DialogTitle>
+      <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
         <DialogContent>
           <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
           <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />

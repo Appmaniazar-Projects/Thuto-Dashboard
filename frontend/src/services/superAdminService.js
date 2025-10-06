@@ -118,13 +118,17 @@ export const createAdmin = async (adminData) => {
  */
 export const updateAdmin = async (adminId, adminData) => {
   try {
-    const response = await api.put(`/superadmins/admins/${adminId}`, adminData);
+    const { createdBy, ...adminPayload } = adminData;
+    const response = await api.put(`/superadmins/admins/update/${adminId}`, adminPayload, {
+      params: createdBy ? { createdBy } : {}
+    });
     return response.data;
   } catch (error) {
-    console.error(`Failed to update administrator ${adminId}:`, error);
+    console.error(`Failed to update admin ${adminId}:`, error);
     throw error;
   }
 };
+
 
 /**
  * Deletes an administrator
@@ -132,14 +136,13 @@ export const updateAdmin = async (adminId, adminData) => {
  */
 export const deleteAdmin = async (adminId) => {
   try {
-    const response = await api.delete(`/superadmins/admins/${adminId}`);
+    const response = await api.delete(`/superadmins/admins/remove/${adminId}`);
     return response.data;
   } catch (error) {
-    console.error(`Failed to delete administrator ${adminId}:`, error);
+    console.error(`Failed to delete admin ${adminId}:`, error);
     throw error;
   }
 };
-
 /**
  * Gets administrators for a specific school
  * @param {string} schoolId - The ID of the school
