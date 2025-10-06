@@ -98,11 +98,11 @@ export const getSchoolDetails = async (schoolId) => {
  * Creates a new administrator
  * @param {object} adminData - Administrator information
  */
-export const createAdmin = async (adminData, createdBy) => {
+export const createAdmin = async (adminData) => {
   try {
-    const response = await api.post('/superadmins/admins/create', {
-      ...adminData,
-      createdBy
+    const { createdBy, ...adminPayload } = adminData;
+    const response = await api.post('/superadmins/admins/create', adminPayload, {
+      params: { createdBy }  // Send createdBy as query parameter
     });
     return response.data;
   } catch (error) {
