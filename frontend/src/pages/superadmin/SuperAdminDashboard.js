@@ -457,7 +457,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schools.map((school) => (
+                  {schools.map((school, index) => (
                     <TableRow key={school.id || `school-${index}`}>
                       <TableCell>{school.name}</TableCell>
                       <TableCell>{school.address}</TableCell>
@@ -510,7 +510,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {admins.map((admin) => (
+                  {admins.map((admin, index) => (
                     <TableRow key={admin.id || `admin-${index}`}>
                       <TableCell>{admin.name}</TableCell>
                       <TableCell>{admin.lastName || 'N/A'}</TableCell>
