@@ -95,6 +95,7 @@ const SuperAdminDashboard = () => {
     lastName: '',
     email: '',
     phoneNumber: '',
+    province:'',
     schoolId: '',
     password: ''
   });
@@ -319,60 +320,52 @@ const SuperAdminDashboard = () => {
     try {
       setSubmitting(true);
       setError(null);
-  
-      // Validate required fields
-      const requiredFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'schoolId', 'role'];
-      const missingFields = requiredFields.filter(field => !adminForm[field]?.trim());
+
+      const requiredFields = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId', 'password'];
+      const missingFields = requiredFields.filter(field => !String(adminForm[field] || '').trim());
       if (missingFields.length > 0) {
         setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
         return;
       }
-  
-      // Validate email format
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(adminForm.email)) {
+      if (!emailRegex.test(adminForm.email.trim())) {
         setError('Please enter a valid email address');
         return;
       }
-  
-      // Validate South African phone number
+
       const phoneRegex = /^(\+27|0)[0-9]{9}$/;
       if (!phoneRegex.test(adminForm.phoneNumber.replace(/\s/g, ''))) {
         setError('Please enter a valid South African phone number (e.g., 0123456789 or +27123456789)');
         return;
       }
-  
-      // Province enforcement for provincial superadmins
+
       const selectedSchool = schools.find(s => s.id === adminForm.schoolId);
       if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUser?.province) {
         setError(`You can only assign admins to schools in your province (${currentUser?.province})`);
         return;
       }
-  
-      // Attach creator and province
-      if (!currentUser?.email) {
-        setError('Unable to identify creator. Please log in again.');
-        return;
-      }
-  
+
       const formDataToSubmit = {
         ...adminForm,
-        createdBy: currentUser.email,
+        name: adminForm.name.trim(),
+        lastName: adminForm.lastName.trim(),
+        email: adminForm.email.trim(),
+        phoneNumber: adminForm.phoneNumber.trim(),
         province: selectedSchool?.province || currentUser?.province || '',
+        createdBy: currentUser.email
       };
-  
-      // Client-side duplicate check (by email within same school)
+
       const existingAdmin = admins.find(admin =>
-        admin.email.toLowerCase() === adminForm.email.toLowerCase() &&
-        admin.schoolId === adminForm.schoolId &&
+        admin.email.toLowerCase() === formDataToSubmit.email.toLowerCase() &&
+        admin.schoolId === formDataToSubmit.schoolId &&
         admin.id !== editingAdmin?.id
       );
       if (existingAdmin) {
         setError('An administrator with this email already exists for the selected school');
         return;
       }
-  
-      // Submit to backend
+
       if (editingAdmin) {
         await updateAdmin(editingAdmin.id, formDataToSubmit);
         alert('Administrator updated successfully!');
@@ -380,42 +373,19 @@ const SuperAdminDashboard = () => {
         await createAdmin(formDataToSubmit);
         alert(`Administrator created successfully by ${currentUser.email}!`);
       }
-  
-      // Reset form and refresh data
+
       setAdminDialogOpen(false);
       setEditingAdmin(null);
-      setAdminForm({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        role: 'admin',
-        schoolId: '',
-        province: isProvincialSuperAdmin() ? currentUser?.province : '',
-      });
+      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '', province: isProvincialSuperAdmin() ? currentUser?.province : '' });
       fetchData();
-  
     } catch (err) {
       console.error('Admin submission error:', err);
-  
-      // Comprehensive error handling
-      if (err.response?.status === 400) {
-        setError(err.response.data?.message || 'Invalid admin data. Please check all fields.');
-      } else if (err.response?.status === 409) {
-        setError('An administrator with this email already exists');
-      } else if (err.response?.status === 403) {
-        setError('You do not have permission to create administrators in this province');
-      } else if (err.response?.status === 500) {
-        setError('Server error. Please try again later or contact support.');
-      } else if (err.code === 'NETWORK_ERROR') {
-        setError('Network error. Please check your internet connection.');
-      } else {
-        setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} administrator. Please try again.`);
-      }
+      setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} administrator.`);
     } finally {
       setSubmitting(false);
     }
   };
+
   
 
   const handleDeleteAdmin = async (adminId) => {
@@ -439,15 +409,15 @@ const SuperAdminDashboard = () => {
         email: admin.email || '',
         phoneNumber: admin.phoneNumber || '',
         schoolId: admin.schoolId || '',
-        password: '' // Don't pre-fill password for security
+        password: '',
+        province: admin.province || ''
       });
     } else {
       setEditingAdmin(null);
-      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '', province: '' });
     }
     setAdminDialogOpen(true);
   };
-
   
 
 
@@ -616,7 +586,7 @@ const SuperAdminDashboard = () => {
                 <TableBody>
                   {admins.map((admin, index) => (
                     <TableRow key={admin.id || `admin-${index}`}>
-                      <TableCell>{admin.name}</TableCell>
+                      <TableCell>{admin.firstName}</TableCell>
                       <TableCell>{admin.lastName || 'N/A'}</TableCell>
                       <TableCell>{admin.email}</TableCell>
                       <TableCell>{admin.phoneNumber}</TableCell>
@@ -653,13 +623,13 @@ const SuperAdminDashboard = () => {
       )}
 
       {/* Superadmins Tab */}
-      {activeTab === 'superadmins' && isMaster() && (
+      {/* {activeTab === 'superadmins' && isMaster() && (
         <Card>
           <CardContent>
             <SuperadminManagement />
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* School Dialog */}
       <Dialog open={schoolDialogOpen} onClose={() => !submitting && setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -749,7 +719,7 @@ const SuperAdminDashboard = () => {
       <Dialog open={adminDialogOpen} onClose={() => !submitting && (setAdminDialogOpen(false), setEditingAdmin(null))} maxWidth="sm" fullWidth>
       <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
         <DialogContent>
-          <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
+          <TextField label="First Name" fullWidth margin="dense" value={adminForm.firstName} onChange={(e) => setAdminForm({ ...adminForm, firstName: e.target.value })} />
           <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />
           <TextField label="Email" type="email" fullWidth margin="dense" value={adminForm.email} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
           <TextField label="Phone Number" fullWidth margin="dense" value={adminForm.phoneNumber} onChange={(e) => setAdminForm({ ...adminForm, phoneNumber: e.target.value })} />
