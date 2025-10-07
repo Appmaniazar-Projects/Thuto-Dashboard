@@ -678,7 +678,7 @@ const SuperAdminDashboard = () => {
       </Dialog>
 
       {/* Admin Dialog */}
-      <Dialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={adminDialogOpen} onClose={() => (setAdminDialogOpen(false), setEditingAdmin(null))} maxWidth="sm" fullWidth>
       <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
         <DialogContent>
           <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
@@ -699,8 +699,10 @@ const SuperAdminDashboard = () => {
           <TextField label="Password" type="password" fullWidth margin="dense" value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAdminDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdminSubmit} variant="contained">Create</Button>
+          <Button onClick={() => (setAdminDialogOpen(false), setEditingAdmin(null))}>Cancel</Button>
+          <Button onClick={handleAdminSubmit} variant="contained">
+            {editingAdmin ? 'Update' : 'Create'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
