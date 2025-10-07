@@ -553,7 +553,7 @@ const SuperAdminDashboard = () => {
                       <TableCell>{admin.email}</TableCell>
                       <TableCell>{admin.phoneNumber}</TableCell>
                       <TableCell>
-                        {schools.find(school => school.id === admin.schoolId)?.name || 'Unknown School'}
+                        {admin.school.name || 'Unknown School'}
                       </TableCell>
                       <TableCell>
                         <Chip label={admin.status || 'Active'} color={admin.status === 'Active' ? 'success' : 'default'} size="small" />
