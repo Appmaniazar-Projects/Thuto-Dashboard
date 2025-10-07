@@ -679,7 +679,7 @@ const SuperAdminDashboard = () => {
 
       {/* Admin Dialog */}
       <Dialog open={adminDialogOpen} onClose={() => !submitting && (setAdminDialogOpen(false), setEditingAdmin(null))} maxWidth="sm" fullWidth>
-      <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
+      <DialogTitle>Add New Administrator</DialogTitle>
         <DialogContent>
           <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
           <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />
@@ -708,7 +708,7 @@ const SuperAdminDashboard = () => {
             disabled={submitting}
             startIcon={submitting ? <CircularProgress size={20} /> : null}
           >
-            {submitting ? 'Saving...' : (editingAdmin ? 'Update' : 'Create')}
+            {submitting ? 'Saving...' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
