@@ -317,40 +317,106 @@ const SuperAdminDashboard = () => {
   // Admin Handlers
   const handleAdminSubmit = async () => {
     try {
-      // Validate that selected school belongs to the superadmin's province (for provincial superadmins)
-      if (isProvincialSuperAdmin()) {
-        const selectedSchool = schools.find(school => school.id === adminForm.schoolId);
-        if (selectedSchool && selectedSchool.province !== currentUser?.province) {
-          setError('You can only create admins for schools in your assigned province');
-          return;
-        }
+      setSubmitting(true);
+      setError(null);
+  
+      // Validate required fields
+      const requiredFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'schoolId', 'role'];
+      const missingFields = requiredFields.filter(field => !adminForm[field]?.trim());
+      if (missingFields.length > 0) {
+        setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        return;
       }
-      
-      // Add creator's email to the submission data
-      const adminDataToSubmit = { ...adminForm };
+  
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(adminForm.email)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+  
+      // Validate South African phone number
+      const phoneRegex = /^(\+27|0)[0-9]{9}$/;
+      if (!phoneRegex.test(adminForm.phoneNumber.replace(/\s/g, ''))) {
+        setError('Please enter a valid South African phone number (e.g., 0123456789 or +27123456789)');
+        return;
+      }
+  
+      // Province enforcement for provincial superadmins
+      const selectedSchool = schools.find(s => s.id === adminForm.schoolId);
+      if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUser?.province) {
+        setError(`You can only assign admins to schools in your province (${currentUser?.province})`);
+        return;
+      }
+  
+      // Attach creator and province
       if (!currentUser?.email) {
         setError('Unable to identify creator. Please log in again.');
         return;
       }
-      adminDataToSubmit.createdBy = currentUser.email;
-
-      if (editingAdmin && editingAdmin.id) {
-        await updateAdmin(editingAdmin.id, adminDataToSubmit);
-        alert('Admin updated successfully!');
-      } else {
-        await createAdmin(adminDataToSubmit);
-        alert('Admin created successfully!');
+  
+      const formDataToSubmit = {
+        ...adminForm,
+        createdBy: currentUser.email,
+        province: selectedSchool?.province || currentUser?.province || '',
+      };
+  
+      // Client-side duplicate check (by email within same school)
+      const existingAdmin = admins.find(admin =>
+        admin.email.toLowerCase() === adminForm.email.toLowerCase() &&
+        admin.schoolId === adminForm.schoolId &&
+        admin.id !== editingAdmin?.id
+      );
+      if (existingAdmin) {
+        setError('An administrator with this email already exists for the selected school');
+        return;
       }
-
+  
+      // Submit to backend
+      if (editingAdmin) {
+        await updateAdmin(editingAdmin.id, formDataToSubmit);
+        alert('Administrator updated successfully!');
+      } else {
+        await createAdmin(formDataToSubmit);
+        alert(`Administrator created successfully by ${currentUser.email}!`);
+      }
+  
+      // Reset form and refresh data
       setAdminDialogOpen(false);
       setEditingAdmin(null);
-      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
+      setAdminForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        role: 'admin',
+        schoolId: '',
+        province: isProvincialSuperAdmin() ? currentUser?.province : '',
+      });
       fetchData();
-            
+  
     } catch (err) {
-      setError('Failed to save admin');
+      console.error('Admin submission error:', err);
+  
+      // Comprehensive error handling
+      if (err.response?.status === 400) {
+        setError(err.response.data?.message || 'Invalid admin data. Please check all fields.');
+      } else if (err.response?.status === 409) {
+        setError('An administrator with this email already exists');
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to create administrators in this province');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later or contact support.');
+      } else if (err.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your internet connection.');
+      } else {
+        setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} administrator. Please try again.`);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
+  
 
   const handleDeleteAdmin = async (adminId) => {
     if (window.confirm('Are you sure you want to delete this administrator?')) {
