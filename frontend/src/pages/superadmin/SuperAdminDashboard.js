@@ -333,18 +333,20 @@ const SuperAdminDashboard = () => {
         return;
       }
       adminDataToSubmit.createdBy = currentUser.email;
-      
-      if (editingAdmin) {
+
+      if (editingAdmin && editingAdmin.id) {
         await updateAdmin(editingAdmin.id, adminDataToSubmit);
         alert('Admin updated successfully!');
       } else {
         await createAdmin(adminDataToSubmit);
         alert('Admin created successfully!');
       }
+
       setAdminDialogOpen(false);
+      setEditingAdmin(null);
       setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '' });
-      fetchData(); // Refresh the admin list
-      
+      fetchData();
+            
     } catch (err) {
       setError('Failed to save admin');
     }
@@ -679,7 +681,7 @@ const SuperAdminDashboard = () => {
 
       {/* Admin Dialog */}
       <Dialog open={adminDialogOpen} onClose={() => !submitting && (setAdminDialogOpen(false), setEditingAdmin(null))} maxWidth="sm" fullWidth>
-      <DialogTitle>Add New Administrator</DialogTitle>
+      <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
         <DialogContent>
           <TextField label="First Name" fullWidth margin="dense" value={adminForm.name} onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })} />
           <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />
@@ -708,7 +710,7 @@ const SuperAdminDashboard = () => {
             disabled={submitting}
             startIcon={submitting ? <CircularProgress size={20} /> : null}
           >
-            {submitting ? 'Saving...' : 'Create'}
+            {submitting ? 'Saving...' : (editingAdmin ? 'Update' : 'Create')}
           </Button>
         </DialogActions>
       </Dialog>
