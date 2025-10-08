@@ -321,7 +321,7 @@ const SuperAdminDashboard = () => {
       setSubmitting(true);
       setError(null);
 
-      const requiredFields = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId', 'password'];
+      const requiredFields = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId','password'];
       const missingFields = requiredFields.filter(field => !String(adminForm[field] || '').trim());
       if (missingFields.length > 0) {
         setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
@@ -353,7 +353,6 @@ const SuperAdminDashboard = () => {
         email: adminForm.email.trim(),
         phoneNumber: adminForm.phoneNumber.trim(),
         province: selectedSchool?.province || currentUser?.province || '',
-        createdBy: currentUser.email
       };
 
       const existingAdmin = admins.find(admin =>
