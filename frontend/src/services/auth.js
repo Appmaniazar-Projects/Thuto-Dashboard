@@ -24,6 +24,18 @@ const login = async (phoneNumber) => {
   return response.data;
 };
 
+/** Admin Login
+ * 
+ */
+const adminLogin = async (email, password) => {
+    const response = await api.post('/admin/login', { email, password });
+    if (response.data.token) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  };
+  
 
 /**
  * Handles superadmin login with email and password
@@ -147,6 +159,7 @@ const resetPassword = async (token, newPassword) => {
 
 const authService = {
   login,
+  adminLogin,
   superAdminLogin,
   superAdminRegister,
   logout,
