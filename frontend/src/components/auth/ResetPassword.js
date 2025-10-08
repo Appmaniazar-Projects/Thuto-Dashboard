@@ -72,7 +72,7 @@ const ResetPassword = () => {
             variant="contained" 
             color="primary" 
             component={MuiLink} 
-            to="/forgot-password"
+            to="/superadmin/forgot-password"
             fullWidth
             sx={{ mt: 2 }}
           >

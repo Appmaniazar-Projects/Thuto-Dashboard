@@ -401,6 +401,9 @@ const SuperAdminDashboard = () => {
   };
   
   const openAdminDialog = (admin = null) => {
+    setError(null);
+    setSubmitting(false);
+  
     if (admin) {
       setEditingAdmin(admin);
       setAdminForm({
@@ -414,10 +417,36 @@ const SuperAdminDashboard = () => {
       });
     } else {
       setEditingAdmin(null);
-      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '', province: '' });
+      setAdminForm({
+        name: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        schoolId: '',
+        password: '',
+        province: isProvincialSuperAdmin() ? currentUser?.province : ''
+      });
     }
+  
     setAdminDialogOpen(true);
   };
+  
+  const handleAdminDialogClose = () => {
+    setAdminDialogOpen(false);
+    setEditingAdmin(null);
+    setError(null);
+    setAdminForm({
+      name: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      schoolId: '',
+      password: '',
+      province: isProvincialSuperAdmin() ? currentUser?.province : ''
+    });
+  };
+  
+  
   
 
 
@@ -566,9 +595,14 @@ const SuperAdminDashboard = () => {
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">Administrator Management</Typography>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={openAdminDialog}>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />} 
+                onClick={() => openAdminDialog(null)}
+              >
                 Add Administrator
               </Button>
+
             </Box>
             <TableContainer component={Paper}>
               <Table>
@@ -586,7 +620,7 @@ const SuperAdminDashboard = () => {
                 <TableBody>
                   {admins.map((admin, index) => (
                     <TableRow key={admin.id || `admin-${index}`}>
-                      <TableCell>{admin.firstName}</TableCell>
+                      <TableCell>{admin.name}</TableCell>
                       <TableCell>{admin.lastName || 'N/A'}</TableCell>
                       <TableCell>{admin.email}</TableCell>
                       <TableCell>{admin.phoneNumber}</TableCell>
@@ -622,14 +656,6 @@ const SuperAdminDashboard = () => {
         </Card>
       )}
 
-      {/* Superadmins Tab */}
-      {/* {activeTab === 'superadmins' && isMaster() && (
-        <Card>
-          <CardContent>
-            <SuperadminManagement />
-          </CardContent>
-        </Card>
-      )} */}
 
       {/* School Dialog */}
       <Dialog open={schoolDialogOpen} onClose={() => !submitting && setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
@@ -716,28 +742,81 @@ const SuperAdminDashboard = () => {
       </Dialog>
 
       {/* Admin Dialog */}
-      <Dialog open={adminDialogOpen} onClose={() => !submitting && (setAdminDialogOpen(false), setEditingAdmin(null))} maxWidth="sm" fullWidth>
-      <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
+      <Dialog open={adminDialogOpen} onClose={handleAdminDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingAdmin ? 'Edit Administrator' : 'Add New Administrator'}</DialogTitle>
         <DialogContent>
-          <TextField label="First Name" fullWidth margin="dense" value={adminForm.firstName} onChange={(e) => setAdminForm({ ...adminForm, firstName: e.target.value })} />
-          <TextField label="Last Name" fullWidth margin="dense" value={adminForm.lastName} onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })} />
-          <TextField label="Email" type="email" fullWidth margin="dense" value={adminForm.email} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} />
-          <TextField label="Phone Number" fullWidth margin="dense" value={adminForm.phoneNumber} onChange={(e) => setAdminForm({ ...adminForm, phoneNumber: e.target.value })} />
-          <TextField select label="School" fullWidth margin="dense" value={adminForm.schoolId} onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <TextField 
+            label="First Name" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.name} 
+            onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
+            required
+          />
+          <TextField 
+            label="Last Name" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.lastName} 
+            onChange={(e) => setAdminForm({ ...adminForm, lastName: e.target.value })}
+            required
+          />
+          <TextField 
+            label="Email" 
+            type="email" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.email} 
+            onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+            required
+            disabled={editingAdmin !== null}
+          />
+          <TextField 
+            label="Phone Number" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.phoneNumber} 
+            onChange={(e) => setAdminForm({ ...adminForm, phoneNumber: e.target.value })}
+            placeholder="e.g., 0123456789"
+            required
+          />
+          <TextField 
+            select 
+            label="School" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.schoolId} 
+            onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}
+            required
+          >
             {schools
               .filter(school => 
                 !isProvincialSuperAdmin() || school.province === currentUser?.province
               )
               .map((school) => (
                 <MenuItem key={school.id} value={school.id}>
-                  {school.name} {isProvincialSuperAdmin() ? '' : `(${school.province})`}
+                  {school.name} {!isProvincialSuperAdmin() ? `(${school.province})` : ''}
                 </MenuItem>
               ))}
           </TextField>
-          <TextField label="Password" type="password" fullWidth margin="dense" value={adminForm.password} onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })} />
+          <TextField 
+            label={editingAdmin ? "Password (leave blank to keep current)" : "Password"} 
+            type="password" 
+            fullWidth 
+            margin="dense" 
+            value={adminForm.password} 
+            onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+            required={!editingAdmin}
+            helperText={editingAdmin ? "Only enter a password if you want to change it" : "Minimum 6 characters"}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => (setAdminDialogOpen(false), setEditingAdmin(null))} disabled={submitting}>
+          <Button onClick={handleAdminDialogClose} disabled={submitting}>
             Cancel
           </Button>
           <Button 
