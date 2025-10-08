@@ -94,19 +94,64 @@ export const getSchoolDetails = async (schoolId) => {
 
 // ========== ADMINISTRATOR MANAGEMENT ==========
 
+// /**
+//  * Creates a new administrator
+//  * @param {object} adminData - Administrator information
+//  */
+// export const createAdmin = async (adminData) => {
+//   try {
+//     const { createdBy, ...adminPayload } = adminData;
+//     const response = await api.post('/superadmins/admins/create', adminPayload, {
+//       params: { createdBy }  // Send createdBy as query parameter
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Failed to create administrator:', error);
+//     throw error;
+//   }
+// };
+
+// /**
+//  * Updates an existing administrator
+//  * @param {string} adminId - The ID of the administrator to update
+//  * @param {object} adminData - Updated administrator information
+//  */
+// export const updateAdmin = async (adminId, adminData) => {
+//   try {
+//     const { createdBy, ...adminPayload } = adminData;
+//     const response = await api.put(`/superadmins/admins/update/${adminId}`, adminPayload, {
+//       params: createdBy ? { createdBy } : {}
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error(`Failed to update admin ${adminId}:`, error);
+//     throw error;
+//   }
+// };
+
 /**
  * Creates a new administrator
  * @param {object} adminData - Administrator information
  */
 export const createAdmin = async (adminData) => {
   try {
-    const { createdBy, ...adminPayload } = adminData;
-    const response = await api.post('/superadmins/admins/create', adminPayload, {
-      params: { createdBy }  // Send createdBy as query parameter
+    console.log('Creating admin with data:', {
+      ...adminData,
+      password: '***HIDDEN***'
     });
+
+    const { createdBy, ...adminPayload } = adminData;
+    
+    const response = await api.post('/superadmins/admins/create', adminPayload, {
+      params: { createdBy }
+    });
+    
+    console.log('Admin created successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Failed to create administrator:', error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
@@ -118,13 +163,23 @@ export const createAdmin = async (adminData) => {
  */
 export const updateAdmin = async (adminId, adminData) => {
   try {
+    console.log('Updating admin with data:', {
+      ...adminData,
+      password: adminData.password ? '***HIDDEN***' : 'NOT_CHANGED'
+    });
+
     const { createdBy, ...adminPayload } = adminData;
+    
     const response = await api.put(`/superadmins/admins/update/${adminId}`, adminPayload, {
       params: createdBy ? { createdBy } : {}
     });
+    
+    console.log('Admin updated successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error(`Failed to update admin ${adminId}:`, error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
