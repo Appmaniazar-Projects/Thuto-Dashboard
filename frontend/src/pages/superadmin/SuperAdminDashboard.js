@@ -357,7 +357,7 @@ const SuperAdminDashboard = () => {
         lastName: adminForm.lastName.trim(),
         email: adminForm.email.trim(),
         phoneNumber: adminForm.phoneNumber.trim(),
-        province: selectedSchool?.province || currentUser?.province || '',
+        //province: selectedSchool?.province || currentUser?.province || '',
         createdBy: currentUser?.email
       };
 
@@ -418,7 +418,7 @@ const SuperAdminDashboard = () => {
         phoneNumber: admin.phoneNumber || '',
         schoolId: admin.schoolId || '',
         password: '',
-        province: admin.province || ''
+        //province: admin.province || ''
       });
     } else {
       setEditingAdmin(null);
@@ -429,7 +429,7 @@ const SuperAdminDashboard = () => {
         phoneNumber: '',
         schoolId: '',
         password: '',
-        province: isProvincialSuperAdmin() ? currentUser?.province : ''
+        //province: isProvincialSuperAdmin() ? currentUser?.province : ''
       });
     }
   
@@ -447,7 +447,7 @@ const SuperAdminDashboard = () => {
       phoneNumber: '',
       schoolId: '',
       password: '',
-      province: isProvincialSuperAdmin() ? currentUser?.province : ''
+      //province: isProvincialSuperAdmin() ? currentUser?.province : ''
     });
   };
   
