@@ -145,6 +145,9 @@ export const createAdmin = async (adminData) => {
     const response = await api.post('/superadmins/admins/create', adminPayload, {
       params: { createdBy }
     });
+    console.log("Payload type:", typeof adminData);
+    console.log("Payload content:", adminData);
+
     
     console.log('Admin created successfully:', response.data);
     return response.data;
