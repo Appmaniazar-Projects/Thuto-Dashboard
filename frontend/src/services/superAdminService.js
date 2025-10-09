@@ -133,14 +133,49 @@ export const getSchoolDetails = async (schoolId) => {
  * Creates a new administrator
  * @param {object} adminData - Administrator information
  */
+// export const createAdmin = async (adminData) => {
+//   try {
+//     console.log('Creating admin with data:', {
+//       ...adminData,
+//       password: '***HIDDEN***'
+//     });
+
+//     const { createdBy, ...adminPayload } = adminData;
+    
+//     const response = await api.post('/superadmins/admins/create', adminPayload, {
+//       params: { createdBy }
+//     });
+  
+//     console.log('Admin created successfully:', response.data);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Failed to create administrator:', error);
+//     console.error('Error response:', error.response?.data);
+//     console.error('Error status:', error.response?.status);
+//     throw error;
+//   }
+// };
+
 export const createAdmin = async (adminData) => {
   try {
-    console.log('Creating admin with data:', {
-      ...adminData,
-      password: '***HIDDEN***'
-    });
+    console.log('=== ADMIN CREATION DEBUG ===');
+    console.log('Full adminData received:', adminData);
+    console.log('adminData type:', typeof adminData);
 
     const { createdBy, ...adminPayload } = adminData;
+    
+    console.log('Extracted createdBy:', createdBy);
+    console.log('createdBy type:', typeof createdBy);
+    console.log('Admin payload (without createdBy):', adminPayload);
+    console.log('Payload keys:', Object.keys(adminPayload));
+    
+    if (!createdBy) {
+      throw new Error('createdBy parameter is required but was not provided');
+    }
+
+    console.log('Making API call to: /superadmins/admins/create');
+    console.log('Query params:', { createdBy });
+    console.log('Request body:', adminPayload);
     
     const response = await api.post('/superadmins/admins/create', adminPayload, {
       params: { createdBy }
@@ -149,9 +184,12 @@ export const createAdmin = async (adminData) => {
     console.log('Admin created successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Failed to create administrator:', error);
-    console.error('Error response:', error.response?.data);
+    console.error('=== ADMIN CREATION ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error response data:', error.response?.data);
     console.error('Error status:', error.response?.status);
+    console.error('Error headers:', error.response?.headers);
+    console.error('Full error object:', error);
     throw error;
   }
 };
