@@ -340,6 +340,11 @@ const SuperAdminDashboard = () => {
         return;
       }
 
+      if (!currentUser?.email) {
+        setError('Unable to identify the current user. Please log in again.');
+        return;
+      }
+
       const selectedSchool = schools.find(s => s.id === adminForm.schoolId);
       if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUser?.province) {
         setError(`You can only assign admins to schools in your province (${currentUser?.province})`);
@@ -353,6 +358,7 @@ const SuperAdminDashboard = () => {
         email: adminForm.email.trim(),
         phoneNumber: adminForm.phoneNumber.trim(),
         province: selectedSchool?.province || currentUser?.province || '',
+        createdBy: currentUser?.email
       };
 
       const existingAdmin = admins.find(admin =>
