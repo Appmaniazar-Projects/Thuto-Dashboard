@@ -25,16 +25,58 @@ const login = async (phoneNumber) => {
 };
 
 /** Admin Login
- * 
+ * Handles admin authentication with email and password
+ * @param {string} email - Admin's email address
+ * @param {string} password - Admin's password
+ * @returns {Promise<Object>} User data and auth token
+ * @throws {Error} With specific error message for different failure scenarios
  */
 const adminLogin = async (email, password) => {
+  try {
     const response = await api.post('/admin/login', { email, password });
+    
+    if (!response.data) {
+      throw new Error('No response data received from server');
+    }
+    
     if (response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       localStorage.setItem('token', response.data.token);
+      return response.data;
     }
-    return response.data;
-  };
+    
+    throw new Error('Authentication failed: No token received');
+  } catch (error) {
+    console.error('Admin login error:', error);
+    
+    // Handle different error scenarios with specific messages
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      const { status, data } = error.response;
+      
+      if (status === 401) {
+        throw new Error('Invalid email or password. Please try again.');
+      } else if (status === 403) {
+        throw new Error('Access denied. You do not have permission to access the admin panel.');
+      } else if (status === 404) {
+        throw new Error('Admin account not found. Please check your credentials.');
+      } else if (status === 429) {
+        throw new Error('Too many login attempts. Please try again later.');
+      } else if (data && data.message) {
+        throw new Error(data.message);
+      } else {
+        throw new Error(`Login failed with status ${status}. Please try again.`);
+      }
+    } else if (error.request) {
+      // The request was made but no response was received
+      throw new Error('Network error. Please check your connection and try again.');
+    } else {
+      // Something happened in setting up the request
+      throw new Error(error.message || 'An error occurred during login. Please try again.');
+    }
+  }
+};
   
 
 /**

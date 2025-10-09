@@ -361,6 +361,11 @@ const SuperAdminDashboard = () => {
         createdBy: currentUser?.email
       };
 
+       // Only include password if it's a new admin or if it's being changed
+      if (!editingAdmin || adminForm.password) {
+        formDataToSubmit.password = adminForm.password;
+      }
+
       const existingAdmin = admins.find(admin =>
         admin.email.toLowerCase() === formDataToSubmit.email.toLowerCase() &&
         admin.schoolId === formDataToSubmit.schoolId &&
@@ -372,12 +377,17 @@ const SuperAdminDashboard = () => {
       }
 
       if (editingAdmin) {
-        await updateAdmin(editingAdmin.id, formDataToSubmit);
+        // For updates, we need to include the admin ID in the payload
+        await updateAdmin(editingAdmin.id, {
+          ...formDataToSubmit,
+          id: editingAdmin.id // Make sure we include the ID in the payload
+        });
         alert('Administrator updated successfully!');
       } else {
         await createAdmin(formDataToSubmit);
         alert(`Administrator created successfully by ${currentUser.email}!`);
       }
+  
 
       setAdminDialogOpen(false);
       setEditingAdmin(null);
@@ -396,14 +406,16 @@ const SuperAdminDashboard = () => {
   const handleDeleteAdmin = async (adminId) => {
     if (window.confirm('Are you sure you want to delete this administrator?')) {
       try {
-        await deleteAdmin(adminId);
-        fetchData(); // Refresh the admin list
-        alert('Admin deleted successfully!');
+        await deleteAdmin(adminId, currentUser?.email);
+        fetchData();
+        alert('Administrator deleted successfully!');
       } catch (err) {
-        setError('Failed to delete administrator');
+        console.error('Error deleting admin:', err);
+        setError(err.response?.data?.message || 'Failed to delete administrator. Please try again.');
       }
     }
   };
+  
   
   const openAdminDialog = (admin = null) => {
     setError(null);

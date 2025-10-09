@@ -4,10 +4,11 @@ import fileUploadService from './fileUploadService';
 /**
  * Fetches all users for the admin
  * @returns {Promise<Array>} Array of user objects
+ * /admins/allRoleSpecificUsers/all'
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admins/allRoleSpecificUsers/all');
+    const response = await api.get('/admins/users');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch users:', error);

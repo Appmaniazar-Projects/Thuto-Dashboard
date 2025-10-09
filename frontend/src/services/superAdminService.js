@@ -206,11 +206,27 @@ export const updateAdmin = async (adminId, adminData) => {
       password: adminData.password ? '***HIDDEN***' : 'NOT_CHANGED'
     });
 
+    // Extract createdBy from adminData if it exists
     const { createdBy, ...adminPayload } = adminData;
     
-    const response = await api.put(`/superadmins/admins/update/${adminId}`, adminPayload, {
+    // Make sure we're not sending an empty password
+    if (adminPayload.password === '') {
+      delete adminPayload.password;
+    }
+
+    console.log('Sending update request with:', {
+      url: `/superadmins/admins/update/${adminId}`,
+      data: adminPayload,
       params: createdBy ? { createdBy } : {}
     });
+
+    const response = await api.put(
+      `/superadmins/admins/update/${adminId}`, 
+      adminPayload,
+      {
+        params: createdBy ? { createdBy } : {}
+      }
+    );
     
     console.log('Admin updated successfully:', response.data);
     return response.data;
@@ -227,12 +243,18 @@ export const updateAdmin = async (adminId, adminData) => {
  * Deletes an administrator
  * @param {string} adminId - The ID of the administrator to delete
  */
-export const deleteAdmin = async (adminId) => {
+export const deleteAdmin = async (adminId, createdBy) => {
   try {
-    const response = await api.delete(`/superadmins/admins/remove/${adminId}`);
+    console.log('Deleting admin with ID:', adminId, 'createdBy:', createdBy);
+    const response = await api.delete(`/superadmins/admins/remove/${adminId}`, {
+      params: createdBy ? { createdBy } : {}
+    });
+    console.log('Admin deleted successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete admin ${adminId}:`, error);
+    console.error('Error response:', error.response?.data);
+    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
