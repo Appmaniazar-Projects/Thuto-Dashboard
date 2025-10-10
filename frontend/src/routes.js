@@ -48,6 +48,8 @@ const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncem
 const SuperAdminLogin = lazy(() => import('./components/auth/SuperAdminLogin'));
 const SuperAdminRegister = lazy(() => import('./components/auth/SuperAdminRegister'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+const SuperAdminProfile = lazy(() => import('./pages/superadmin/SuperAdminProfile'));
+const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSettings'));
 
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -178,6 +180,8 @@ export const superAdminRoutes = [
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
   { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
   { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
+  { path: '/superadmin/profile', element: <SuperAdminProfile /> },
+  { path: '/superadmin/settings', element: <SuperAdminSettings /> },
 ];
 
 export { protectedRoutes };

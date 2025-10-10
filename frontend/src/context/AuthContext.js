@@ -103,6 +103,16 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
+      // Determine redirect path based on current user role
+      const userRole = currentUser?.role;
+      let redirectPath = '/login'; // default for students/teachers/parents
+      
+      if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(userRole)) {
+        redirectPath = '/superadmin/login';
+      } else if (userRole === 'admin') {
+        redirectPath = '/admin/login';
+      }
+      
       // Clear all stored data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -117,6 +127,10 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(null);
       
       enqueueSnackbar('Logged out successfully!', { variant: 'info' });
+      
+      // Navigate to appropriate login screen
+      navigate(redirectPath);
+      
     } catch (err) {
       console.error('Logout Error:', err);
       setError(err.message);

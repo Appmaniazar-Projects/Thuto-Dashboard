@@ -280,6 +280,7 @@ const SuperAdminDashboard = () => {
       try {
         await deleteSchool(schoolId);
         fetchData();
+        alert('School deleted successfully!');
       } catch (err) {
         setError('Failed to delete school');
       }
@@ -421,15 +422,20 @@ const SuperAdminDashboard = () => {
   const openAdminDialog = (admin = null) => {
     setError(null);
     setSubmitting(false);
+    console.log(admin);
   
     if (admin) {
-      setEditingAdmin(admin);
+      const adminId = admin.id || admin.adminId || admin.userId;
+      setEditingAdmin({
+        ...admin,
+        id: adminId // Ensure ID is properly set
+      });
       setAdminForm({
         name: admin.name || '',
         lastName: admin.lastName || '',
         email: admin.email || '',
         phoneNumber: admin.phoneNumber || '',
-        schoolId: admin.schoolId || '',
+        schoolId: admin.schoolId || admin.school?.id || '',
         password: '',
         //province: admin.province || ''
       });

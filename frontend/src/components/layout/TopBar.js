@@ -24,8 +24,7 @@ import {
   AccountCircle,
   Notifications as NotificationsIcon,
   Mail as MailIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
+  Settings as SettingsIcon,
   Logout as LogoutIcon,
   MarkChatRead as MarkChatReadIcon
 } from '@mui/icons-material';
@@ -79,12 +78,28 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
   const handleLogout = () => {
     handleMenuClose();
     logout();
-    navigate('/login');
   };
 
   const handleProfile = () => {
     handleMenuClose();
-    navigate('/profile');
+    
+    // Navigate to role-specific profile page
+    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role)) {
+      navigate('/superadmin/profile');
+    } else {
+      navigate('/profile');
+    }
+  };
+
+  const handleSettings = () => {
+    handleMenuClose();
+    
+    // Navigate to role-specific settings page
+    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role)) {
+      navigate('/superadmin/settings');
+    } else {
+      navigate('/settings');
+    }
   };
 
   const handleMarkAsRead = async (notificationId) => {
@@ -325,14 +340,24 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           </ListItemIcon>
           <ListItemText>Profile</ListItemText>
         </MenuItem>
-        
-        <MenuItem onClick={() => navigate('/messages')}>
-          <ListItemIcon>
-            <MailIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Messages</ListItemText>
-          <Badge badgeContent={0} color="error" sx={{ mr: 1 }} />
-        </MenuItem>
+
+          {/* Messages/Settings - Role-based */}
+          {['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role) ? (
+            <MenuItem onClick={handleSettings}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Settings</ListItemText>
+            </MenuItem>
+          ) : (
+            <MenuItem onClick={() => navigate('/messages')}>
+              <ListItemIcon>
+                <MailIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Messages</ListItemText>
+              <Badge badgeContent={0} color="error" sx={{ mr: 1 }} />
+            </MenuItem>
+          )}
         
         <Divider />
         
