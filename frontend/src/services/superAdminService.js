@@ -54,9 +54,15 @@ export const createSchool = async (schoolData) => {
  * @param {string} schoolId - The ID of the school to update
  * @param {object} schoolData - Updated school information
  */
-export const updateSchool = async (schoolId, schoolData) => {
+export const updateSchool = async (schoolId, schoolData, updatedBy) => {
   try {
-    const response = await api.put(`/superadmins/admins/updateSchool/${schoolId}`, schoolData);
+    const response = await api.put(
+      `/superadmins/updateSchool/${schoolId}`, 
+      schoolData,
+      {
+        params: { updatedBy }
+      }
+    );
     return response.data;
   } catch (error) {
     console.error(`Failed to update school ${schoolId}:`, error);
@@ -206,7 +212,7 @@ export const updateAdmin = async (adminId, adminData) => {
       password: adminData.password ? '***HIDDEN***' : 'NOT_CHANGED'
     });
 
-    // Extract createdBy from adminData if it exists
+    // Keep updatedBy in the payload, only extract createdBy
     const { createdBy, ...adminPayload } = adminData;
     
     // Make sure we're not sending an empty password
@@ -215,17 +221,13 @@ export const updateAdmin = async (adminId, adminData) => {
     }
 
     console.log('Sending update request with:', {
-      url: `/superadmins/admins/update/${adminId}`,
-      data: adminPayload,
-      params: createdBy ? { createdBy } : {}
+      url: `/superadmins/admins/user/updateUser/${adminId}`,
+      data: adminPayload  // updatedBy is now part of adminPayload
     });
 
     const response = await api.put(
-      `/superadmins/admins/update/${adminId}`, 
-      adminPayload,
-      {
-        params: createdBy ? { createdBy } : {}
-      }
+      `/superadmins/admins/user/updateUser/${adminId}`, 
+      adminPayload  // Send updatedBy in the request body
     );
     
     console.log('Admin updated successfully:', response.data);
@@ -237,7 +239,6 @@ export const updateAdmin = async (adminId, adminData) => {
     throw error;
   }
 };
-
 
 /**
  * Deletes an administrator

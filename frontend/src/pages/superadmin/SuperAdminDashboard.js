@@ -231,7 +231,7 @@ const SuperAdminDashboard = () => {
   
       // Submit to backend
       if (editingSchool) {
-        await updateSchool(editingSchool.id, formDataToSubmit);
+        await updateSchool(editingSchool.id, formDataToSubmit, currentUser?.email);
         alert('School updated successfully!');
       } else {
         await createSchool(formDataToSubmit);
@@ -360,7 +360,8 @@ const SuperAdminDashboard = () => {
         email: adminForm.email.trim(),
         phoneNumber: adminForm.phoneNumber.trim(),
         //province: selectedSchool?.province || currentUser?.province || '',
-        createdBy: currentUser?.email
+        createdBy: currentUser?.email,
+        updatedBy: currentUser?.email 
       };
 
        // Only include password if it's a new admin or if it's being changed
