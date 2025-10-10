@@ -321,7 +321,8 @@ const SuperAdminDashboard = () => {
       setSubmitting(true);
       setError(null);
 
-      const requiredFields = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId','password'];
+      const requiredFields = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId'];
+      if (!editingAdmin) requiredFields.push('password');
       const missingFields = requiredFields.filter(field => !String(adminForm[field] || '').trim());
       if (missingFields.length > 0) {
         setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
@@ -791,7 +792,6 @@ const SuperAdminDashboard = () => {
             value={adminForm.email} 
             onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
             required
-            disabled={editingAdmin !== null}
           />
           <TextField 
             label="Phone Number" 
