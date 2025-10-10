@@ -33,7 +33,7 @@ import { useAuth } from '../../context/AuthContext';
 import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 
-const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false }) => {
+const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, logout } = useAuth();
@@ -84,18 +84,28 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
     handleMenuClose();
     
     // Navigate to role-specific profile page
-    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role)) {
+    const isSuperAdmin = user?.role === 'superadmin' || 
+                       user?.level === 'national' || 
+                       user?.level === 'provincial' ||
+                       ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
+    
+    if (isSuperAdmin) {
       navigate('/superadmin/profile');
     } else {
       navigate('/profile');
     }
   };
-
+  
   const handleSettings = () => {
     handleMenuClose();
     
     // Navigate to role-specific settings page
-    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role)) {
+    const isSuperAdmin = user?.role === 'superadmin' || 
+                       user?.level === 'national' || 
+                       user?.level === 'provincial' ||
+                       ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
+    
+    if (isSuperAdmin) {
       navigate('/superadmin/settings');
     } else {
       navigate('/settings');
@@ -159,11 +169,16 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           variant="h6" 
           noWrap 
           component="div" 
+          onClick={onTitleClick}
           sx={{ 
             flexGrow: 1,
             fontWeight: 600,
             letterSpacing: '0.5px',
-            marginLeft:'10px'
+            marginLeft:'10px',
+            cursor: onTitleClick ? 'pointer' : 'default',
+            '&:hover': onTitleClick ? {
+              opacity: 0.8
+            } : {}
           }}
         >
           {title}
@@ -342,22 +357,30 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
         </MenuItem>
 
           {/* Messages/Settings - Role-based */}
-          {['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role) ? (
-            <MenuItem onClick={handleSettings}>
-              <ListItemIcon>
-                <SettingsIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Settings</ListItemText>
-            </MenuItem>
-          ) : (
-            <MenuItem onClick={() => navigate('/messages')}>
-              <ListItemIcon>
-                <MailIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Messages</ListItemText>
-              <Badge badgeContent={0} color="error" sx={{ mr: 1 }} />
-            </MenuItem>
-          )}
+          {(() => {
+            // Check if user is any type of superadmin
+            const isSuperAdmin = user?.role === 'superadmin' || 
+                              user?.level === 'national' || 
+                              user?.level === 'provincial' ||
+                              ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
+            
+            return isSuperAdmin ? (
+              <MenuItem onClick={handleSettings}>
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Settings</ListItemText>
+              </MenuItem>
+            ) : (
+              <MenuItem onClick={() => navigate('/messages')}>
+                <ListItemIcon>
+                  <MailIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Messages</ListItemText>
+                <Badge badgeContent={0} color="error" sx={{ mr: 1 }} />
+              </MenuItem>
+            );
+          })()}
         
         <Divider />
         

@@ -1,17 +1,23 @@
 import React from 'react';
 import { Box, Container, useTheme } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import TopBar from './TopBar';
 import Footer from './Footer';
 
 const SuperAdminLayout = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
+
+  const handleTitleClick = () => {
+    navigate('/superadmin/dashboard');
+  };
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       <TopBar 
         title="Thuto Dashboard" 
         isSuperAdmin={true} 
+        onTitleClick={handleTitleClick}
       />
 
       <Box

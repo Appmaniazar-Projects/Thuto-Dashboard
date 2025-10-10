@@ -409,7 +409,7 @@ const SuperAdminDashboard = () => {
   const handleDeleteAdmin = async (adminId) => {
     if (window.confirm('Are you sure you want to delete this administrator?')) {
       try {
-        await deleteAdmin(adminId, currentUser?.email);
+        await deleteAdmin(adminId);
         fetchData();
         alert('Administrator deleted successfully!');
       } catch (err) {

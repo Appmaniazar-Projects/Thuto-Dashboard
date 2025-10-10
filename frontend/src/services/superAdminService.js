@@ -244,12 +244,10 @@ export const updateAdmin = async (adminId, adminData) => {
  * Deletes an administrator
  * @param {string} adminId - The ID of the administrator to delete
  */
-export const deleteAdmin = async (adminId, createdBy) => {
+export const deleteAdmin = async (adminId) => {
   try {
-    console.log('Deleting admin with ID:', adminId, 'createdBy:', createdBy);
-    const response = await api.delete(`/superadmins/admins/remove/${adminId}`, {
-      params: createdBy ? { createdBy } : {}
-    });
+    console.log('Deleting admin with ID:', adminId);
+    const response = await api.delete(`/superadmins/admins/removeAdmin/${adminId}`);
     console.log('Admin deleted successfully:', response.data);
     return response.data;
   } catch (error) {
@@ -259,6 +257,7 @@ export const deleteAdmin = async (adminId, createdBy) => {
     throw error;
   }
 };
+
 /**
  * Gets administrators for a specific school
  * @param {string} schoolId - The ID of the school
