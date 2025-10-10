@@ -98,13 +98,12 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
 
   const handleProfile = () => {
     handleMenuClose();
-    
-    // Navigate to role-specific profile page
-    const isSuperAdmin = user?.role === 'superadmin' || 
-                       user?.level === 'national' || 
-                       user?.level === 'provincial' ||
-                       ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
-    
+    // Update the role check in TopBar to:
+      const isSuperAdmin = user?.role === 'superadmin' || 
+      user?.role === 'SUPERADMIN_NATIONAL' ||
+      user?.role === 'SUPERADMIN_PROVINCIAL' ||
+      ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
+
     if (isSuperAdmin) {
       navigate('/superadmin/profile');
     } else {
