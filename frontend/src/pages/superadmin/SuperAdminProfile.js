@@ -22,7 +22,12 @@ import { useAuth } from '../../context/AuthContext';
 import PageTitle from '../../components/common/PageTitle';
 
 const SuperAdminProfile = () => {
-  const { currentUser, isMaster, isProvincialSuperAdmin } = useAuth();
+    const { currentUser, isMaster, isProvincialSuperAdmin } = useAuth();
+    const navigate = useNavigate();
+  
+    const handleBack = () => {
+      navigate('/superadmin/dashboard');
+    };
 
   if (!currentUser) {
     return (
@@ -46,11 +51,22 @@ const SuperAdminProfile = () => {
 
   return (
     <Box>
+      {/* Header with Back Button */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Button 
+          onClick={handleBack} 
+          startIcon={<ArrowBackIcon />}
+          sx={{ mr: 2 }}
+        >
+          Back to Dashboard
+        </Button>
       <PageTitle 
         title="Profile" 
         subtitle="Manage your account information and settings" 
       />
+      </Box>
 
+      {/* Profile Content */}
       <Grid container spacing={3}>
         {/* Profile Header Card */}
         <Grid item xs={12}>

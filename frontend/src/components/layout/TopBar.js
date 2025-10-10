@@ -37,22 +37,6 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { user, logout } = useAuth();
-  useEffect(() => {
-    if (user) {
-      console.log('=== TOPBAR USER DEBUG ===');
-      console.log('Full user object:', user);
-      console.log('User keys:', Object.keys(user));
-      console.log('Role checks:', {
-        role: user.role,
-        level: user.level,
-        isRoleSuperadmin: user.role === 'superadmin',
-        isLevelNational: user.level === 'national',
-        isLevelProvincial: user.level === 'provincial',
-        includesCheck: ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user.role)
-      });
-      console.log('========================');
-    }
-  }, [user]);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
@@ -110,14 +94,14 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
       navigate('/profile');
     }
   };
-  
+
   const handleSettings = () => {
     handleMenuClose();
     
     // Navigate to role-specific settings page
     const isSuperAdmin = user?.role === 'superadmin' || 
-                       user?.level === 'national' || 
-                       user?.level === 'provincial' ||
+                       user?.role === 'SUPERADMIN_NATIONAL' ||
+                       user?.role === 'SUPERADMIN_PROVINCIAL' ||
                        ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
     
     if (isSuperAdmin) {
@@ -375,8 +359,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           {(() => {
             // Check if user is any type of superadmin
             const isSuperAdmin = user?.role === 'superadmin' || 
-                              user?.level === 'national' || 
-                              user?.level === 'provincial' ||
+                              user?.role === 'SUPERADMIN_NATIONAL' ||
+                              user?.role === 'SUPERADMIN_PROVINCIAL' ||
                               ['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user?.role);
             
             return isSuperAdmin ? (
