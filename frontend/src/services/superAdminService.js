@@ -57,7 +57,7 @@ export const createSchool = async (schoolData) => {
 export const updateSchool = async (schoolId, schoolData, updatedBy) => {
   try {
     const response = await api.put(
-      `/superadmins/updateSchool/${schoolId}`, 
+      `/superadmins/admins/updateSchool/${schoolId}`, 
       schoolData,
       {
         params: { updatedBy }
