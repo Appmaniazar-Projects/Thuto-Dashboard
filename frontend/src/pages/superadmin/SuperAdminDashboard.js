@@ -442,7 +442,8 @@ const SuperAdminDashboard = () => {
       
   
     if (admin) {
-      const adminId = admin.id || admin.adminId || admin.userId;
+      const adminId = admin.id || admin.email; // Use email when ID is null
+      console.log('Using admin identifier:', adminId, '(ID was null, using email)');
       setEditingAdmin({
         ...admin,
         id: adminId // Ensure ID is properly set
@@ -675,7 +676,7 @@ const SuperAdminDashboard = () => {
                       <IconButton onClick={() => openAdminDialog(admin)}>
                         <EditIcon />
                       </IconButton>
-                      <IconButton onClick={() => handleDeleteAdmin(admin.id)} color="error">
+                      <IconButton onClick={() => handleDeleteAdmin(admin.id || admin.email)} color="error">
                         <DeleteIcon />
                       </IconButton>
                       </TableCell>
