@@ -36,7 +36,7 @@ import SchoolLogo from '../common/SchoolLogo';
 
 import { useAuth } from '../../context/AuthContext';
 
-const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth, sidebarWidthCollapsed }) => {
+const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth, sidebarWidthCollapsed }) => {
   // DEBUG: Log user and role to verify role-based rendering
   const { user, logout } = useAuth();
   console.log('[Sidebar] user:', user, 'role:', user?.role);
@@ -45,7 +45,7 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
  
   
   const drawerVariant = isMobile ? 'temporary' : 'permanent';
-  const drawerWidth = isMobile ? sidebarWidth : (open ? sidebarWidth : sidebarWidthCollapsed);
+  const drawerWidth = isMobile ? sidebarWidth : sidebarWidth;
   const drawerOpen = isMobile ? mobileOpen : true;
 
   const getMenuItems = () => {
@@ -158,7 +158,7 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
         <Toolbar 
           sx={{ 
             display: 'flex', 
-            justifyContent: open ? 'space-between' : 'center', 
+            justifyContent: 'space-between', 
             px: 2,
             borderBottom: '1px solid #2c2c2c',
             minHeight: '64px !important',
@@ -166,19 +166,19 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
             flexShrink: 0,
           }}
         >
-          {open && (
             <SchoolLogo showName={true} variant="sidebar" size={32} />
-          )}
+          {isMobile && (
           <IconButton onClick={handleDrawerToggle} sx={{ color: '#fff' }}>
             <MenuIcon />
           </IconButton>
+          )}
         </Toolbar>
 
         {/* Main Menu Items */}
         <Box sx={{ overflowY: 'auto', flex: 1 }}>
           <List>
             {getMenuItems().map((item, index) => (
-              <Tooltip key={index} title={!open ? item.text : ''} placement="right">
+              <Tooltip key={index} title={item.text} placement="right">
                 <ListItem
                   button
                   component={Link}
@@ -202,7 +202,7 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
                   >
                     {item.icon}
                   </ListItemIcon>
-                  {open && <ListItemText primary={item.text} />}
+                  <ListItemText primary={item.text} />
                 </ListItem>
               </Tooltip>
             ))}
@@ -228,15 +228,15 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
                 },
               }}
             >
-              <ListItemIcon sx={{ color: '#fff', mr: open ? 2 : 'auto' }}>
+              <ListItemIcon sx={{ color: '#fff', mr: open }}>
                 <PersonIcon />
               </ListItemIcon>
-              {open && <ListItemText primary="Profile" />}
+              <ListItemText primary="Profile" />
             </ListItem>
           </Tooltip>
 
           {/* Settings */}
-          <Tooltip title={!open ? 'Settings' : ''} placement="right">
+          <Tooltip title={'Settings'} placement="right">
             <ListItem
               button
               component={Link}
@@ -250,21 +250,21 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
                 },
               }}
             >
-              <ListItemIcon sx={{ color: '#fff', mr: open ? 2 : 'auto' }}>
+              <ListItemIcon sx={{ color: '#fff', mr: open }}>
                 <SettingsIcon />
               </ListItemIcon>
-              {open && <ListItemText primary="Settings" />}
+              <ListItemText primary="Settings" />
             </ListItem>
           </Tooltip>
           
           {/* Logout */}
-          <Tooltip title={!open ? 'Logout' : ''} placement="right">
+          <Tooltip title={'Logout'} placement="right">
             <ListItem
               button
               onClick={handleLogout}
               sx={{
                 minHeight: 48,
-                justifyContent: open ? 'initial' : 'center',
+                justifyContent: 'initial',
                 px: 2.5,
                 '&:hover': {
                   backgroundColor: 'rgba(255, 0, 0, 0.1)',
@@ -274,10 +274,10 @@ const Sidebar = ({ open, setOpen, mobileOpen, setMobileOpen, title, sidebarWidth
                 },
               }}
             >
-              <ListItemIcon sx={{ color: '#fff', mr: open ? 2 : 'auto' }}>
+              <ListItemIcon sx={{ color: '#fff', mr: 2 }}>
                 <LogoutIcon />
               </ListItemIcon>
-              {open && <ListItemText primary="Logout" />}
+              <ListItemText primary="Logout" />
             </ListItem>
           </Tooltip>
         </Box>
