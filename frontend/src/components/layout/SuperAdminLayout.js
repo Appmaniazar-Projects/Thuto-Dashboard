@@ -15,7 +15,7 @@ const SuperAdminLayout = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       <TopBar 
-        title="Thuto Dashboard" 
+        title="Thuto" 
         isSuperAdmin={true} 
         onTitleClick={handleTitleClick}
       />
