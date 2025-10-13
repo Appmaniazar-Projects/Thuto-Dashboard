@@ -56,7 +56,7 @@ const AdminLogin = () => {
     try {
       const { user, token } = await authService.adminLogin(email, password);
       setAuthData(user, token);
-      navigate('/admin/dashboard');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Admin login failed:', err);
       

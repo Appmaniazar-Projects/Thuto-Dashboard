@@ -16,10 +16,12 @@ import {
   Email as EmailIcon,
   LocationOn as LocationIcon,
   AdminPanelSettings as AdminIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import PageTitle from '../../components/common/PageTitle';
+import { useNavigate } from 'react-router-dom';
 
 const SuperAdminProfile = () => {
     const { currentUser, isMaster, isProvincialSuperAdmin } = useAuth();

@@ -230,10 +230,11 @@ const SuperAdminDashboard = () => {
       }
   
       // Submit to backend
-      if (editingSchool) {
-        await updateSchool(editingSchool.id, formDataToSubmit, currentUser?.email);
-        alert('School updated successfully!');
-      } else {
+   if (editingSchool) {
+      const updatedBy = currentUser?.email;
+      await updateSchool(editingSchool.id, formDataToSubmit, updatedBy);
+      alert('School updated successfully!');
+    } else if (currentUser?.email) {
         await createSchool(formDataToSubmit);
         alert(`School created successfully by ${currentUser.email}!`);
       }
@@ -295,6 +296,7 @@ const SuperAdminDashboard = () => {
       setEditingSchool(school);
       setSchoolForm({
         ...school,
+        phoneNumber: school.phoneNumber || '',
         subjects: school.subjects || [],
         grades: school.grades || []
       });
@@ -423,22 +425,6 @@ const SuperAdminDashboard = () => {
   const openAdminDialog = (admin = null) => {
       setError(null);
       setSubmitting(false);
-      
-      // COMPREHENSIVE ADMIN DEBUG
-      console.log('=== ADMIN OBJECT DEBUG ===');
-      console.log('Full admin object:', admin);
-      console.log('Admin keys:', admin ? Object.keys(admin) : 'null');
-      console.log('ID field checks:', {
-        id: admin?.id,
-        adminId: admin?.adminId,
-        userId: admin?.userId,
-        user_id: admin?.user_id,
-        admin_id: admin?.admin_id,
-        userID: admin?.userID,
-        adminID: admin?.adminID
-      });
-      console.log('Email for verification:', admin?.email);
-      console.log('=========================');
       
   
     if (admin) {

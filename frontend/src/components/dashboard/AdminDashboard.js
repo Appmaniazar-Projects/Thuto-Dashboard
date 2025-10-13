@@ -10,7 +10,8 @@ import {
   PersonAdd as PersonAddIcon,
   Settings as SettingsIcon,
   Campaign as CampaignIcon,
-  FilterAlt as FilterIcon
+  FilterAlt as FilterIcon,
+  ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
