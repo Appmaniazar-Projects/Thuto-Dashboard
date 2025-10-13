@@ -53,8 +53,8 @@ const Layout = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          marginLeft: !isMobile ? (open ? `${SIDEBAR_WIDTH}px` : `${SIDEBAR_WIDTH_COLLAPSED}px`) : 0,
-          width: !isMobile ? `calc(100% - ${(open ? SIDEBAR_WIDTH : SIDEBAR_WIDTH_COLLAPSED)}px)` : '100%',
+          marginLeft: !isMobile ? `${SIDEBAR_WIDTH}px` : 0,
+          width: !isMobile ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
           paddingTop: '64px', // For TopBar
         }}
       >
