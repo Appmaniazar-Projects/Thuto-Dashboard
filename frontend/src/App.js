@@ -69,53 +69,51 @@ function App() {
               <NotificationProvider>
                 <SystemMessageProvider>
                   <EventsProvider>
-                    <BrowserRouter>
-                      <ScrollToTop />
-                      <Routes>
-                        {/* Public routes - AuthLayout */}
-                        {publicRoutes.map((route, i) => (
+                    <ScrollToTop />
+                    <Routes>
+                      {/* Public routes */}
+                      {publicRoutes.map((route, i) => (
+                        <Route
+                          key={i}
+                          path={route.path}
+                          element={
+                            <Suspense fallback={<div>Loading...</div>}>
+                              <AuthLayout>{route.element}</AuthLayout>
+                            </Suspense>
+                          }
+                        />
+                      ))}
+
+                      {/* Protected routes */}
+                      <Route element={<Layout />}>
+                        {protectedRoutes.map((route, i) => (
                           <Route
                             key={i}
                             path={route.path}
                             element={
                               <Suspense fallback={<div>Loading...</div>}>
-                                <AuthLayout>{route.element}</AuthLayout>
+                                {route.element}
                               </Suspense>
                             }
                           />
                         ))}
+                      </Route>
 
-                        {/* Protected routes - Main Layout */}
-                        <Route element={<Layout />}>
-                          {protectedRoutes.map((route, i) => (
-                            <Route
-                              key={i}
-                              path={route.path}
-                              element={
-                                <Suspense fallback={<div>Loading...</div>}>
-                                  {route.element}
-                                </Suspense>
-                              }
-                            />
-                          ))}
-                        </Route>
-
-                        {/* Super Admin routes - SuperAdminLayout */}
-                        <Route element={<SuperAdminLayout />}>
-                          {superAdminRoutes.map((route, i) => (
-                            <Route
-                              key={i}
-                              path={route.path}
-                              element={
-                                <Suspense fallback={<div>Loading...</div>}>
-                                  {route.element}
-                                </Suspense>
-                              }
-                            />
-                          ))}
-                        </Route>
-                      </Routes>
-                    </BrowserRouter>
+                      {/* Super Admin routes */}
+                      <Route element={<SuperAdminLayout />}>
+                        {superAdminRoutes.map((route, i) => (
+                          <Route
+                            key={i}
+                            path={route.path}
+                            element={
+                              <Suspense fallback={<div>Loading...</div>}>
+                                {route.element}
+                              </Suspense>
+                            }
+                          />
+                        ))}
+                      </Route>
+                    </Routes>
                   </EventsProvider>
                 </SystemMessageProvider>
               </NotificationProvider>

@@ -103,44 +103,55 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      
-      // Determine redirect path based on current user role
+  
+      // Call backend logout endpoint if available
+      if (currentUser?.id) {
+        try {
+          await api.post(`/api/auth/${currentUser.id}/logout`);
+        } catch (apiError) {
+          console.warn('Logout API failed, continuing client-side cleanup', apiError);
+        }
+      }
+  
+      // Firebase sign-out (for teacher/parent/student roles)
+      try {
+        await auth.signOut();
+      } catch (firebaseError) {
+        console.warn('Firebase signOut failed:', firebaseError);
+      }
+  
+      // Clear stored session
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('superAdmin');
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userProvince');
+      delete api.defaults.headers.common['Authorization'];
+  
+      setCurrentUser(null);
+      setError('');
+  
+      // Determine redirect path
       const userRole = currentUser?.role;
-      let redirectPath = '/login'; // default for students/teachers/parents
-      
+      let redirectPath = '/login';
       if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(userRole)) {
         redirectPath = '/superadmin/login';
       } else if (userRole === 'admin') {
         redirectPath = '/admin/login';
       }
-      
-      // Clear all stored data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('userRole');
-      localStorage.removeItem('superAdmin');
-      localStorage.removeItem('userProvince');
-      
-      // Clear API authorization header
-      delete api.defaults.headers.common['Authorization'];
-      
-      // Reset state
-      setCurrentUser(null);
-      
+  
       enqueueSnackbar('Logged out successfully!', { variant: 'info' });
-      
-      // Navigate to appropriate login screen
-      navigate(redirectPath);
-      
+      navigate(redirectPath, { replace: true });
+  
     } catch (err) {
       console.error('Logout Error:', err);
       setError(err.message);
       enqueueSnackbar('Failed to log out', { variant: 'error' });
-      throw err;
     } finally {
       setLoading(false);
     }
   };
+  
 
   const updateUserProfile = async (updates) => {
     try {
