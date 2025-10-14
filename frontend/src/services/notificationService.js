@@ -1,4 +1,5 @@
 // This service handles notifications with a simple mock implementation
+const useWebSockets = false;
 
 class NotificationService {
   constructor() {
@@ -75,5 +76,6 @@ class NotificationService {
 
 // Export a singleton instance
 export const notificationService = new NotificationService();
+
 
 export default notificationService;
