@@ -1,18 +1,50 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import api from '../services/api';
-
-const DataContext = createContext();
-
-export const DataProvider = ({ children }) => {
+const DataProvider = ({ children }) => {
   const [students, setStudents] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [superAdminData, setSuperAdminData] = useState(null);
 
-  // Fetch all students when the provider mounts or user changes
+  const loadSuperAdminData = async (user) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Make sure we have the user's email
+      if (!user?.email) {
+        throw new Error('User email is required');
+      }
+  
+      const response = await api.get('/superadmins/dashboard', {
+        params: { 
+          superAdminEmail: user.email 
+        }
+      });
+  
+      // The backend returns an array of schools
+      const schools = Array.isArray(response.data) ? response.data : [];
+      
+      // Update the dashboard data with the schools
+      setDashboardData(prev => ({
+        ...prev,
+        schools,
+        totalSchools: schools.length
+      }));
+  
+      return schools;
+    } catch (error) {
+      console.error('Error loading schools:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to load schools';
+      setError(errorMessage);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch all data when the provider mounts or user changes
   useEffect(() => {
     const loadData = async () => {
-      // Don't load if no user is logged in
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user) return;
 
@@ -23,14 +55,11 @@ export const DataProvider = ({ children }) => {
         const isSuperAdmin = user?.role?.includes('SUPERADMIN');
         
         if (isSuperAdmin) {
-          // For super admin, we might not need to load students
-          // Or we could load a list of schools/admins instead
-          const response = await api.get('/superadmins/dashboard');
-            setDashboardData(response.data);
+          await loadSuperAdminData(user);
           return;
         }
 
-        // For regular admins, only fetch students if we have a school context
+        // For regular admins
         if (user.schoolId) {
           const response = await api.get('/admin/students', {
             params: { schoolId: user.schoolId }
@@ -39,7 +68,7 @@ export const DataProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Error loading data:', error);
-        setError('Failed to load student data');
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -48,39 +77,21 @@ export const DataProvider = ({ children }) => {
     loadData();
   }, []);
 
-  // Calculate derived data
-  const genderData = React.useMemo(() => {
-    if (!students.length) return [];
-    const male = students.filter(s => s.gender === 'male').length;
-    const female = students.filter(s => s.gender === 'female').length;
-    return [
-      { name: 'Male', value: male },
-      { name: 'Female', value: female }
-    ];
-  }, [students]);
-
-  const totalEnrollment = students.length;
-
+  // ... rest of the component remains the same
   return (
     <DataContext.Provider
       value={{
         students,
         dashboardData,
+        superAdminData, // Add this to the context
         genderData,
         totalEnrollment,
         loading,
         error,
+        refreshData: loadData // Add refresh capability
       }}
     >
       {children}
     </DataContext.Provider>
   );
-};
-
-export const useData = () => {
-  const context = useContext(DataContext);
-  if (!context) {
-    throw new Error('useData must be used within a DataProvider');
-  }
-  return context;
 };
