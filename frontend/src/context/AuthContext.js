@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
 
   const setAuthData = (user, token) => {
     if (!user || !user.role) {
