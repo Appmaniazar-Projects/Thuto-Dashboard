@@ -54,7 +54,6 @@ import {
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
-import { useData } from '../../context/DataContext';
 
 const PROVINCES = [
   'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
