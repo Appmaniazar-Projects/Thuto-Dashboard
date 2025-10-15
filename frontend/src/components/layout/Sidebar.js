@@ -46,8 +46,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
   const drawerWidth = sidebarWidth;
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    logout(); // AuthContext will handle role-based redirect
   };
 
   const getMenuItems = () => {
