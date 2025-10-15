@@ -151,11 +151,32 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <Typography>Loading dashboard data...</Typography>;
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" gutterBottom>Loading Dashboard...</Typography>
+          <Typography variant="body2" color="text.secondary">Please wait while we fetch your data.</Typography>
+        </Box>
+      </Box>
+    );
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <Box sx={{ p: 3 }}>
+        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'error.light', color: 'error.contrastText' }}>
+          <Typography variant="h6" gutterBottom>Error Loading Dashboard</Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>{error}</Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => window.location.reload()}
+            sx={{ bgcolor: 'error.dark', '&:hover': { bgcolor: 'error.main' } }}
+          >
+            Retry
+          </Button>
+        </Paper>
+      </Box>
+    );
   }
 
   return (

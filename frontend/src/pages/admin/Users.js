@@ -63,7 +63,6 @@ const Users = () => {
         email: '',
         phoneNumber: '',
         role: '',
-        password: '',
         subjects: [],
         grade: [],
         schoolId: '',
@@ -156,7 +155,6 @@ const Users = () => {
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
                 role: user.role || '',
-                password: '',
                 subjects: user.subjects || [],
                 grade: user.grade || [],
                 schoolId: user.schoolId || ''
@@ -175,7 +173,6 @@ const Users = () => {
             email: '',
             phoneNumber: '',
             role: '',
-            password: '',
             subjects: [],
             grade: []
         });
@@ -508,15 +505,7 @@ const Users = () => {
                         </>
                     )}
                     
-                    <TextField
-                        margin="dense"
-                        label={editingUser ? 'New Password (leave blank to keep current)' : 'Password'}
-                        type="password"
-                        fullWidth
-                        variant="outlined"
-                        value={userForm.password}
-                        onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                    />
+                    {/* Password removed - users authenticate with OTP */}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>Cancel</Button>

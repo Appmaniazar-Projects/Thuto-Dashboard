@@ -8,10 +8,30 @@ import fileUploadService from './fileUploadService';
  */
 export const getAllUsers = async () => {
   try {
+    console.log('Fetching all users from /admin/users');
     const response = await api.get('/admin/users');
-    return response.data;
+    
+    // Handle different response structures
+    const users = response.data || [];
+    console.log('Received users response:', { 
+      status: response.status, 
+      dataType: typeof users, 
+      isArray: Array.isArray(users),
+      length: Array.isArray(users) ? users.length : 'N/A',
+      users: users
+    });
+    
+    // Ensure we always return an array
+    return Array.isArray(users) ? users : [];
   } catch (error) {
     console.error('Failed to fetch users:', error);
+    
+    // If it's a 404 or the endpoint doesn't exist, return empty array
+    if (error.response?.status === 404) {
+      console.log('No users found (404), returning empty array');
+      return [];
+    }
+    
     throw error;
   }
 };
