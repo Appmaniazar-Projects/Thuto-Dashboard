@@ -62,11 +62,11 @@ const SuperAdminProfile = () => {
         >
           Back to Dashboard
         </Button>
+      </Box>
       <PageTitle 
         title="Profile" 
         subtitle="Manage your account information and settings" 
       />
-      </Box>
 
       {/* Profile Content */}
       <Grid container spacing={3}>

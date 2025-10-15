@@ -15,10 +15,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-  fetchAllStudents, 
-  fetchAllStaff 
-} from '../../services/api';
+import api from '../../services/api';
+import adminService from '../../services/adminService';
 import { fetchAllAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
@@ -42,7 +40,6 @@ const AdminDashboard = () => {
   const [staff, setStaff] = useState([]);
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRole, setSelectedRole] = useState('All');
   const [error, setError] = useState(null);
   
   // Filter states
@@ -65,15 +62,15 @@ const AdminDashboard = () => {
         
         // Fetch all data in parallel
         const [studentsRes, attendanceRes, staffRes, gradesRes] = await Promise.all([
-          fetchAllStudents(),
+          adminService.getUsersByRole('Student'),
           fetchAllAttendance(),
-          fetchAllStaff(),
+          adminService.getUsersByRole('Teacher'),
           gradeService.getSchoolGrades()
         ]);
         
-        setStudents(studentsRes.data || []);
+        setStudents(studentsRes || []);
         setAttendance(attendanceRes.data || []);
-        setStaff(staffRes.data || []);
+        setStaff(staffRes || []);
         setGrades(gradesRes || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

@@ -61,11 +61,11 @@ const SuperAdminSettings = () => {
         >
           Back to Dashboard
         </Button>
+        </Box>
         <PageTitle 
           title="Settings" 
           subtitle="Manage your preferences and account settings" 
         />
-      </Box>
 
       {saveStatus === 'success' && (
         <Alert severity="success" sx={{ mb: 3 }}>

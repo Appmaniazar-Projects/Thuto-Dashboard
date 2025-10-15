@@ -41,7 +41,7 @@ const ProfilePage = () => {
             </div>
             <div className="detail-item">
               <strong>School:</strong>
-              <span>{user.school || 'N/A'}</span>
+              <span>{user.school?.name || 'N/A'}</span>
             </div>
             <div className="detail-item">
               <strong>Member Since:</strong>
