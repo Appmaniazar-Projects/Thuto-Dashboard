@@ -62,9 +62,9 @@ const AdminDashboard = () => {
         
         // Fetch all data in parallel
         const [studentsRes, attendanceRes, staffRes, gradesRes] = await Promise.all([
-          adminService.getUsersByRole('Student'),
+          adminService.getUsersByRole('STUDENT'),
           fetchAllAttendance(),
-          adminService.getUsersByRole('Teacher'),
+          adminService.getUsersByRole('TEACHER'),
           gradeService.getSchoolGrades()
         ]);
         
