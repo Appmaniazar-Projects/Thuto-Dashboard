@@ -61,16 +61,18 @@ const AdminDashboard = () => {
         setError(null);
         
         // Fetch all data in parallel
-        const [studentsRes, attendanceRes, staffRes, gradesRes] = await Promise.all([
-          adminService.getUsersByRole('STUDENT'),
+        const [allUsersRes, attendanceRes, gradesRes] = await Promise.all([
+          adminService.getAllUsers(),
           fetchAllAttendance(),
-          adminService.getUsersByRole('TEACHER'),
           gradeService.getSchoolGrades()
         ]);
         
-        setStudents(studentsRes || []);
+        const allUsers = allUsersRes || [];
+        
+        // Filter users by role on frontend
+        setStudents(allUsers.filter(user => user.role === 'STUDENT'));
+        setStaff(allUsers.filter(user => user.role === 'TEACHER'));
         setAttendance(attendanceRes.data || []);
-        setStaff(staffRes || []);
         setGrades(gradesRes || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
