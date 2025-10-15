@@ -8,7 +8,7 @@ import fileUploadService from './fileUploadService';
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/admins/users');
+    const response = await api.get('/admin/users');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch users:', error);
@@ -20,10 +20,11 @@ export const getAllUsers = async () => {
  * Fetches users by role
  * @param {string} role - User role to filter by
  * @returns {Promise<Array>} Array of user objects with specified role
+ * /admins/allRoleSpecificUsers/all'
  */
 export const getUsersByRole = async (role) => {
   try {
-    const response = await api.get(`/admins/allRoleSpecificUsers/${role}`);
+    const response = await api.get(`/admin/users/role/${role}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch users with role ${role}:`, error);
@@ -54,7 +55,7 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await api.patch(`/admin/users/${userId}`, userData);
+    const response = await api.put(`/admin/users/${userId}`, userData);
     return response.data;
   } catch (error) {
     console.error('Failed to update user:', error);
