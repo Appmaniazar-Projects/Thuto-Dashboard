@@ -22,6 +22,7 @@ import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
 import CalendarPanel from './admin/CalendarPanel';
 import StatCard from '../common/StatCard';
+import { getDefaultNumber, getUserDisplayName, formatPercentage, getDefaultError } from '../../utils/appText';
 
 const ROLES = [
   { value: 'All', label: 'All' },
@@ -166,7 +167,7 @@ const AdminDashboard = () => {
       <Box sx={{ p: 3 }}>
         <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'error.light', color: 'error.contrastText' }}>
           <Typography variant="h6" gutterBottom>Error Loading Dashboard</Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>{error}</Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>{getDefaultError(error)}</Typography>
           <Button 
             variant="contained" 
             onClick={() => window.location.reload()}
@@ -187,7 +188,7 @@ const AdminDashboard = () => {
           Administration Dashboard
         </Typography>
         <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 2 }}>
-          Welcome, {user?.name || 'Admin'}. Here is the school's overview.
+          Welcome, {getUserDisplayName(user)}. Here is the school's overview.
         </Typography>
         
         {/* Filter Section */}
@@ -287,28 +288,28 @@ const AdminDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Total Students" 
-            value={stats.totalStudents} 
+            value={getDefaultNumber(stats.totalStudents)} 
             icon={<SchoolIcon />} 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Avg. Attendance" 
-            value={`${stats.averageAttendance}%`} 
+            value={formatPercentage(stats.averageAttendance)} 
             icon={<AssessmentIcon />} 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="Total Staff" 
-            value={stats.totalStaff} 
+            value={getDefaultNumber(stats.totalStaff)} 
             icon={<GroupIcon />} 
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
             title="System Alerts" 
-            value={stats.systemAlerts} 
+            value={getDefaultNumber(stats.systemAlerts)} 
             icon={<CampaignIcon />} 
             color="error"
           />

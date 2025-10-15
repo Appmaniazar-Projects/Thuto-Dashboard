@@ -8,8 +8,22 @@ import fileUploadService from './fileUploadService';
  */
 export const getAllUsers = async () => {
   try {
-    console.log('Fetching all users from /admin/users');
-    const response = await api.get('/admin/users');
+    // Get admin info for context
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    console.log('Fetching all users from /admin/users with context:', {
+      adminEmail: adminInfo.email,
+      schoolId: schoolId,
+      adminInfo: adminInfo
+    });
+    
+    // Add admin context as query parameters
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+    if (adminInfo.email) params.adminEmail = adminInfo.email;
+    
+    const response = await api.get('/admin/users', { params });
     
     // Handle different response structures
     const users = response.data || [];
@@ -44,10 +58,25 @@ export const getAllUsers = async () => {
  */
 export const getUsersByRole = async (role) => {
   try {
-    const response = await api.get(`/admin/users/role/${role}`);
-    return response.data;
+    // Get admin info for context
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    // Add admin context as query parameters
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+    if (adminInfo.email) params.adminEmail = adminInfo.email;
+    
+    const response = await api.get(`/admin/users/role/${role}`, { params });
+    return response.data || [];
   } catch (error) {
     console.error(`Failed to fetch users with role ${role}:`, error);
+    
+    // Return empty array for 404s
+    if (error.response?.status === 404) {
+      return [];
+    }
+    
     throw error;
   }
 };
