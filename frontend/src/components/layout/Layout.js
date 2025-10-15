@@ -10,7 +10,8 @@ const SIDEBAR_WIDTH = 240;
 
 const Layout = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Changed from 'md' to 'sm' to match TopBar
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md')); // Add tablet detection
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -51,7 +52,13 @@ const Layout = () => {
           paddingTop: '64px',
         }}
       >
-        <Container maxWidth={false} sx={{ py: 4, px: 4 }}>
+        <Container 
+          maxWidth={false} 
+          sx={{ 
+            py: isTablet ? 2 : 4, // Reduce padding on tablet
+            px: isTablet ? 2 : 4   // Reduce padding on tablet
+          }}
+        >
           <Outlet />
         </Container>
         <Footer />

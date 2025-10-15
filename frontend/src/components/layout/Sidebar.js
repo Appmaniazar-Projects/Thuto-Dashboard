@@ -38,7 +38,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // Changed from 'md' to 'sm' for consistency
 
   const [open] = useState(true); // currently permanent sidebar
 

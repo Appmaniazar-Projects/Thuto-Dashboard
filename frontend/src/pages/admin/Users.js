@@ -496,13 +496,39 @@ const Users = () => {
                                 onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
                                 sx={{ mb: 2 }}
                             >
-                                {grades.map((grade) => (
-                                    <MenuItem key={grade.id} value={grade.name}>
-                                        {grade.name}
-                                    </MenuItem>
-                                ))}
+                                {grades.map((grade) => {
+                                    // Extract number from grade name (e.g., "Grade 8" -> "8")
+                                    const gradeNumber = grade.name?.match(/\d+/)?.[0] || grade.id || grade.name;
+                                    return (
+                                        <MenuItem key={grade.id} value={gradeNumber}>
+                                            {grade.name}
+                                        </MenuItem>
+                                    );
+                                })}
                             </TextField>
                         </>
+                    )}
+                    
+                    {userForm.role === 'student' && (
+                        <TextField
+                            select
+                            margin="dense"
+                            label="Grade(s)"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.grade}
+                            onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
+                            SelectProps={{
+                                multiple: true,
+                            }}
+                            sx={{ mb: 2 }}
+                        >
+                            {grades.map((grade) => (
+                                <MenuItem key={grade.id} value={grade.name}>
+                                    {grade.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     )}
                     
                     {/* Password removed - users authenticate with OTP */}

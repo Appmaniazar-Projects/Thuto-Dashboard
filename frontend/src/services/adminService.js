@@ -88,10 +88,55 @@ export const getUsersByRole = async (role) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await api.post('/admin/createUser', userData);
+    // Get admin info from localStorage
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    console.log('Admin context check:', {
+      adminInfo,
+      schoolIdFromStorage: localStorage.getItem('schoolId'),
+      schoolIdFromAdmin: adminInfo.schoolId,
+      finalSchoolId: schoolId
+    });
+    
+    // Validate required data
+    if (!schoolId && !adminInfo.email) {
+      throw new Error('Missing school context. Admin must be properly logged in.');
+    }
+    
+    // Clean and validate user data
+    const cleanedUserData = {
+      ...userData,
+      // Ensure grade is an array (support multiple grades)
+      grade: Array.isArray(userData.grade) ? userData.grade : (userData.grade ? [userData.grade] : []),
+      // Ensure subjects is an array
+      subjects: Array.isArray(userData.subjects) ? userData.subjects : [],
+      // Remove empty fields
+      name: userData.name?.trim() || '',
+      lastName: userData.lastName?.trim() || '',
+      email: userData.email?.trim() || '',
+      phoneNumber: userData.phoneNumber?.trim() || ''
+    };
+    
+    // Prepare payload with admin context
+    const payload = {
+      ...cleanedUserData,
+      schoolId: schoolId || 'MISSING_SCHOOL_ID',
+      createdBy: adminInfo.email || adminInfo.id || 'MISSING_ADMIN_EMAIL',
+      createdByRole: 'admin',
+      adminEmail: adminInfo.email // Add admin email as separate field
+    };
+    
+    console.log('Creating user with payload:', payload);
+    const response = await api.post('/admin/createUser', payload);
     return response.data;
   } catch (error) {
     console.error('Failed to create user:', error);
+    console.error('Error details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
     throw error;
   }
 };

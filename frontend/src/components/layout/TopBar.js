@@ -36,6 +36,7 @@ import { formatDistanceToNow } from 'date-fns';
 const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTabletOrMobile = useMediaQuery(theme.breakpoints.down('md')); // Add tablet detection
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -136,8 +137,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
     <AppBar
       position="fixed"
       sx={{
-        width: isSuperAdmin ? '100%' : { sm: `calc(100% - ${drawerWidth}px)` },
-        ml: isSuperAdmin ? 0 : { sm: `${drawerWidth}px` },
+        width: isSuperAdmin ? '100%' : (isMobile ? '100%' : `calc(100% - ${drawerWidth}px)`),
+        ml: isSuperAdmin ? 0 : (isMobile ? 0 : `${drawerWidth}px`),
         backgroundColor: '#1f2937',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         transition: theme.transitions.create(['margin', 'width'], {
@@ -147,7 +148,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
       }}
     >
       <Toolbar sx={{ minHeight: '64px !important' }}>
-        {!isSuperAdmin && (
+        {!isSuperAdmin && isMobile && (
           <IconButton
             color="inherit"
             aria-label="open drawer"
