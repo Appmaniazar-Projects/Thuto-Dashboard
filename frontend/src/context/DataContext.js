@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
+import { getUsersByRole } from '../services/adminService';
 
 // Create the context
 const DataContext = createContext();
@@ -17,10 +17,8 @@ export const DataProvider = ({ children }) => {
     setError(null);
     
     try {
-      const response = await api.get('/admin/students', {
-        params: { schoolId: user.schoolId }
-      });
-      setStudents(response.data || []);
+      const studentData = await getUsersByRole('student');
+      setStudents(studentData || []);
     } catch (error) {
       console.error('Error loading student data:', error);
       setError(error.response?.data?.message || 'Failed to load student data');

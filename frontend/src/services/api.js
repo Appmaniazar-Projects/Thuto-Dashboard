@@ -51,25 +51,25 @@ api.interceptors.response.use(
  * Fetches all student data for frontend filtering
  * @param {Object} filters - Optional filters to apply on the frontend
  */
-export const fetchAllStudents = (filters = {}) => 
-  api.get("/admin/students").then(response => {
-    // Apply filters on the frontend
-    let filteredData = [...(response.data || [])];
+// export const fetchAllStudents = (filters = {}) => 
+//   api.get("/admin/students").then(response => {
+//     // Apply filters on the frontend
+//     let filteredData = [...(response.data || [])];
     
-    if (filters.grade) {
-      filteredData = filteredData.filter(student => student.grade === filters.grade);
-    }
+//     if (filters.grade) {
+//       filteredData = filteredData.filter(student => student.grade === filters.grade);
+//     }
     
-    if (filters.gender) {
-      filteredData = filteredData.filter(student => student.gender === filters.gender);
-    }
+//     if (filters.gender) {
+//       filteredData = filteredData.filter(student => student.gender === filters.gender);
+//     }
     
-    if (filters.status) {
-      filteredData = filteredData.filter(student => student.status === filters.status);
-    }
+//     if (filters.status) {
+//       filteredData = filteredData.filter(student => student.status === filters.status);
+//     }
     
-    return { data: filteredData };
-  });
+//     return { data: filteredData };
+//   });
 
 /**
  * Fetches all staff data
