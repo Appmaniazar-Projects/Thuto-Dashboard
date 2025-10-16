@@ -36,8 +36,7 @@ import {
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import gradeService from '../../services/gradeService';
-import studentService from '../../services/studentService';
-import teacherService from '../../services/teacherService';
+import { getUsersByRole } from '../../services/adminService';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorDisplay } from '../common/ErrorDisplay';
 
@@ -65,8 +64,8 @@ const GradeManagement = () => {
       setLoading(true);
       const [gradesData, studentsData, teachersData] = await Promise.all([
         gradeService.getSchoolGrades(),
-        studentService.getAllStudents(),
-        teacherService.getAllTeachers()
+        getUsersByRole('student'),
+        getUsersByRole('teacher')
       ]);
       setGrades(gradesData.map(grade => ({ id: grade.id, name: grade.name })));
       setStudents(studentsData);

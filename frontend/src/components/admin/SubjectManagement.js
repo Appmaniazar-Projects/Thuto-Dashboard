@@ -32,7 +32,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import subjectService from '../../services/subjectService';
-import teacherService from '../../services/teacherService';
+import { getUsersByRole } from '../../services/adminService';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorDisplay } from '../common/ErrorDisplay';
 
@@ -57,7 +57,7 @@ const SubjectManagement = () => {
       setLoading(true);
       const [subjectsData, teachersData] = await Promise.all([
         subjectService.getSchoolSubjects(),
-        teacherService.getAllTeachers()
+        getUsersByRole('teacher')
       ]);
       setSubjects(subjectsData.map(subject => ({ id: subject.id, name: subject.name, description: subject.description })));
       setTeachers(teachersData);
