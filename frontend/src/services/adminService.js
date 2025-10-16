@@ -149,7 +149,14 @@ export const createUser = async (userData) => {
  */
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await api.put(`/admin/users/${userId}`, userData);
+    // Get the logged-in user's email for updatedBy
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const updatedBy = currentUser.email || 'unknown';
+    
+    const response = await api.put(`/admin/users/${userId}`, {
+      ...userData,
+      updatedBy: updatedBy
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to update user:', error);

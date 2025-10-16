@@ -341,7 +341,7 @@ const Users = () => {
     if (loading) return <CircularProgress />;
 
     return (
-        <Box>
+        <Box sx={{ width: '100%', p: 0, m: 0 }}>
             <PageTitle title="User Management" subtitle="Manage users, administrators, and teachers in your school." />
 
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
