@@ -44,8 +44,9 @@ import PageTitle from '../../components/common/PageTitle';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
-    const [admins, setAdmins] = useState([]);
     const [teachers, setTeachers] = useState([]);
+    const [parents, setParents] = useState([]);
+    const [students, setStudents] = useState([]);
     const [grades, setGrades] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -72,7 +73,6 @@ const Users = () => {
         { value: 'student', label: 'Student' },
         { value: 'parent', label: 'Parent' },
         { value: 'teacher', label: 'Teacher' },
-        { value: 'admin', label: 'Administrator' }
     ];
 
     useEffect(() => {
@@ -102,14 +102,16 @@ const Users = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const [allUsersData, adminsData, teachersData] = await Promise.all([
+            const [allUsersData, parentsData, teachersData, studentsData] = await Promise.all([
                 getAllUsers(),
-                getUsersByRole('admin'),
-                getUsersByRole('teacher')
+                getUsersByRole('parent'),
+                getUsersByRole('teacher'),
+                getUsersByRole('student')
             ]);
             setUsers(allUsersData);
-            setAdmins(adminsData);
-            setTeachers(teachersData);
+            setParents(parentsData || []);
+            setTeachers(teachersData || []);
+            setStudents(studentsData || []);
         } catch (err) {
             setError('Failed to load users.');
             console.error(err);
@@ -119,6 +121,26 @@ const Users = () => {
     };
 
     const handleSubmit = async () => {
+        // Basic validation
+        if (!userForm.name || !userForm.email || !userForm.phoneNumber || !userForm.role) {
+            setError('Please fill in all required fields (Name, Email, Phone Number, Role)');
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userForm.email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
+        // Phone number validation (basic)
+        const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+        if (!phoneRegex.test(userForm.phoneNumber)) {
+            setError('Please enter a valid phone number');
+            return;
+        }
+
         try {
             if (editingUser) {
                 await updateUser(editingUser.id, userForm);
@@ -129,8 +151,9 @@ const Users = () => {
             setEditingUser(null);
             resetForm();
             fetchUsers();
+            setError(''); // Clear any previous errors
         } catch (err) {
-            setError('Failed to save user');
+            setError('Failed to save user: ' + (err.response?.data?.message || err.message));
             console.error(err);
         }
     };
@@ -198,6 +221,7 @@ const Users = () => {
         const csvData = data.map(user => {
             const row = {
                 'Name': user.name,
+                'Last Name': user.lastName || 'N/A',
                 'Email': user.email,
                 'Phone Number': user.phoneNumber,
                 'Role': user.role,
@@ -237,8 +261,9 @@ const Users = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => {
                                     const roleMap = {
-                                        'All Users': 'student',
-                                        'Administrators': 'admin',
+                                        'All Users': 'user',
+                                        'Parents': 'parent',
+                                        'Students': 'student',
                                         'Teachers': 'teacher'
                                     };
                                     setUserForm({ ...userForm, role: roleMap[title] || 'student' });
@@ -346,10 +371,10 @@ const Users = () => {
                                 <AdminIcon sx={{ fontSize: 40, color: 'error.main', mr: 2 }} />
                                 <Box>
                                     <Typography variant="h4" component="div">
-                                        {admins.length}
+                                        {parents.length}
                                     </Typography>
                                     <Typography color="text.secondary">
-                                        Administrators
+                                        Parents
                                     </Typography>
                                 </Box>
                             </Box>
@@ -396,15 +421,17 @@ const Users = () => {
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                 <Tabs value={activeTab} onChange={handleTabChange}>
                     <Tab label="All Users" />
-                    <Tab label="Administrators" />
+                    <Tab label="Parents" />
                     <Tab label="Teachers" />
+                    <Tab label="Students" />
                 </Tabs>
             </Box>
 
             {/* Tab Panels */}
             {activeTab === 0 && renderUserTable(users, 'All Users')}
-            {activeTab === 1 && renderUserTable(admins, 'Administrators')}
-            {activeTab === 2 && renderUserTable(teachers, 'Teachers')}
+            {activeTab === 1 && renderUserTable(users.filter(u => u.role === 'parent'), 'Parents')}
+            {activeTab === 2 && renderUserTable(users.filter(u => u.role === 'teacher'), 'Teachers')}
+            {activeTab === 3 && renderUserTable(users.filter(u => u.role === 'student'), 'Students')}
 
             {/* User Dialog */}
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
