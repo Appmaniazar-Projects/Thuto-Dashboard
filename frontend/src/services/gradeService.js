@@ -39,10 +39,26 @@ export const getAllGrades = async () => {
 /**
  * Get grades for current school
  * @returns {Promise<Array>} Array of grade objects for current school
+ * schoolId
  */
-export const getSchoolGrades = async () => {
-  const response = await api.get('/grades');
-  return response.data;
+export const getSchoolGrades = async (schoolId) => {
+  try {
+    // If schoolId is not provided, get it from localStorage
+    const finalSchoolId = schoolId || localStorage.getItem('schoolId');
+    
+    const params = {};
+    if (finalSchoolId) {
+      params.schoolId = finalSchoolId;
+    }
+    
+    const response = await api.get('/grades', {
+      params: params
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch school grades:', error);
+    throw error;
+  }
 };
 
 /**

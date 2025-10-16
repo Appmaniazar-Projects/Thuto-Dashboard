@@ -405,7 +405,7 @@ const Users = () => {
                                 <PersonIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
                                 <Box>
                                     <Typography variant="h4" component="div">
-                                        {users.filter(u => u.role === 'student').length}
+                                        {students.length}
                                     </Typography>
                                     <Typography color="text.secondary">
                                         Students
@@ -429,9 +429,9 @@ const Users = () => {
 
             {/* Tab Panels */}
             {activeTab === 0 && renderUserTable(users, 'All Users')}
-            {activeTab === 1 && renderUserTable(users.filter(u => u.role === 'parent'), 'Parents')}
-            {activeTab === 2 && renderUserTable(users.filter(u => u.role === 'teacher'), 'Teachers')}
-            {activeTab === 3 && renderUserTable(users.filter(u => u.role === 'student'), 'Students')}
+            {activeTab === 1 && renderUserTable(parents, 'Parents')}
+            {activeTab === 2 && renderUserTable(teachers, 'Teachers')}
+            {activeTab === 3 && renderUserTable(students, 'Students')}
 
             {/* User Dialog */}
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
