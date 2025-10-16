@@ -175,6 +175,7 @@ const Users = () => {
             setEditingUser(user);
             setUserForm({
                 name: user.name || '',
+                lastName: user.lastName || '',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
                 role: user.role || '',

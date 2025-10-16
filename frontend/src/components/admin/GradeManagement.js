@@ -234,10 +234,40 @@ const GradeManagement = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {grades.map((grade) => {
-              const stats = getGradeStats(grade);
-              return (
-                <TableRow key={grade.id}>
+            {error ? (
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <Box sx={{ textAlign: 'center', py: 3 }}>
+                    <Typography color="error" variant="h6" gutterBottom>
+                      Error Loading Grades
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                      {error}
+                    </Typography>
+                    <Button variant="contained" onClick={loadData}>
+                      Retry
+                    </Button>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : grades.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4}>
+                  <Box sx={{ textAlign: 'center', py: 3 }}>
+                    <Typography color="text.secondary" variant="h6">
+                      No grades found
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Create your first grade to get started
+                    </Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              grades.map((grade) => {
+                const stats = getGradeStats(grade);
+                return (
+                  <TableRow key={grade.id}>
                   <TableCell>
                     <Typography variant="subtitle1" fontWeight="medium">
                       {grade.name}
@@ -292,8 +322,9 @@ const GradeManagement = () => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              );
-            })}
+               );
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>
