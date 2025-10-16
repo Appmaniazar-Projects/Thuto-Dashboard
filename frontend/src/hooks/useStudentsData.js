@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchAllStudents } from '../services/api';
+import { getAllUsers } from '../services/adminService';
 
 export const useStudentsData = () => {
   const [students, setStudents] = useState([]);
@@ -9,8 +9,10 @@ export const useStudentsData = () => {
   useEffect(() => {
     const loadStudents = async () => {
       try {
-        const response = await fetchAllStudents();
-        setStudents(response.data || []);
+        const allUsers = await getAllUsers();
+        // Filter for students only
+        const students = allUsers.filter(user => user.role === 'student');
+        setStudents(students || []);
       } catch (err) {
         setError('Failed to load students');
         console.error('Error fetching students:', err);
