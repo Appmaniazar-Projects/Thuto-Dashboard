@@ -11,3 +11,23 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Global CSS override to fix layout spacing issues */
+.css-avik8r {
+  margin-left: 0 !important;
+}
+
+/* Additional layout fixes for consistent spacing */
+.MuiBox-root.css-avik8r {
+  margin-left: 0 !important;
+}
+
+/* Ensure main content area has proper spacing without extra margins */
+[role="main"], main {
+  margin-left: 0 !important;
+}
+
+/* Fix any Material-UI generated classes that might add unwanted margins */
+.css-* {
+  margin-left: 0 !important;
+}

@@ -47,8 +47,8 @@ const Layout = () => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          marginLeft: !isMobile ? `${SIDEBAR_WIDTH}px` : 0,
-          width: !isMobile ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+          marginLeft: 0, // Remove dynamic margin to fix white space issue
+          width: '100%',
           paddingTop: '64px',
         }}
       >

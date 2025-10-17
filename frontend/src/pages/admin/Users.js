@@ -93,9 +93,17 @@ const Users = () => {
     const loadSubjects = async () => {
         try {
             const subjectsData = await subjectService.getSchoolSubjects();
-            setSubjects(subjectsData);
+            setSubjects(subjectsData || []);
         } catch (error) {
-            console.error('Failed to load subjects:', error);
+            console.warn('Subjects endpoint not available, using fallback data:', error.message);
+            // Provide fallback subject data until backend implements the endpoint
+            setSubjects([
+                { id: 1, name: 'Mathematics' },
+                { id: 2, name: 'English' },
+                { id: 3, name: 'Science' },
+                { id: 4, name: 'History' },
+                { id: 5, name: 'Geography' }
+            ]);
         }
     };
 

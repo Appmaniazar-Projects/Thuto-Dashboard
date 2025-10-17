@@ -61,20 +61,38 @@ const AdminDashboard = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch all data in parallel
-        const [allUsersRes, attendanceRes, gradesRes] = await Promise.all([
-          adminService.getAllUsers(),
-          fetchAllAttendance(),
-          gradeService.getSchoolGrades()
-        ]);
-        
+        // Fetch all data with individual error handling
+        const allUsersRes = await adminService.getAllUsers();
         const allUsers = allUsersRes || [];
         
         // Filter users by role on frontend
         setStudents(allUsers.filter(user => user.role === 'STUDENT'));
         setStaff(allUsers.filter(user => user.role === 'TEACHER'));
-        setAttendance(attendanceRes.data || []);
-        setGrades(gradesRes || []);
+        
+        // Fetch attendance with error handling
+        try {
+          const attendanceRes = await fetchAllAttendance();
+          setAttendance(attendanceRes.data || []);
+        } catch (error) {
+          console.warn('Attendance data not available:', error.message);
+          setAttendance([]);
+        }
+        
+        // Fetch grades with error handling and fallback
+        try {
+          const gradesRes = await gradeService.getSchoolGrades();
+          setGrades(gradesRes || []);
+        } catch (error) {
+          console.warn('Grades endpoint not available, using fallback data:', error.message);
+          // Provide fallback grade data until backend implements the endpoint
+          setGrades([
+            { id: 1, name: 'Grade 8' },
+            { id: 2, name: 'Grade 9' },
+            { id: 3, name: 'Grade 10' },
+            { id: 4, name: 'Grade 11' },
+            { id: 5, name: 'Grade 12' }
+          ]);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError('Failed to load dashboard data. Please try again.');

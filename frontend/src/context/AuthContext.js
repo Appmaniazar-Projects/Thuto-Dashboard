@@ -73,6 +73,7 @@ export const AuthProvider = ({ children }) => {
               role: userData.role.toLowerCase(), // enforce lowercase
               level: userData.level || null,
               province: userData.province || null,
+              schoolId: userData.schoolId || userData.school_id || null, // Add schoolId support
               displayName: userData.name || userData.displayName || 'User',
               phoneNumber: userData.phoneNumber || null,
               ...userData
