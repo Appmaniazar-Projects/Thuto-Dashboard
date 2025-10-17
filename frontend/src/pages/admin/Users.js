@@ -128,12 +128,24 @@ const Users = () => {
         }
     };
 
+    // Normalize role to lowercase before submission
+    const normalizeRole = (role) => {
+        if (!role) return 'student';
+        return role.toLowerCase();
+    };
+
     const handleSubmit = async () => {
         // Basic validation
         if (!userForm.name || !userForm.email || !userForm.phoneNumber || !userForm.role) {
             setError('Please fill in all required fields (Name, Email, Phone Number, Role)');
             return;
         }
+        
+        // Normalize form data before submission
+        const formData = {
+            ...userForm,
+            role: normalizeRole(userForm.role)
+        };
 
         // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -453,7 +465,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.name}
-                        onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                    onChange={(e) => {
+                        setUserForm({ ...userForm, name: e.target.value });
+                        setFormErrors({ ...formErrors, name: false });
+                    }}
+                    error={formErrors.name}
+                    helperText={formErrors.name ? 'Name is required' : ''}
+                    required
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -472,7 +490,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.email}
-                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                    onChange={(e) => {
+                        setUserForm({ ...userForm, email: e.target.value });
+                        setFormErrors({ ...formErrors, email: false });
+                    }}
+                    error={formErrors.email}
+                    helperText={formErrors.email ? 'Please enter a valid email address' : ''}
+                    required
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -481,7 +505,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.phoneNumber}
-                        onChange={(e) => setUserForm({ ...userForm, phoneNumber: e.target.value })}
+                    onChange={(e) => {
+                        setUserForm({ ...userForm, phoneNumber: e.target.value });
+                        setFormErrors({ ...formErrors, phoneNumber: false });
+                    }}
+                    error={formErrors.phoneNumber}
+                    helperText={formErrors.phoneNumber ? 'Phone number is required' : ''}
+                    required
                         sx={{ mb: 2 }}
                     />
                     <TextField
