@@ -19,6 +19,39 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add schoolId parameter for school-scoped requests
+    const user = localStorage.getItem("user");
+    const superAdmin = localStorage.getItem("superAdmin");
+    
+    let userData = null;
+    try {
+      if (user) {
+        userData = JSON.parse(user);
+      } else if (superAdmin) {
+        userData = JSON.parse(superAdmin);
+      }
+    } catch (e) {
+      console.warn('Error parsing user data for schoolId:', e);
+    }
+
+    // Add schoolId to requests that need it (exclude auth and superadmin endpoints)
+    if (userData && userData.schoolId && 
+        !config.url.includes('/auth/') && 
+        !config.url.includes('/superadmin/') &&
+        !config.url.includes('/master/')) {
+      
+      // Add schoolId as query parameter
+      if (!config.params) {
+        config.params = {};
+      }
+      
+      // Only add if not already present
+      if (!config.params.schoolId) {
+        config.params.schoolId = userData.schoolId;
+      }
+    }
+
     return config;
   },
   (error) => {

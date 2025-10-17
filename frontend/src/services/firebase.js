@@ -5,10 +5,11 @@ import {
   getAuth, 
   signInWithPopup,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
   signOut,
   onAuthStateChanged,
-  updateProfile,
- 
+  updateProfile
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -24,8 +25,15 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Firebase initialization failed:', error);
+  throw new Error('Firebase configuration is invalid. Please check your environment variables.');
+}
 
 // Initialize Analytics only if measurementId is provided and not in demo mode
 let analytics = null;
@@ -49,6 +57,8 @@ export {
   analytics,
   signInWithPopup,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
   signOut,
   onAuthStateChanged,
   updateProfile,

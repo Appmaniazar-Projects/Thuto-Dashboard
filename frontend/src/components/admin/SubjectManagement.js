@@ -32,6 +32,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import subjectService from '../../services/subjectService';
+import gradeService from '../../services/gradeService';
 import { getUsersByRole } from '../../services/adminService';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorDisplay } from '../common/ErrorDisplay';
@@ -39,13 +40,14 @@ import { ErrorDisplay } from '../common/ErrorDisplay';
 const SubjectManagement = () => {
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [] });
   const [selectedTeacher, setSelectedTeacher] = useState(null);
 
   useEffect(() => {
@@ -55,12 +57,19 @@ const SubjectManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [subjectsData, teachersData] = await Promise.all([
+      const [subjectsData, teachersData, gradesData] = await Promise.all([
         subjectService.getSchoolSubjects(),
-        getUsersByRole('teacher')
+        getUsersByRole('teacher'),
+        gradeService.getSchoolGrades()
       ]);
-      setSubjects(subjectsData.map(subject => ({ id: subject.id, name: subject.name, description: subject.description })));
+      setSubjects(subjectsData.map(subject => ({ 
+        id: subject.id, 
+        name: subject.name, 
+        description: subject.description,
+        gradeIds: subject.gradeIds || []
+      })));
       setTeachers(teachersData);
+      setGrades(gradesData || []);
     } catch (err) {
       setError('Failed to load data: ' + err.message);
     } finally {
@@ -70,14 +79,18 @@ const SubjectManagement = () => {
 
   const handleCreateSubject = () => {
     setDialogMode('create');
-    setFormData({ name: '', description: '' });
+    setFormData({ name: '', description: '', gradeIds: [] });
     setSelectedSubject(null);
     setOpenDialog(true);
   };
 
   const handleEditSubject = (subject) => {
     setDialogMode('edit');
-    setFormData({ name: subject.name, description: subject.description || '' });
+    setFormData({ 
+      name: subject.name, 
+      description: subject.description || '',
+      gradeIds: subject.gradeIds || []
+    });
     setSelectedSubject(subject);
     setOpenDialog(true);
   };
@@ -211,6 +224,7 @@ const SubjectManagement = () => {
             <TableRow>
               <TableCell>Subject Name</TableCell>
               <TableCell>Description</TableCell>
+              <TableCell align="center">Grades</TableCell>
               <TableCell align="center">Teachers</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
@@ -229,6 +243,26 @@ const SubjectManagement = () => {
                     <Typography variant="body2" color="text.secondary">
                       {subject.description || 'No description'}
                     </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center' }}>
+                      {subject.gradeIds && subject.gradeIds.length > 0 ? (
+                        subject.gradeIds.map(gradeId => {
+                          const grade = grades.find(g => g.id === gradeId);
+                          return (
+                            <Chip 
+                              key={gradeId}
+                              label={grade ? grade.name : `Grade ${gradeId}`}
+                              color="primary"
+                              size="small"
+                              variant="outlined"
+                            />
+                          );
+                        })
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No grades</Typography>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell align="center">
                     <Chip 
@@ -302,6 +336,37 @@ const SubjectManagement = () => {
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Brief description of the subject"
+            sx={{ mb: 2 }}
+          />
+          <Autocomplete
+            multiple
+            options={grades}
+            getOptionLabel={(grade) => grade.name || `Grade ${grade.id}`}
+            value={grades.filter(grade => formData.gradeIds.includes(grade.id))}
+            onChange={(event, newValue) => {
+              setFormData({ 
+                ...formData, 
+                gradeIds: newValue.map(grade => grade.id) 
+              });
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Select Grades"
+                placeholder="Choose grades for this subject"
+                helperText="Select which grades this subject will be taught to"
+              />
+            )}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  variant="outlined"
+                  label={option.name || `Grade ${option.id}`}
+                  {...getTagProps({ index })}
+                  key={option.id}
+                />
+              ))
+            }
           />
         </DialogContent>
         <DialogActions>
