@@ -78,7 +78,7 @@ export const getSchoolGrades = async (schoolId) => {
     
     // Add admin context as query parameters
     const params = {};
-    if (finalSchoolId) params.schoolId = finalSchoolId;
+    if (finalSchoolId) params.schoolId = String(finalSchoolId); // Ensure schoolId is string
     if (adminEmail) params.adminEmail = adminEmail;
     
     const response = await api.get('/grades', {
