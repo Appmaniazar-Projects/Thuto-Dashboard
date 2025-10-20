@@ -43,6 +43,12 @@ export const getAllGrades = async () => {
  */
 export const getSchoolGrades = async (schoolId) => {
   try {
+    // Get admin context from JWT token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
     // Get admin info and handle different data structures
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
     
