@@ -19,16 +19,6 @@ export const createGrade = async (gradeData) => {
     const schoolId = localStorage.getItem('schoolId') || adminInfo.school?.id;
     const adminEmail = adminInfo.email;
     
-    // Debug: Log all context data
-    console.log('DEBUG - Grade creation context:', {
-      gradeData: gradeData,
-      adminInfo: adminInfo,
-      schoolIdFromStorage: localStorage.getItem('schoolId'),
-      schoolIdFromAdmin: adminInfo.school?.id,
-      finalSchoolId: schoolId,
-      adminEmail: adminEmail
-    });
-    
     // Validate required context
     if (!schoolId) {
       throw new Error('School ID not found. Cannot create grade without school context.');
@@ -41,11 +31,7 @@ export const createGrade = async (gradeData) => {
       createdBy: adminEmail || 'unknown',
       createdByRole: 'admin'
     };
-    
-    console.log('DEBUG - Final grade payload:', gradePayload);
-    console.log('DEBUG - Payload keys:', Object.keys(gradePayload));
-    console.log('DEBUG - schoolId value and type:', { value: gradePayload.schoolId, type: typeof gradePayload.schoolId });
-    
+
     const response = await api.post('/grades', gradePayload);
     return response.data;
   } catch (error) {

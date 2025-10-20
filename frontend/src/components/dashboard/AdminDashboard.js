@@ -57,6 +57,23 @@ const AdminDashboard = () => {
   // Fetch all data on component mount
   useEffect(() => {
     const fetchData = async () => {
+      // Simple cache check - avoid refetching data within 5 minutes
+      const cacheKey = 'adminDashboardData';
+      const cacheTime = 5 * 60 * 1000; // 5 minutes
+      const cached = localStorage.getItem(cacheKey);
+      
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < cacheTime) {
+          console.log('Using cached dashboard data');
+          setStudents(data.students || []);
+          setAttendance(data.attendance || []);
+          setStaff(data.staff || []);
+          setGrades(data.grades || []);
+          setLoading(false);
+          return;
+        }
+      }
       try {
         setLoading(true);
         setError(null);
@@ -229,14 +246,6 @@ const AdminDashboard = () => {
               >
                 <MenuItem value="">All Grades</MenuItem>
                 {(() => {
-                  // Debug: Log grades type and value
-                  console.log('DEBUG - Grades in render:', {
-                    grades: grades,
-                    type: typeof grades,
-                    isArray: Array.isArray(grades),
-                    hasMapMethod: grades && typeof grades.map === 'function'
-                  });
-                  
                   // Ensure grades is always an array
                   const safeGrades = Array.isArray(grades) ? grades : [];
                   
