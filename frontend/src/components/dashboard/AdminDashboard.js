@@ -228,7 +228,7 @@ const AdminDashboard = () => {
                 size="small"
               >
                 <MenuItem value="">All Grades</MenuItem>
-                {grades.map(grade => (
+                {(grades || []).map(grade => (
                   <MenuItem key={grade.id} value={grade.name}>{grade.name}</MenuItem>
                 ))}
               </TextField>
