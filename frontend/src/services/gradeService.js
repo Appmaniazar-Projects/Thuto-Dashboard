@@ -13,8 +13,33 @@ import axios from 'axios';
  * @returns {Promise<Object>} Created grade object
  */
 export const createGrade = async (gradeData) => {
-  const response = await api.post('/grades', gradeData);
-  return response.data;
+  try {
+    // Get admin context for school association
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.school?.id;
+    const adminEmail = adminInfo.email;
+    
+    // Validate required context
+    if (!schoolId) {
+      throw new Error('School ID not found. Cannot create grade without school context.');
+    }
+    
+    // Prepare grade data with school context
+    const gradePayload = {
+      ...gradeData,
+      schoolId: String(schoolId), // Ensure schoolId is string
+      createdBy: adminEmail || 'unknown',
+      createdByRole: 'admin'
+    };
+    
+    console.log('Creating grade with payload:', gradePayload);
+    
+    const response = await api.post('/grades', gradePayload);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create grade:', error);
+    throw error;
+  }
 };
 
 /**
