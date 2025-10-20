@@ -40,8 +40,23 @@ const adminLogin = async (email, password) => {
     }
     
     if (response.data.token) {
+      // Debug: Log the user data structure
+      console.log('Admin login response structure:', {
+        fullResponse: response.data,
+        userObject: response.data.user,
+        userKeys: Object.keys(response.data.user || {})
+      });
+      
       localStorage.setItem('user', JSON.stringify(response.data.user));
       localStorage.setItem('token', response.data.token);
+      
+      // Also store schoolId separately if it exists in the user object
+      if (response.data.user?.school?.id) {
+        localStorage.setItem('schoolId', response.data.user.school.id);
+      } else if (response.data.user?.schoolId) {
+        localStorage.setItem('schoolId', response.data.user.schoolId);
+      }
+      
       return response.data;
     }
     

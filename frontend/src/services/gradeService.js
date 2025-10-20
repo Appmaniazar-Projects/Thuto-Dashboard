@@ -43,13 +43,37 @@ export const getAllGrades = async () => {
  */
 export const getSchoolGrades = async (schoolId) => {
   try {
-    // If schoolId is not provided, get it from localStorage
-    const finalSchoolId = schoolId || localStorage.getItem('schoolId');
+    // Get admin info and handle different data structures
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
     
-    const params = {};
-    if (finalSchoolId) {
-      params.schoolId = finalSchoolId;
+    // Extract schoolId from various possible locations
+    const finalSchoolId = schoolId || 
+                         localStorage.getItem('schoolId') || 
+                         adminInfo.schoolId || 
+                         adminInfo.school?.id || 
+                         adminInfo.school?.schoolId;
+    
+    // Extract admin email from various possible locations
+    const adminEmail = adminInfo.email || adminInfo.user?.email;
+    
+    console.log('Fetching school grades with context:', {
+      adminInfo: adminInfo,
+      adminEmail: adminEmail,
+      schoolId: finalSchoolId,
+      providedSchoolId: schoolId,
+      hasToken: !!token,
+      adminInfoKeys: Object.keys(adminInfo)
+    });
+    
+    // Validate we have required context
+    if (!finalSchoolId) {
+      throw new Error('School ID not found. Admin context may be incomplete.');
     }
+    
+    // Add admin context as query parameters
+    const params = {};
+    if (finalSchoolId) params.schoolId = finalSchoolId;
+    if (adminEmail) params.adminEmail = adminEmail;
     
     const response = await api.get('/grades', {
       params: params
