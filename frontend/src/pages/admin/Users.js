@@ -56,6 +56,7 @@ const Users = () => {
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [formErrors, setFormErrors] = useState({});
     
     // Form state
     const [userForm, setUserForm] = useState({
@@ -135,9 +136,45 @@ const Users = () => {
     };
 
     const handleSubmit = async () => {
-        // Basic validation
-        if (!userForm.name || !userForm.email || !userForm.phoneNumber || !userForm.role) {
-            setError('Please fill in all required fields (Name, Email, Phone Number, Role)');
+        // Reset previous errors
+        setFormErrors({});
+        setError('');
+        
+        // Validation
+        const errors = {};
+        
+        if (!userForm.name.trim()) {
+            errors.name = true;
+        }
+        
+        if (!userForm.email.trim()) {
+            errors.email = true;
+        } else {
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(userForm.email)) {
+                errors.email = true;
+            }
+        }
+        
+        if (!userForm.phoneNumber.trim()) {
+            errors.phoneNumber = true;
+        } else {
+            // Phone number validation (basic)
+            const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+            if (!phoneRegex.test(userForm.phoneNumber)) {
+                errors.phoneNumber = true;
+            }
+        }
+        
+        if (!userForm.role) {
+            errors.role = true;
+        }
+        
+        // If there are errors, set them and return
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            setError('Please fix the errors above');
             return;
         }
         
@@ -146,20 +183,6 @@ const Users = () => {
             ...userForm,
             role: normalizeRole(userForm.role)
         };
-
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(userForm.email)) {
-            setError('Please enter a valid email address');
-            return;
-        }
-
-        // Phone number validation (basic)
-        const phoneRegex = /^[\d\s\+\-\(\)]+$/;
-        if (!phoneRegex.test(userForm.phoneNumber)) {
-            setError('Please enter a valid phone number');
-            return;
-        }
 
         try {
             if (editingUser) {
@@ -207,6 +230,8 @@ const Users = () => {
             setEditingUser(null);
             resetForm();
         }
+        setFormErrors({});
+        setError('');
         setDialogOpen(true);
     };
 
@@ -220,6 +245,7 @@ const Users = () => {
             subjects: [],
             grade: []
         });
+        setFormErrors({});
     };
 
     const handleTabChange = (event, newValue) => {
@@ -521,7 +547,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.role}
-                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                        onChange={(e) => {
+                            setUserForm({ ...userForm, role: e.target.value });
+                            setFormErrors({ ...formErrors, role: false });
+                        }}
+                        error={formErrors.role}
+                        helperText={formErrors.role ? 'Role is required' : ''}
+                        required
                         sx={{ mb: 2 }}
                     >
                         {roles.map((role) => (
