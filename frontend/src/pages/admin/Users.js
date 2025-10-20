@@ -221,7 +221,7 @@ const Users = () => {
                 lastName: user.lastName || '',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
-                role: user.role || '',
+                role: normalizeRole(user.role) || '',
                 subjects: user.subjects || [],
                 grade: user.grade || [],
                 schoolId: user.schoolId || ''
