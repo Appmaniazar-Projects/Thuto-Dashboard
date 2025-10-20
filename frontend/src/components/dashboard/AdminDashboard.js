@@ -228,9 +228,22 @@ const AdminDashboard = () => {
                 size="small"
               >
                 <MenuItem value="">All Grades</MenuItem>
-                {(grades || []).map(grade => (
-                  <MenuItem key={grade.id} value={grade.name}>{grade.name}</MenuItem>
-                ))}
+                {(() => {
+                  // Debug: Log grades type and value
+                  console.log('DEBUG - Grades in render:', {
+                    grades: grades,
+                    type: typeof grades,
+                    isArray: Array.isArray(grades),
+                    hasMapMethod: grades && typeof grades.map === 'function'
+                  });
+                  
+                  // Ensure grades is always an array
+                  const safeGrades = Array.isArray(grades) ? grades : [];
+                  
+                  return safeGrades.map(grade => (
+                    <MenuItem key={grade.id || grade.name} value={grade.name}>{grade.name}</MenuItem>
+                  ));
+                })()}
               </TextField>
             </Grid>
             
