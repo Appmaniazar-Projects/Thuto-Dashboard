@@ -24,20 +24,32 @@ const getAdminContext = () => {
 };
 
 /**
- * Create a new grade
+ * Create a new grade/class
+ * @param {Object} gradeData - Grade information
+ * @param {string} gradeData.name - Grade name (e.g., "Grade 8", "Form 1")
+ * @returns {Promise<Object>} Created grade object
  */
 export const createGrade = async (gradeData) => {
   try {
-    const { schoolId } = getAdminContext();
-    if (!schoolId) throw new Error('Missing school ID in admin context');
-
-    // Backend expects only name and schoolId
-    const payload = {
-      name: gradeData.name,
-      schoolId: Number(schoolId)
+    // Get admin context for school association
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.school?.id;
+    const adminEmail = adminInfo.email;
+    
+    // Validate required context
+    if (!schoolId) {
+      throw new Error('School ID not found. Cannot create grade without school context.');
+    }
+    
+    // Prepare grade data with school context
+    const gradePayload = {
+      ...gradeData,
+      schoolId: String(schoolId), // Ensure schoolId is string
+      createdBy: adminEmail || 'unknown',
+      createdByRole: 'admin'
     };
 
-    const response = await api.post('/grades', payload);
+    const response = await api.post('/grades', gradePayload);
     return response.data;
   } catch (error) {
     console.error('Failed to create grade:', error);
@@ -47,54 +59,64 @@ export const createGrade = async (gradeData) => {
 
 /**
  * Update an existing grade
+ * @param {string} gradeId - Grade ID
+ * @param {Object} gradeData - Updated grade information
+ * @returns {Promise<Object>} Updated grade object
  */
 export const updateGrade = async (gradeId, gradeData) => {
-  try {
-    const { schoolId } = getAdminContext();
-    
-    // Backend expects name and schoolId for updates
-    const payload = {
-      name: gradeData.name,
-      schoolId: Number(schoolId)
-    };
-    
-    const response = await api.put(`/grades/${gradeId}`, payload);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to update grade ${gradeId}:`, error);
-    throw error;
-  }
+  const response = await api.put(`/grades/${gradeId}`, gradeData);
+  return response.data;
 };
 
 /**
- * Fetch all grades in the system (system-wide)
+ * Get all grades in the system
+ * @returns {Promise<Array>} Array of grade objects
  */
 export const getAllGrades = async () => {
-  try {
-    const response = await api.get('/grades/grades');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch all grades:', error);
-    throw error;
-  }
+  const response = await api.get('/grades/grades');
+  return response.data;
 };
 
 /**
- * Fetch grades for the current school
- * Now expects backend to return grades with embedded schoolId
+ * Get grades for current school
+ * @returns {Promise<Array>} Array of grade objects for current school
+ * schoolId
  */
 export const getSchoolGrades = async (schoolId) => {
   try {
-    const { token, schoolId: storedSchoolId } = getAdminContext();
-    if (!token) throw new Error('No authentication token found');
-
-    const finalSchoolId = schoolId || storedSchoolId;
-    if (!finalSchoolId)
-      throw new Error('School ID not found in admin context.');
-
-    // Backend now returns all grades with embedded schoolId
-    // We filter on frontend for the specific school
-    const response = await api.get('/grades');
+    // Get admin context from JWT token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    // Get admin info and handle different data structures
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Extract schoolId from various possible locations
+    const finalSchoolId = schoolId || 
+                         localStorage.getItem('schoolId') || 
+                         adminInfo.schoolId || 
+                         adminInfo.school?.id || 
+                         adminInfo.school?.schoolId;
+    
+    console.log('Fetching school grades with context:', {
+      adminInfo: adminInfo,
+      schoolId: finalSchoolId,
+      providedSchoolId: schoolId,
+      hasToken: !!token,
+      adminInfoKeys: Object.keys(adminInfo)
+    });
+    
+    // Validate we have required context
+    if (!finalSchoolId) {
+      throw new Error('School ID not found. Admin context may be incomplete.');
+    }
+    
+    
+    const response = await api.get('/grades', {
+      params: { schoolId: finalSchoolId } 
+    });
     
     let grades = response.data;
     
@@ -109,22 +131,8 @@ export const getSchoolGrades = async (schoolId) => {
       }
     }
     
-    // Ensure we have an array
-    if (!Array.isArray(grades)) {
-      console.warn('⚠️ Grades response is not an array, returning empty array');
-      return [];
-    }
-    
-    // Filter grades by schoolId (now embedded in grade data)
-    const schoolGrades = grades.filter(grade => {
-      // Handle both string and number schoolId comparisons
-      return grade.schoolId && 
-             (String(grade.schoolId) === String(finalSchoolId));
-    });
-    
-    console.log(`📚 Found ${schoolGrades.length} grades for school ${finalSchoolId}`);
-    return schoolGrades;
-    
+    // Ensure we always return an array
+    return Array.isArray(grades) ? grades : [];
   } catch (error) {
     console.error('Failed to fetch school grades:', error);
     throw error;
@@ -133,77 +141,54 @@ export const getSchoolGrades = async (schoolId) => {
 
 /**
  * Get students by grade
+ * @param {string} gradeId - Grade ID
+ * @returns {Promise<Array>} Array of student objects in the grade
  */
 export const getStudentsByGrade = async (gradeId) => {
-  try {
-    const response = await api.get(`/grades/${gradeId}/students`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch students for grade ${gradeId}:`, error);
-    throw error;
-  }
+  const response = await api.get(`/grades/${gradeId}/students`);
+  return response.data;
 };
 
 /**
  * Get grades assigned to a specific teacher
+ * @param {string} teacherId - Teacher ID
+ * @returns {Promise<Array>} Array of grade objects assigned to teacher
  */
 export const getGradesByTeacher = async (teacherId) => {
-  try {
-    const response = await api.get(`/grades/teacher/${teacherId}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch grades for teacher ${teacherId}:`, error);
-    throw error;
-  }
+  const response = await api.get(`/grades/teacher/${teacherId}`);
+  return response.data;
 };
 
 /**
  * Assign a student to a grade
+ * @param {string} gradeId - Grade ID
+ * @param {string} studentId - Student ID
+ * @returns {Promise<Object>} Assignment result
  */
 export const assignStudentToGrade = async (gradeId, studentId) => {
-  try {
-    const response = await api.post(
-      `/grades/${gradeId}/assign-student/${studentId}` 
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      `Failed to assign student ${studentId} to grade ${gradeId}:`,
-      error
-    );
-    throw error;
-  }
+  const response = await api.post(`/grades/${gradeId}/assign-student/${studentId}`);
+  return response.data;
 };
 
 /**
  * Assign a teacher to a grade
+ * @param {string} gradeId - Grade ID
+ * @param {string} teacherId - Teacher ID
+ * @returns {Promise<Object>} Assignment result
  */
 export const assignTeacherToGrade = async (gradeId, teacherId) => {
-  try {
-    const response = await api.post(
-      `/grades/assign-teacher/${gradeId}/assign-teacher/${teacherId}` 
-    );
-    return response.data;
-  } catch (error) {
-    console.error(
-      `Failed to assign teacher ${teacherId} to grade ${gradeId}:`,
-      error
-    );
-    throw error;
-  }
+  const response = await api.post(`/grades/assign-teacher/${gradeId}/assign-teacher/${teacherId}`);
+  return response.data;
 };
 
 /**
- * Delete a grade
+ * Delete a grade (if supported by backend)
+ * @param {string} gradeId - Grade ID
+ * @returns {Promise<Object>} Deletion result
  */
 export const deleteGrade = async (gradeId) => {
-  try {
-    const response = await api.delete(`/grades/${gradeId}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to delete grade ${gradeId}:`, error);
-    throw error;
-  }
+  const response = await api.delete(`/grades/${gradeId}`);
+  return response.data;
 };
 
 const gradeService = {

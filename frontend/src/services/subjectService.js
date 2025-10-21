@@ -48,8 +48,7 @@ export const updateSubject = async (subjectId, subjectData) => {
 };
 
 /**
- * Get all subjects for the current school
- * Now expects backend to return subjects with embedded schoolId
+ * Get subjects for current school using query parameters
  * @returns {Promise<Array>} Array of school subjects
  */
 export const getSchoolSubjects = async () => {
@@ -61,9 +60,15 @@ export const getSchoolSubjects = async () => {
       throw new Error('School ID not found in admin context');
     }
     
-    // Backend now returns all subjects with embedded schoolId
-    // We filter on frontend for the specific school
-    const response = await api.get('/subjects');
+    console.log('Fetching school subjects with context:', {
+      schoolId: schoolId,
+      adminInfo: adminInfo
+    });
+    
+    // Backend expects schoolId as query parameter (consistent with grades)
+    const response = await api.get('/subjects', {
+      params: { schoolId: schoolId }
+    });
     
     let subjects = response.data;
     
@@ -84,15 +89,8 @@ export const getSchoolSubjects = async () => {
       return [];
     }
     
-    // Filter subjects by schoolId (now embedded in subject data)
-    const schoolSubjects = subjects.filter(subject => {
-      // Handle both string and number schoolId comparisons
-      return subject.schoolId && 
-             (String(subject.schoolId) === String(schoolId));
-    });
-    
-    console.log(`📚 Found ${schoolSubjects.length} subjects for school ${schoolId}`);
-    return schoolSubjects;
+    console.log(`📚 Found ${subjects.length} subjects for school ${schoolId}`);
+    return subjects;
     
   } catch (error) {
     console.error('Failed to fetch school subjects:', error);
