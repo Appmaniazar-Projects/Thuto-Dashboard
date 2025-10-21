@@ -13,8 +13,27 @@ import api from './api';
  * @returns {Promise<Object>} Created subject object
  */
 export const createSubject = async (subjectData) => {
-  const response = await api.post('/subjects', subjectData);
-  return response.data;
+  try {
+    // Get admin context for schoolId
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    if (!schoolId) {
+      throw new Error('School ID not found in admin context');
+    }
+    
+    // Include schoolId in the payload
+    const payload = {
+      ...subjectData,
+      schoolId: Number(schoolId)
+    };
+    
+    const response = await api.post('/subjects', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create subject:', error);
+    throw error;
+  }
 };
 
 /**
