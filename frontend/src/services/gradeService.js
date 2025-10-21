@@ -120,13 +120,34 @@ export const getSchoolGrades = async (schoolId) => {
     
     let grades = response.data;
     
+    // Debug: Log the raw response
+    console.log('🔍 Raw response type:', typeof grades);
+    console.log('🔍 Raw response length:', grades?.length || 'N/A');
+    
     // Handle JSON string responses from backend
     if (typeof grades === 'string') {
+      // Debug: Show first and last 200 characters
+      console.log('🔍 First 200 chars:', grades.substring(0, 200));
+      console.log('🔍 Last 200 chars:', grades.substring(grades.length - 200));
+      
       try {
         grades = JSON.parse(grades);
-        console.log('✅ Parsed grades JSON string response');
+        console.log('✅ Successfully parsed grades JSON string');
       } catch (parseError) {
         console.error('❌ Failed to parse grades JSON string:', parseError);
+        console.error('❌ Error position:', parseError.message);
+        
+        // Try to find where the JSON becomes invalid
+        const errorPos = parseError.message.match(/position (\d+)/);
+        if (errorPos) {
+          const pos = parseInt(errorPos[1]);
+          console.error('❌ Context around error:', {
+            before: grades.substring(Math.max(0, pos - 50), pos),
+            at: grades.charAt(pos),
+            after: grades.substring(pos + 1, pos + 51)
+          });
+        }
+        
         grades = [];
       }
     }
