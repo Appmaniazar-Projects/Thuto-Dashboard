@@ -62,14 +62,14 @@ const SubjectManagement = () => {
         getUsersByRole('teacher'),
         gradeService.getSchoolGrades()
       ]);
-      setSubjects(subjectsData.map(subject => ({ 
+      setSubjects(Array.isArray(subjectsData) ? subjectsData.map(subject => ({ 
         id: subject.id, 
         name: subject.name, 
         description: subject.description,
         gradeIds: subject.gradeIds || []
-      })));
-      setTeachers(teachersData);
-      setGrades(gradesData || []);
+      })) : []);
+      setTeachers(Array.isArray(teachersData) ? teachersData : []);
+      setGrades(Array.isArray(gradesData) ? gradesData : []);
     } catch (err) {
       setError('Failed to load data: ' + err.message);
     } finally {
