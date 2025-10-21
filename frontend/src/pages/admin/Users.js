@@ -296,7 +296,11 @@ const Users = () => {
         }
     };
 
-    const renderUserTable = (userData, title, canCreateRole = true) => (
+    const renderUserTable = (userData, title, canCreateRole = true) => {
+        // Safety check: ensure userData is always an array
+        const safeUserData = Array.isArray(userData) ? userData : [];
+        
+        return (
         <Card>
             <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -346,7 +350,16 @@ const Users = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {userData.map((user) => (
+                            {safeUserData.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} align="center">
+                                        <Typography color="text.secondary">
+                                            No {title.toLowerCase()} found
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                safeUserData.map((user) => (
                                 <TableRow key={user.id}>
                                     <TableCell>{user.name}</TableCell>
                                     <TableCell>{user.lastName || 'N/A'}</TableCell>
@@ -376,13 +389,15 @@ const Users = () => {
                                         </IconButton>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
             </CardContent>
         </Card>
-    );
+        );
+    };
 
     if (loading) return <CircularProgress />;
 
