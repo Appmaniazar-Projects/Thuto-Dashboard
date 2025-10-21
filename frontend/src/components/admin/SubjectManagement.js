@@ -37,6 +37,7 @@ import { getUsersByRole } from '../../services/adminService';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { ErrorDisplay } from '../common/ErrorDisplay';
 
+
 const SubjectManagement = () => {
   const [subjects, setSubjects] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -47,8 +48,11 @@ const SubjectManagement = () => {
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
   const [selectedSubject, setSelectedSubject] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [] });
+  const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+  const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [], schoolId: schoolId });
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+
 
   useEffect(() => {
     loadData();
@@ -66,7 +70,8 @@ const SubjectManagement = () => {
         id: subject.id, 
         name: subject.name, 
         description: subject.description,
-        gradeIds: subject.gradeIds || []
+        gradeIds: subject.gradeIds || [],
+        schoolId: subject.schoolId, 
       })) : []);
       setTeachers(Array.isArray(teachersData) ? teachersData : []);
       setGrades(Array.isArray(gradesData) ? gradesData : []);
@@ -79,7 +84,7 @@ const SubjectManagement = () => {
 
   const handleCreateSubject = () => {
     setDialogMode('create');
-    setFormData({ name: '', description: '', gradeIds: [] });
+    setFormData({ name: '', description: '', gradeIds: [], schoolId: schoolId });
     setSelectedSubject(null);
     setOpenDialog(true);
   };
@@ -89,7 +94,8 @@ const SubjectManagement = () => {
     setFormData({ 
       name: subject.name, 
       description: subject.description || '',
-      gradeIds: subject.gradeIds || []
+      gradeIds: subject.gradeIds || [],
+      schoolId: subject.schoolId || null
     });
     setSelectedSubject(subject);
     setOpenDialog(true);

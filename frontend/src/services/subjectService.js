@@ -11,6 +11,7 @@ import api from './api';
  * @param {string} subjectData.name - Subject name (e.g., "Mathematics", "English")
  * @param {string} subjectData.description - Subject description
  * @param {Array} subjectData.gradeIds - List of grade IDs associated with the subject
+ * @param {string} subjectData.schoolId - School ID associated with the subject
  * @returns {Promise<Object>} Created subject object
  */
 export const createSubject = async (subjectData) => {
@@ -23,13 +24,7 @@ export const createSubject = async (subjectData) => {
       throw new Error('School ID not found in admin context');
     }
     
-    // Include schoolId in the payload
-    const payload = {
-      ...subjectData,
-      schoolId: Number(schoolId)
-    };
-    
-    const response = await api.post('/subjects', payload);
+    const response = await api.post('/subjects', subjectData);
     return response.data;
   } catch (error) {
     console.error('Failed to create subject:', error);
