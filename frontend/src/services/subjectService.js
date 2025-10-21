@@ -10,6 +10,7 @@ import api from './api';
  * @param {Object} subjectData - Subject information
  * @param {string} subjectData.name - Subject name (e.g., "Mathematics", "English")
  * @param {string} subjectData.description - Subject description
+ * @param {Array} subjectData.gradeIds - List of grade IDs associated with the subject
  * @returns {Promise<Object>} Created subject object
  */
 export const createSubject = async (subjectData) => {
