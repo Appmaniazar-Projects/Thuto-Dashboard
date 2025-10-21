@@ -48,12 +48,56 @@ export const updateSubject = async (subjectId, subjectData) => {
 };
 
 /**
- * Get subjects for current school
- * @returns {Promise<Array>} Array of subject objects for current school
+ * Get all subjects for the current school
+ * Now expects backend to return subjects with embedded schoolId
+ * @returns {Promise<Array>} Array of school subjects
  */
 export const getSchoolSubjects = async () => {
-  const response = await api.get('/subjects');
-  return response.data;
+  try {
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    if (!schoolId) {
+      throw new Error('School ID not found in admin context');
+    }
+    
+    // Backend now returns all subjects with embedded schoolId
+    // We filter on frontend for the specific school
+    const response = await api.get('/subjects');
+    
+    let subjects = response.data;
+    
+    // Handle JSON string responses from backend
+    if (typeof subjects === 'string') {
+      try {
+        subjects = JSON.parse(subjects);
+        console.log('✅ Parsed subjects JSON string response');
+      } catch (parseError) {
+        console.error('❌ Failed to parse subjects JSON string:', parseError);
+        subjects = [];
+      }
+    }
+    
+    // Ensure we have an array
+    if (!Array.isArray(subjects)) {
+      console.warn('⚠️ Subjects response is not an array, returning empty array');
+      return [];
+    }
+    
+    // Filter subjects by schoolId (now embedded in subject data)
+    const schoolSubjects = subjects.filter(subject => {
+      // Handle both string and number schoolId comparisons
+      return subject.schoolId && 
+             (String(subject.schoolId) === String(schoolId));
+    });
+    
+    console.log(`📚 Found ${schoolSubjects.length} subjects for school ${schoolId}`);
+    return schoolSubjects;
+    
+  } catch (error) {
+    console.error('Failed to fetch school subjects:', error);
+    throw error;
+  }
 };
 
 /**

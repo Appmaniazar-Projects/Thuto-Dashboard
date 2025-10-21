@@ -81,6 +81,7 @@ export const getAllGrades = async () => {
 
 /**
  * Fetch grades for the current school
+ * Now expects backend to return grades with embedded schoolId
  */
 export const getSchoolGrades = async (schoolId) => {
   try {
@@ -91,13 +92,39 @@ export const getSchoolGrades = async (schoolId) => {
     if (!finalSchoolId)
       throw new Error('School ID not found in admin context.');
 
-    // Backend expects schoolId as query parameter
-    const params = {
-      schoolId: Number(finalSchoolId)
-    };
-
-    const response = await api.get('/grades', { params });
-    return response.data;
+    // Backend now returns all grades with embedded schoolId
+    // We filter on frontend for the specific school
+    const response = await api.get('/grades');
+    
+    let grades = response.data;
+    
+    // Handle JSON string responses from backend
+    if (typeof grades === 'string') {
+      try {
+        grades = JSON.parse(grades);
+        console.log('✅ Parsed grades JSON string response');
+      } catch (parseError) {
+        console.error('❌ Failed to parse grades JSON string:', parseError);
+        grades = [];
+      }
+    }
+    
+    // Ensure we have an array
+    if (!Array.isArray(grades)) {
+      console.warn('⚠️ Grades response is not an array, returning empty array');
+      return [];
+    }
+    
+    // Filter grades by schoolId (now embedded in grade data)
+    const schoolGrades = grades.filter(grade => {
+      // Handle both string and number schoolId comparisons
+      return grade.schoolId && 
+             (String(grade.schoolId) === String(finalSchoolId));
+    });
+    
+    console.log(`📚 Found ${schoolGrades.length} grades for school ${finalSchoolId}`);
+    return schoolGrades;
+    
   } catch (error) {
     console.error('Failed to fetch school grades:', error);
     throw error;
