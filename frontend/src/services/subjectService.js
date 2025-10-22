@@ -24,7 +24,17 @@ export const createSubject = async (subjectData) => {
       throw new Error('School ID not found in admin context');
     }
     
-    const response = await api.post('/subjects', subjectData);
+    // Prepare subject data with school context and grade associations
+    const subjectPayload = {
+      name: subjectData.name,
+      description: subjectData.description,
+      gradeIds: subjectData.gradeIds || [], // Array of grade IDs for many-to-many relationship
+      schoolId: schoolId
+    };
+    
+    console.log('Creating subject with payload:', subjectPayload);
+    
+    const response = await api.post('/subjects', subjectPayload);
     return response.data;
   } catch (error) {
     console.error('Failed to create subject:', error);

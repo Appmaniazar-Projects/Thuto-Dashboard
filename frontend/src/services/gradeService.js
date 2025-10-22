@@ -100,13 +100,6 @@ export const getSchoolGrades = async (schoolId) => {
                          adminInfo.school?.id || 
                          adminInfo.school?.schoolId;
     
-    console.log('Fetching school grades with context:', {
-      adminInfo: adminInfo,
-      schoolId: finalSchoolId,
-      providedSchoolId: schoolId,
-      hasToken: !!token,
-      adminInfoKeys: Object.keys(adminInfo)
-    });
     
     // Validate we have required context
     if (!finalSchoolId) {
@@ -132,23 +125,30 @@ export const getSchoolGrades = async (schoolId) => {
       
       try {
         grades = JSON.parse(grades);
-        console.log('✅ Successfully parsed grades JSON string');
       } catch (parseError) {
         console.error('❌ Failed to parse grades JSON string:', parseError);
         console.error('❌ Error position:', parseError.message);
         
-        // Try to find where the JSON becomes invalid
-        const errorPos = parseError.message.match(/position (\d+)/);
-        if (errorPos) {
-          const pos = parseInt(errorPos[1]);
-          console.error('❌ Context around error:', {
-            before: grades.substring(Math.max(0, pos - 50), pos),
-            at: grades.charAt(pos),
-            after: grades.substring(pos + 1, pos + 51)
-          });
+        // WORKAROUND: Backend is concatenating valid JSON with error object
+        // Try to extract the valid JSON part before the error
+        try {
+          // Look for the pattern: ]}]{"timestamp" which indicates end of array + start of error
+          const errorPattern = /\]\}\]\{"timestamp"/;
+          const match = grades.match(errorPattern);
+          
+          if (match) {
+            // Extract everything before the error object
+            const validJsonEnd = match.index + 3; // Include the closing ]}]
+            const validJson = grades.substring(0, validJsonEnd);
+            
+            grades = JSON.parse(validJson);
+          } else {
+            grades = [];
+          }
+        } catch (extractError) {
+          console.error('Failed to extract valid JSON:', extractError);
+          grades = [];
         }
-        
-        grades = [];
       }
     }
     
