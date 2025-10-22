@@ -28,16 +28,31 @@ const login = async (phoneNumber) => {
   });
   
   // Backend expects firebaseToken (not idToken) and extracts phone from Firebase token
-  const response = await api.post('/auth/login', { 
-    phoneNumber: phoneNumber.replace(/\s+/g, ''), // This might be ignored by backend
-    firebaseToken 
-  });
-  
-  if (response.data.token) {
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    localStorage.setItem('token', response.data.token);
+  try {
+    console.log('🚀 Making login request to:', '/auth/login');
+    const response = await api.post('/auth/login', { 
+      phoneNumber: phoneNumber.replace(/\s+/g, ''), // This might be ignored by backend
+      firebaseToken 
+    });
+    
+    console.log('✅ Login successful:', response.data);
+    
+    if (response.data.token) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('token', response.data.token);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('❌ Login failed:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url,
+      fullError: error
+    });
+    throw error;
   }
-  return response.data;
 };
 
 /** Admin Login

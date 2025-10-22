@@ -58,6 +58,20 @@ const Login = () => {
 
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check rate limiting - Firebase allows 1 SMS per minute per phone number
+    const cleanPhone = phoneNumber.replace(/\s+/g, '');
+    const lastOtpTime = localStorage.getItem(`lastOtp_${cleanPhone}`);
+    if (lastOtpTime) {
+      const timeDiff = Date.now() - parseInt(lastOtpTime);
+      const waitTime = 60000; // 1 minute
+      if (timeDiff < waitTime) {
+        const remainingTime = Math.ceil((waitTime - timeDiff) / 1000);
+        setError(`Please wait ${remainingTime} seconds before requesting another OTP`);
+        return;
+      }
+    }
+    
     setLoading(true);
     setError('');
 
