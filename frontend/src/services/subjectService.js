@@ -32,7 +32,6 @@ export const createSubject = async (subjectData) => {
       schoolId: schoolId
     };
     
-    console.log('Creating subject with payload:', subjectPayload);
     
     const response = await api.post('/subjects', subjectPayload);
     return response.data;
@@ -66,10 +65,6 @@ export const getSchoolSubjects = async () => {
       throw new Error('School ID not found in admin context');
     }
     
-    console.log('Fetching school subjects with context:', {
-      schoolId: schoolId,
-      adminInfo: adminInfo
-    });
     
     // Backend expects schoolId as query parameter (consistent with grades)
     const response = await api.get('/subjects', {
@@ -82,20 +77,18 @@ export const getSchoolSubjects = async () => {
     if (typeof subjects === 'string') {
       try {
         subjects = JSON.parse(subjects);
-        console.log('✅ Parsed subjects JSON string response');
       } catch (parseError) {
-        console.error('❌ Failed to parse subjects JSON string:', parseError);
+        console.warn('Could not parse subjects response, returning empty array');
         subjects = [];
       }
     }
     
     // Ensure we have an array
     if (!Array.isArray(subjects)) {
-      console.warn('⚠️ Subjects response is not an array, returning empty array');
+      console.warn('Subjects response is not an array, returning empty array');
       return [];
     }
     
-    console.log(`📚 Found ${subjects.length} subjects for school ${schoolId}`);
     return subjects;
     
   } catch (error) {

@@ -100,12 +100,10 @@ export const getSchoolGrades = async (schoolId) => {
                          adminInfo.school?.id || 
                          adminInfo.school?.schoolId;
     
-    
     // Validate we have required context
     if (!finalSchoolId) {
       throw new Error('School ID not found. Admin context may be incomplete.');
     }
-    
     
     const response = await api.get('/grades', {
       params: { schoolId: finalSchoolId } 
@@ -113,22 +111,11 @@ export const getSchoolGrades = async (schoolId) => {
     
     let grades = response.data;
     
-    // Debug: Log the raw response
-    console.log('🔍 Raw response type:', typeof grades);
-    console.log('🔍 Raw response length:', grades?.length || 'N/A');
-    
     // Handle JSON string responses from backend
     if (typeof grades === 'string') {
-      // Debug: Show first and last 200 characters
-      console.log('🔍 First 200 chars:', grades.substring(0, 200));
-      console.log('🔍 Last 200 chars:', grades.substring(grades.length - 200));
-      
       try {
         grades = JSON.parse(grades);
       } catch (parseError) {
-        console.error('❌ Failed to parse grades JSON string:', parseError);
-        console.error('❌ Error position:', parseError.message);
-        
         // WORKAROUND: Backend is concatenating valid JSON with error object
         // Try to extract the valid JSON part before the error
         try {
@@ -140,13 +127,18 @@ export const getSchoolGrades = async (schoolId) => {
             // Extract everything before the error object
             const validJsonEnd = match.index + 3; // Include the closing ]}]
             const validJson = grades.substring(0, validJsonEnd);
-            
             grades = JSON.parse(validJson);
           } else {
-            grades = [];
+            // Try to find any valid JSON array pattern
+            const arrayMatch = grades.match(/^\[.*?\](?=\{|$)/s);
+            if (arrayMatch) {
+              grades = JSON.parse(arrayMatch[0]);
+            } else {
+              grades = [];
+            }
           }
         } catch (extractError) {
-          console.error('Failed to extract valid JSON:', extractError);
+          console.warn('Could not parse grades response, returning empty array');
           grades = [];
         }
       }

@@ -52,6 +52,7 @@ const SubjectManagement = () => {
   const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
   const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [], schoolId: schoolId });
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [assignLoading, setAssignLoading] = useState(false);
 
 
   useEffect(() => {
@@ -61,22 +62,29 @@ const SubjectManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       const [subjectsData, teachersData, gradesData] = await Promise.all([
         subjectService.getSchoolSubjects(),
         getUsersByRole('teacher'),
         gradeService.getSchoolGrades()
       ]);
-      setSubjects(Array.isArray(subjectsData) ? subjectsData.map(subject => ({ 
+      
+      // Process subjects data with teacher assignments
+      const processedSubjects = Array.isArray(subjectsData) ? subjectsData.map(subject => ({ 
         id: subject.id, 
         name: subject.name, 
         description: subject.description,
         gradeIds: subject.gradeIds || [],
-        schoolId: subject.schoolId, 
-      })) : []);
+        schoolId: subject.schoolId,
+        assignedTeacher: subject.assignedTeacher || null // Include teacher assignment info
+      })) : [];
+      
+      setSubjects(processedSubjects);
       setTeachers(Array.isArray(teachersData) ? teachersData : []);
       setGrades(Array.isArray(gradesData) ? gradesData : []);
     } catch (err) {
-      setError('Failed to load data: ' + err.message);
+      console.error('Error loading data:', err);
+      setError('Failed to load data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -133,24 +141,46 @@ const SubjectManagement = () => {
   };
 
   const handleAssignTeacher = async () => {
+    if (!selectedTeacher || !selectedSubject) {
+      setError('Please select a teacher to assign.');
+      return;
+    }
+
     try {
+      setAssignLoading(true);
+      setError('');
       await subjectService.assignTeacherToSubject(selectedSubject.id, selectedTeacher.id);
       setOpenAssignDialog(false);
-      loadData();
+      setSelectedTeacher(null);
+      await loadData(); // Reload data to show updated assignments
     } catch (err) {
-      setError('Failed to assign teacher: ' + err.message);
+      console.error('Error assigning teacher:', err);
+      setError('Failed to assign teacher. Please try again.');
+    } finally {
+      setAssignLoading(false);
     }
   };
 
   const getSubjectStats = (subject) => {
-    // Find teacher assigned to this specific subject (backend returns arrays)
+    // Check if subject has direct teacher assignment from backend
+    if (subject.assignedTeacher) {
+      return {
+        teacherCount: 1,
+        teacherName: subject.assignedTeacher.name || 'Unknown Teacher',
+        teacherId: subject.assignedTeacher.id
+      };
+    }
+    
+    // Fallback: Find teacher assigned to this specific subject
     const assignedTeacher = teachers.find(t => 
       t.subject === subject.name || 
       (t.subjects && t.subjects.some(s => s.id === subject.id || s.name === subject.name))
     );
+    
     return {
       teacherCount: assignedTeacher ? 1 : 0,
-      teacherName: assignedTeacher ? assignedTeacher.name : 'Not assigned'
+      teacherName: assignedTeacher ? assignedTeacher.name : 'Not assigned',
+      teacherId: assignedTeacher?.id || null
     };
   };
 
@@ -271,12 +301,27 @@ const SubjectManagement = () => {
                     </Box>
                   </TableCell>
                   <TableCell align="center">
-                    <Chip 
-                      label={stats.teacherCount} 
-                      color="secondary" 
-                      size="small"
-                      onClick={() => handleOpenAssignDialog(subject)}
-                    />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip 
+                          label={stats.teacherCount} 
+                          color={stats.teacherCount > 0 ? "success" : "default"} 
+                          size="small"
+                        />
+                        <Typography variant="body2" fontWeight="medium">
+                          {stats.teacherName}
+                        </Typography>
+                      </Box>
+                      {stats.teacherCount === 0 && (
+                        <Chip 
+                          label="Assign Teacher" 
+                          color="warning" 
+                          size="small"
+                          onClick={() => handleOpenAssignDialog(subject)}
+                          sx={{ cursor: 'pointer' }}
+                        />
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell align="center">
                     <IconButton 
@@ -389,13 +434,25 @@ const SubjectManagement = () => {
           Assign Teacher to {selectedSubject?.name}
         </DialogTitle>
         <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select a teacher to assign to <strong>{selectedSubject?.name}</strong>
+          </Typography>
           <Autocomplete
-            options={teachers.filter(t => 
-              !t.subject || 
-              t.subject !== selectedSubject?.name ||
-              (t.subjects && !t.subjects.some(s => s.id === selectedSubject?.id))
-            )}
-            getOptionLabel={(teacher) => `${teacher.name} (${teacher.phoneNumber})`}
+            options={teachers.filter(t => {
+              // Filter out teachers already assigned to this subject
+              const stats = getSubjectStats(selectedSubject || {});
+              return !stats.teacherId || stats.teacherId !== t.id;
+            })}
+            getOptionLabel={(teacher) => {
+              const name = teacher.name || 'Unknown';
+              const phone = teacher.phoneNumber || teacher.phone || 'No phone';
+              return `${name} (${phone})`;
+            }}
             value={selectedTeacher}
             onChange={(event, newValue) => setSelectedTeacher(newValue)}
             renderInput={(params) => (
@@ -403,19 +460,32 @@ const SubjectManagement = () => {
                 {...params}
                 label="Select Teacher"
                 placeholder="Choose a teacher to assign"
+                helperText={teachers.length === 0 ? 'No teachers available' : `${teachers.length} teachers available`}
               />
             )}
+            noOptionsText="No available teachers"
             sx={{ mt: 2 }}
+            disabled={assignLoading}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenAssignDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              setOpenAssignDialog(false);
+              setSelectedTeacher(null);
+              setError('');
+            }}
+            disabled={assignLoading}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleAssignTeacher}
             variant="contained"
-            disabled={!selectedTeacher}
+            disabled={!selectedTeacher || assignLoading}
+            startIcon={assignLoading ? <div>Loading...</div> : null}
           >
-            Assign Teacher
+            {assignLoading ? 'Assigning...' : 'Assign Teacher'}
           </Button>
         </DialogActions>
       </Dialog>
