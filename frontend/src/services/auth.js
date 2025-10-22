@@ -12,8 +12,24 @@ const login = async (phoneNumber) => {
   if (!firebaseUser) throw new Error('No Firebase user found');
   
   const firebaseToken = await firebaseUser.getIdToken();
+  
+  // DEBUG: Log what we're sending and what Firebase has
+  console.log('🔍 LOGIN DEBUG:', {
+    frontendPhoneNumber: phoneNumber,
+    frontendPhoneNumberCleaned: phoneNumber.replace(/\s+/g, ''),
+    firebaseUserPhoneNumber: firebaseUser.phoneNumber,
+    firebaseTokenLength: firebaseToken?.length || 0,
+    firebaseTokenStart: firebaseToken?.substring(0, 50) + '...',
+    firebaseUser: {
+      uid: firebaseUser.uid,
+      phoneNumber: firebaseUser.phoneNumber,
+      email: firebaseUser.email
+    }
+  });
+  
+  // Backend expects firebaseToken (not idToken) and extracts phone from Firebase token
   const response = await api.post('/auth/login', { 
-    phoneNumber: phoneNumber.replace(/\s+/g, ''), 
+    phoneNumber: phoneNumber.replace(/\s+/g, ''), // This might be ignored by backend
     firebaseToken 
   });
   
