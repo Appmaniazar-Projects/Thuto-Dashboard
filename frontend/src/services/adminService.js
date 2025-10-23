@@ -26,13 +26,33 @@ export const getAllUsers = async () => {
     const response = await api.get('/admin/users', { params });
     
     // Handle different response structures
-    const users = response.data || [];
+    let users = response.data || [];
+    
+    // Check if users is returned as a string (needs parsing)
+    if (typeof users === 'object' && users.users && typeof users.users === 'string') {
+      try {
+        users = JSON.parse(users.users);
+        console.log('✅ Parsed users from string:', users.length, 'users');
+      } catch (parseError) {
+        console.error('❌ Failed to parse users string:', parseError);
+        users = [];
+      }
+    } else if (typeof users === 'string') {
+      try {
+        users = JSON.parse(users);
+        console.log('✅ Parsed users from direct string:', users.length, 'users');
+      } catch (parseError) {
+        console.error('❌ Failed to parse users string:', parseError);
+        users = [];
+      }
+    }
+    
     console.log('Received users response:', { 
       status: response.status, 
       dataType: typeof users, 
       isArray: Array.isArray(users),
       length: Array.isArray(users) ? users.length : 'N/A',
-      users: users
+      firstUser: Array.isArray(users) && users.length > 0 ? users[0] : null
     });
     
     // Ensure we always return an array

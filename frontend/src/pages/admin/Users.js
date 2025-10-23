@@ -186,9 +186,9 @@ const Users = () => {
 
         try {
             if (editingUser) {
-                await updateUser(editingUser.id, userForm);
+                await updateUser(editingUser.id, formData);
             } else {
-                await createUser(userForm);
+                await createUser(formData);
             }
             setDialogOpen(false);
             setEditingUser(null);
