@@ -92,13 +92,6 @@ export const createUser = async (userData) => {
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
     
-    console.log('Admin context check:', {
-      adminInfo,
-      schoolIdFromStorage: localStorage.getItem('schoolId'),
-      schoolIdFromAdmin: adminInfo.schoolId,
-      finalSchoolId: schoolId
-    });
-    
     // Validate required data
     if (!schoolId && !adminInfo.email) {
       throw new Error('Missing school context. Admin must be properly logged in.');
@@ -127,8 +120,8 @@ export const createUser = async (userData) => {
       adminEmail: adminInfo.email // Add admin email as separate field
     };
     
-    console.log('Creating user with payload:', payload);
     const response = await api.post('/admin/createUser', payload);
+    console.log('✅ User created successfully');
     return response.data;
   } catch (error) {
     console.error('Failed to create user:', error);
@@ -172,23 +165,21 @@ export const updateUser = async (userId, userData) => {
       updatedBy: updatedBy
     };
     
-    console.log('Updating user:', {
-      userId: userId,
-      payload: updatePayload,
-      url: `/admin/users/${userId}`
-    });
-    
     const response = await api.put(`/admin/users/${userId}`, updatePayload);
-    console.log('Update successful:', response.data);
+    console.log('✅ User updated successfully');
     return response.data;
   } catch (error) {
-    console.error('Failed to update user:', {
-      userId: userId,
-      error: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      url: `/admin/users/${userId}`
-    });
+    console.error('Failed to update user:', error.message);
+    
+    // If it's a 500 error, provide a more helpful error message
+    if (error.response?.status === 500) {
+      const backendError = error.response?.data;
+      const errorMessage = `Backend Error: ${backendError?.message || 'Internal server error'}. ` +
+        `This appears to be a server-side issue. Please check the backend logs for user ID ${userId}.`;
+      
+      throw new Error(errorMessage);
+    }
+    
     throw error;
   }
 };
@@ -201,6 +192,7 @@ export const updateUser = async (userId, userData) => {
 export const deleteUser = async (userId) => {
   try {
     await api.delete(`/admin/removeUser/${userId}`);
+    console.log('✅ User deleted successfully');
   } catch (error) {
     console.error('Failed to delete user:', error);
     throw error;

@@ -318,7 +318,6 @@ const Users = () => {
                                         'Teachers': 'teacher'
                                     };
                                     const selectedRole = roleMap[title] || 'student';
-                                    console.log(`Setting default role to: ${selectedRole} for ${title}`);
                                     
                                     // Reset form and set the role
                                     resetForm();
