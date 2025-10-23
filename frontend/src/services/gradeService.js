@@ -100,34 +100,16 @@ export const getSchoolGrades = async (schoolId) => {
                          adminInfo.school?.id || 
                          adminInfo.school?.schoolId;
     
-    console.log('🔍 GRADE SERVICE DEBUG:', {
-      providedSchoolId: schoolId,
-      fromStorage: localStorage.getItem('schoolId'),
-      fromAdmin: adminInfo.schoolId,
-      fromAdminSchool: adminInfo.school?.id,
-      finalSchoolId: finalSchoolId,
-      adminInfo: adminInfo
-    });
-    
     // Validate we have required context
     if (!finalSchoolId) {
       throw new Error('School ID not found. Admin context may be incomplete.');
     }
     
-    console.log('🚀 Making request to /grades with schoolId:', finalSchoolId);
     const response = await api.get('/grades', {
       params: { schoolId: finalSchoolId } 
     });
     
     let grades = response.data;
-    
-    console.log('📝 Raw grades response:', {
-      status: response.status,
-      dataType: typeof grades,
-      isArray: Array.isArray(grades),
-      length: Array.isArray(grades) ? grades.length : 'N/A',
-      rawData: grades
-    });
     
     // Handle JSON string responses from backend
     if (typeof grades === 'string') {
@@ -161,11 +143,6 @@ export const getSchoolGrades = async (schoolId) => {
         }
       }
     }
-    
-    console.log('✅ Final processed grades:', {
-      count: Array.isArray(grades) ? grades.length : 0,
-      grades: Array.isArray(grades) ? grades : []
-    });
     
     // Ensure we always return an array
     return Array.isArray(grades) ? grades : [];

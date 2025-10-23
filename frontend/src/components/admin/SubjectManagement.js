@@ -50,7 +50,7 @@ const SubjectManagement = () => {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
   const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
-  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [], schoolId: schoolId, teacherId: null });
+  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [], schoolId: schoolId });
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [assignLoading, setAssignLoading] = useState(false);
 
@@ -93,22 +93,20 @@ const SubjectManagement = () => {
 
   const handleCreateSubject = () => {
     setDialogMode('create');
-    setFormData({ name: '', description: '', gradeIds: [], schoolId: schoolId, teacherId: null });
+    setFormData({ name: '', description: '', gradeIds: [], schoolId: schoolId });
     setSelectedSubject(null);
     setOpenDialog(true);
   };
 
   const handleEditSubject = (subject) => {
     setDialogMode('edit');
-    setSelectedSubject(subject);
-    const stats = getSubjectStats(subject);
-    setFormData({
-      name: subject.name,
+    setFormData({ 
+      name: subject.name, 
       description: subject.description || '',
       gradeIds: subject.gradeIds || [],
-      schoolId: subject.schoolId || schoolId,
-      teacherId: stats.teacherId || null
+      schoolId: subject.schoolId || null
     });
+    setSelectedSubject(subject);
     setOpenDialog(true);
   };
 
@@ -421,32 +419,6 @@ const SubjectManagement = () => {
                 />
               ))
             }
-          />
-          {/* Teacher Selection */}
-          <Autocomplete
-            options={teachers}
-            getOptionLabel={(teacher) => {
-              const name = teacher.name || 'Unknown';
-              const phone = teacher.phoneNumber || teacher.phone || 'No phone';
-              return `${name} (${phone})`;
-            }}
-            value={teachers.find(t => t.id === formData.teacherId) || null}
-            onChange={(event, newValue) => {
-              setFormData({ 
-                ...formData, 
-                teacherId: newValue ? newValue.id : null 
-              });
-            }}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Assign Teacher (Optional)"
-                placeholder="Choose a teacher for this subject"
-                helperText="You can assign a teacher now or later"
-                sx={{ mt: 2 }}
-              />
-            )}
-            noOptionsText="No teachers available"
           />
         </DialogContent>
         <DialogActions>
