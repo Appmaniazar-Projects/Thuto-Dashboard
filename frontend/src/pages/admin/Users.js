@@ -242,7 +242,7 @@ const Users = () => {
             email: '',
             phoneNumber: '',
             role: '',
-            subjects: [],
+            subjectIds: [], // Changed from subjects to subjectIds
             grade: []
         });
         setFormErrors({});
@@ -574,8 +574,9 @@ const Users = () => {
                             setFormErrors({ ...formErrors, role: false });
                         }}
                         error={formErrors.role}
-                        helperText={formErrors.role ? 'Role is required' : ''}
+                        helperText={editingUser ? 'Role cannot be changed after creation' : (formErrors.role ? 'Role is required' : '')}
                         required
+                        disabled={!!editingUser} // Disable role field when editing
                         sx={{ mb: 2 }}
                     >
                         {roles.map((role) => (
@@ -593,15 +594,15 @@ const Users = () => {
                                 label="Subjects"
                                 fullWidth
                                 variant="outlined"
-                                value={userForm.subjects}
-                                onChange={(e) => setUserForm({ ...userForm, subjects: e.target.value })}
+                                value={userForm.subjectIds} // Changed from subjects to subjectIds
+                                onChange={(e) => setUserForm({ ...userForm, subjectIds: e.target.value })} // Store IDs instead of names
                                 SelectProps={{
                                     multiple: true,
                                 }}
                                 sx={{ mb: 2 }}
                             >
                                 {subjects.map((subject) => (
-                                    <MenuItem key={subject.id} value={subject.name}>
+                                    <MenuItem key={subject.id} value={subject.id}> {/* Changed from subject.name to subject.id */}
                                         {subject.name}
                                     </MenuItem>
                                 ))}
