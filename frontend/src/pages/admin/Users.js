@@ -242,7 +242,7 @@ const Users = () => {
             email: '',
             phoneNumber: '',
             role: '',
-            subjectIds: [], // Changed from subjects to subjectIds
+            subjects: [],
             grade: []
         });
         setFormErrors({});
@@ -594,8 +594,8 @@ const Users = () => {
                                 label="Subjects"
                                 fullWidth
                                 variant="outlined"
-                                value={userForm.subjectIds} // Changed from subjects to subjectIds
-                                onChange={(e) => setUserForm({ ...userForm, subjectIds: e.target.value })} // Store IDs instead of names
+                                value={userForm.subjects}
+                                onChange={(e) => setUserForm({ ...userForm, subjects: e.target.value })}
                                 SelectProps={{
                                     multiple: true,
                                 }}
