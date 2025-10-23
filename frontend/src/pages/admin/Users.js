@@ -317,8 +317,16 @@ const Users = () => {
                                         'Students': 'student',
                                         'Teachers': 'teacher'
                                     };
-                                    setUserForm({ ...userForm, role: roleMap[title] || 'student' });
-                                    openDialog();
+                                    const selectedRole = roleMap[title] || 'student';
+                                    console.log(`Setting default role to: ${selectedRole} for ${title}`);
+                                    
+                                    // Reset form and set the role
+                                    resetForm();
+                                    setUserForm(prev => ({ ...prev, role: selectedRole }));
+                                    setEditingUser(null);
+                                    setFormErrors({});
+                                    setError('');
+                                    setDialogOpen(true);
                                 }}
                                 sx={{ mr: 1 }}
                             >

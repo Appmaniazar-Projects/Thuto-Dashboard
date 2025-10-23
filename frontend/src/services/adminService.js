@@ -153,13 +153,28 @@ export const updateUser = async (userId, userData) => {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const updatedBy = currentUser.email || 'unknown';
     
-    const response = await api.put(`/admin/users/${userId}`, {
+    const updatePayload = {
       ...userData,
       updatedBy: updatedBy
+    };
+    
+    console.log('Updating user:', {
+      userId: userId,
+      payload: updatePayload,
+      url: `/admin/users/${userId}`
     });
+    
+    const response = await api.put(`/admin/users/${userId}`, updatePayload);
+    console.log('Update successful:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Failed to update user:', error);
+    console.error('Failed to update user:', {
+      userId: userId,
+      error: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: `/admin/users/${userId}`
+    });
     throw error;
   }
 };
