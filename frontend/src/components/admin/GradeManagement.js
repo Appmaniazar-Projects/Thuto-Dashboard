@@ -62,16 +62,32 @@ const GradeManagement = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError('');
       const [gradesData, studentsData, teachersData] = await Promise.all([
         gradeService.getSchoolGrades(),
         getUsersByRole('student'),
         getUsersByRole('teacher')
       ]);
-      setGrades(gradesData.map(grade => ({ id: grade.id, name: grade.name })));
-      setStudents(studentsData);
-      setTeachers(teachersData);
+      
+      // Ensure all data is properly formatted as arrays
+      const processedGrades = Array.isArray(gradesData) ? gradesData.map(grade => ({ 
+        id: grade.id, 
+        name: grade.name 
+      })) : [];
+      
+      const processedStudents = Array.isArray(studentsData) ? studentsData : [];
+      const processedTeachers = Array.isArray(teachersData) ? teachersData : [];
+      
+      setGrades(processedGrades);
+      setStudents(processedStudents);
+      setTeachers(processedTeachers);
     } catch (err) {
+      console.error('Error loading grade management data:', err);
       setError('Failed to load data: ' + err.message);
+      // Set empty arrays as fallback
+      setGrades([]);
+      setStudents([]);
+      setTeachers([]);
     } finally {
       setLoading(false);
     }
@@ -147,8 +163,17 @@ const GradeManagement = () => {
   };
 
   const getGradeStats = (grade) => {
-    const gradeStudents = students.filter(s => s.grade === grade.name || s.gradeId === grade.id);
-    const gradeTeachers = teachers.filter(t => t.grades?.some(g => g.id === grade.id) || t.gradeIds?.includes(grade.id));
+    // Ensure students and teachers are arrays before using filter
+    const studentsArray = Array.isArray(students) ? students : [];
+    const teachersArray = Array.isArray(teachers) ? teachers : [];
+    
+    const gradeStudents = studentsArray.filter(s => 
+      s.grade === grade.name || s.gradeId === grade.id
+    );
+    const gradeTeachers = teachersArray.filter(t => 
+      t.grades?.some(g => g.id === grade.id) || t.gradeIds?.includes(grade.id)
+    );
+    
     return {
       studentCount: gradeStudents.length,
       teacherCount: gradeTeachers.length
@@ -363,7 +388,7 @@ const GradeManagement = () => {
           {assignMode === 'student' ? (
             <Autocomplete
               multiple
-              options={students.filter(s => !s.grade || s.grade !== selectedGrade?.name)}
+              options={Array.isArray(students) ? students.filter(s => !s.grade || s.grade !== selectedGrade?.name) : []}
               getOptionLabel={(student) => `${student.name} ${student.lastName || ''}`}
               value={selectedStudents}
               onChange={(event, newValue) => setSelectedStudents(newValue)}
@@ -372,14 +397,16 @@ const GradeManagement = () => {
                   {...params}
                   label="Select Students"
                   placeholder="Choose students to assign"
+                  helperText={students.length === 0 ? 'No students available' : `${students.length} students available`}
                 />
               )}
               sx={{ mt: 2 }}
+              noOptionsText="No available students"
             />
           ) : (
             <Autocomplete
-              options={teachers}
-              getOptionLabel={(teacher) => teacher.name}
+              options={Array.isArray(teachers) ? teachers : []}
+              getOptionLabel={(teacher) => teacher.name || 'Unknown Teacher'}
               value={selectedTeacher}
               onChange={(event, newValue) => setSelectedTeacher(newValue)}
               renderInput={(params) => (
@@ -387,9 +414,11 @@ const GradeManagement = () => {
                   {...params}
                   label="Select Teacher"
                   placeholder="Choose a teacher to assign"
+                  helperText={teachers.length === 0 ? 'No teachers available' : `${teachers.length} teachers available`}
                 />
               )}
               sx={{ mt: 2 }}
+              noOptionsText="No available teachers"
             />
           )}
         </DialogContent>

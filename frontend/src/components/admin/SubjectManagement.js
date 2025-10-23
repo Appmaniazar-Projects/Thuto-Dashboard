@@ -76,7 +76,8 @@ const SubjectManagement = () => {
         description: subject.description,
         gradeIds: subject.gradeIds || [],
         schoolId: subject.schoolId,
-        assignedTeacher: subject.assignedTeacher || null // Include teacher assignment info
+        assignedTeacher: subject.assignedTeacher || null, // Include teacher assignment info
+        teacher: subject.teacher || null // Alternative teacher field
       })) : [];
       
       setSubjects(processedSubjects);
@@ -168,6 +169,15 @@ const SubjectManagement = () => {
         teacherCount: 1,
         teacherName: subject.assignedTeacher.name || 'Unknown Teacher',
         teacherId: subject.assignedTeacher.id
+      };
+    }
+    
+    // Check if subject has teacher info in different format
+    if (subject.teacher) {
+      return {
+        teacherCount: 1,
+        teacherName: subject.teacher.name || subject.teacher,
+        teacherId: subject.teacher.id || null
       };
     }
     
@@ -312,15 +322,6 @@ const SubjectManagement = () => {
                           {stats.teacherName}
                         </Typography>
                       </Box>
-                      {stats.teacherCount === 0 && (
-                        <Chip 
-                          label="Assign Teacher" 
-                          color="warning" 
-                          size="small"
-                          onClick={() => handleOpenAssignDialog(subject)}
-                          sx={{ cursor: 'pointer' }}
-                        />
-                      )}
                     </Box>
                   </TableCell>
                   <TableCell align="center">

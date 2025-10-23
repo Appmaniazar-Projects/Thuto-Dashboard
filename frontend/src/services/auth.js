@@ -29,13 +29,26 @@ const login = async (phoneNumber) => {
   
   // Backend expects firebaseToken (not idToken) and extracts phone from Firebase token
   try {
-    console.log('🚀 Making login request to:', '/auth/login');
-    const response = await api.post('/auth/login', { 
-      phoneNumber: phoneNumber.replace(/\s+/g, ''), // This might be ignored by backend
+    const requestData = {
+      phoneNumber: phoneNumber.replace(/\s+/g, ''),
       firebaseToken 
+    };
+    
+    console.log('🚀 Making login request:', {
+      url: '/auth/login',
+      fullUrl: `${api.defaults.baseURL}/auth/login`,
+      phoneNumber: requestData.phoneNumber,
+      firebaseTokenLength: firebaseToken?.length,
+      firebaseTokenStart: firebaseToken?.substring(0, 50) + '...'
     });
     
-    console.log('✅ Login successful:', response.data);
+    const response = await api.post('/auth/login', requestData);
+    
+    console.log('✅ Login successful:', {
+      status: response.status,
+      user: response.data?.user,
+      hasToken: !!response.data?.token
+    });
     
     if (response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data.user));

@@ -100,14 +100,35 @@ const Login = () => {
     setError('');
 
     try {
+      // Step 1: Verify OTP with Firebase
+      console.log('🔐 Verifying OTP with Firebase...');
       await confirmationResult.confirm(otp);
+      console.log('✅ Firebase OTP verification successful');
+      
+      // Step 2: Login with backend
+      console.log('🚀 Logging in with backend...');
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
       const { user, token } = await authService.login(cleanPhone);
+      
+      console.log('✅ Backend login successful:', { user: user?.name, role: user?.role });
       setAuthData(user, token);
-      navigate('/dashboard');
+      
+      // Navigate based on user role
+      const dashboardPath = user?.role === 'TEACHER' ? '/teacher/dashboard' : 
+                           user?.role === 'STUDENT' ? '/student/dashboard' :
+                           user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
+      navigate(dashboardPath);
     } catch (err) {
-      console.error('OTP verification failed:', err);
-      setError('Invalid OTP. Please try again.');
+      console.error('❌ Login process failed:', err);
+      
+      // Check if it's a Firebase OTP error or backend login error
+      if (err.code && err.code.includes('auth/')) {
+        // Firebase OTP verification error
+        setError('Invalid OTP code. Please check and try again.');
+      } else {
+        // Backend login error - show the specific error message
+        setError(err.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
