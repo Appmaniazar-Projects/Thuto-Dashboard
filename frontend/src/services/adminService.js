@@ -153,8 +153,22 @@ export const updateUser = async (userId, userData) => {
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     const updatedBy = currentUser.email || 'unknown';
     
+    // Create a minimal payload with only essential fields to avoid backend issues
+    const essentialFields = {
+      name: userData.name,
+      lastName: userData.lastName,
+      email: userData.email,
+      phoneNumber: userData.phoneNumber,
+      role: userData.role?.toUpperCase() || 'STUDENT' // Backend might expect uppercase
+    };
+    
+    // Only include non-empty optional fields
+    if (userData.schoolId) essentialFields.schoolId = userData.schoolId;
+    if (userData.subjects && userData.subjects.length > 0) essentialFields.subjects = userData.subjects;
+    if (userData.grade && userData.grade.length > 0) essentialFields.grade = userData.grade;
+    
     const updatePayload = {
-      ...userData,
+      ...essentialFields,
       updatedBy: updatedBy
     };
     
