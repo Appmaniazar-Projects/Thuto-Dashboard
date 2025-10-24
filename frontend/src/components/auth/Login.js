@@ -102,33 +102,75 @@ const Login = () => {
     try {
       // Step 1: Verify OTP with Firebase
       console.log('🔐 Verifying OTP with Firebase...');
-      await confirmationResult.confirm(otp);
-      console.log('✅ Firebase OTP verification successful');
+      const firebaseUser = await confirmationResult.confirm(otp);
+      console.log('✅ Firebase OTP verification successful', { firebaseUser });
       
       // Step 2: Login with backend
       console.log('🚀 Logging in with backend...');
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
-      const { user, token } = await authService.login(cleanPhone);
       
-      console.log('✅ Backend login successful:', { user: user?.name, role: user?.role });
-      setAuthData(user, token);
+      // Get the Firebase ID token
+      const firebaseToken = await firebaseUser.user.getIdToken();
       
-      // Navigate based on user role
-      const dashboardPath = user?.role === 'TEACHER' ? '/teacher/dashboard' : 
-                           user?.role === 'STUDENT' ? '/student/dashboard' :
-                           user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
-      navigate(dashboardPath);
+      // Call your backend login with the Firebase token
+      const response = await authService.login(cleanPhone, firebaseToken);
+      
+      if (!response || !response.user || !response.token) {
+        throw new Error('Invalid response from server');
+      }
+      
+      console.log('✅ Backend login successful:', { 
+        user: response.user?.name, 
+        role: response.user?.role,
+        hasToken: !!response.token
+      });
+      
+      // Store auth data and get the normalized user
+      const normalizedUser = setAuthData(response.user, response.token);
+      
+      if (!normalizedUser) {
+        throw new Error('Failed to initialize user session');
+      }
+      
+      // Navigate based on user role (using lowercase for consistency)
+      const userRole = normalizedUser.role?.toLowerCase();
+      
+      let dashboardPath = '/dashboard'; // Default fallback
+      
+      if (userRole === 'teacher') {
+        dashboardPath = '/teacher/dashboard';
+      } else if (userRole === 'student') {
+        dashboardPath = '/student/dashboard';
+      } else if (userRole === 'parent') {
+        dashboardPath = '/parent/dashboard';
+      } else if (['superadmin', 'admin'].includes(userRole)) {
+        dashboardPath = '/admin/dashboard';
+      }
+      
+      console.log(`🔄 Redirecting to: ${dashboardPath}`);
+      navigate(dashboardPath, { replace: true });
+      
     } catch (err) {
       console.error('❌ Login process failed:', err);
       
-      // Check if it's a Firebase OTP error or backend login error
-      if (err.code && err.code.includes('auth/')) {
-        // Firebase OTP verification error
-        setError('Invalid OTP code. Please check and try again.');
+      // More specific error handling
+      if (err.code) {
+        if (err.code.includes('auth/')) {
+          // Firebase OTP verification error
+          setError('Invalid OTP code. Please check and try again.');
+        } else if (err.response) {
+          // Backend API error
+          setError(err.response.data?.message || 'Login failed. Please try again.');
+        } else {
+          // Other errors
+          setError(err.message || 'An unexpected error occurred. Please try again.');
+        }
       } else {
-        // Backend login error - show the specific error message
         setError(err.message || 'Login failed. Please try again.');
       }
+      
+      // Reset OTP field on error
+      setOtp('');
     } finally {
       setLoading(false);
     }
