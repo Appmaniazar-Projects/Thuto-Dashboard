@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
 import { auth, signInWithPhoneNumber } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
 import Logo from '../../assets/Logo.png';
+import { RecaptchaVerifier } from 'firebase/auth';
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('phone'); // 'phone' | 'otp'
+  const [step, setStep] = useState('phone');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -27,7 +28,21 @@ const Login = () => {
     return formatted;
   };
 
-  // Send OTP without reCAPTCHA
+  // Initialize invisible reCAPTCHA once
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        'recaptcha-container',
+        { size: 'invisible' }, // invisible!
+        auth
+      );
+      window.recaptchaVerifier.render().then((widgetId) => {
+        window.recaptchaWidgetId = widgetId;
+      });
+    }
+  }, []);
+
+  // Handle phone submission
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -35,13 +50,11 @@ const Login = () => {
 
     try {
       const firebasePhone = `+27${phoneNumber.replace(/\s+/g, '').slice(1)}`;
+      const verifier = window.recaptchaVerifier;
 
-      // ⚠️ Warning: appVerificationDisabledForTesting must be enabled in dev
-      auth.appVerificationDisabledForTesting = true;
-
-      const confirmation = await signInWithPhoneNumber(auth, firebasePhone, null); // null reCAPTCHA
+      const confirmation = await signInWithPhoneNumber(auth, firebasePhone, verifier);
       setConfirmationResult(confirmation);
-      window.confirmationResult = confirmation; // keep global
+      window.confirmationResult = confirmation; // keep globally
       setStep('otp');
       console.log('📱 OTP sent to', firebasePhone);
     } catch (err) {
@@ -52,7 +65,7 @@ const Login = () => {
     }
   };
 
-  // Verify OTP
+  // Handle OTP verification
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     const confirmation = confirmationResult || window.confirmationResult;
@@ -141,6 +154,9 @@ const Login = () => {
             </Box>
           </Box>
         )}
+
+        {/* Invisible reCAPTCHA container */}
+        <div id="recaptcha-container" />
       </Paper>
     </Container>
   );
