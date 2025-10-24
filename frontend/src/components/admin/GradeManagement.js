@@ -25,7 +25,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Autocomplete
+  Autocomplete,
+  Snackbar
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -54,6 +55,8 @@ const GradeManagement = () => {
   const [formData, setFormData] = useState({ name: '' });
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -111,10 +114,13 @@ const GradeManagement = () => {
     try {
       if (dialogMode === 'create') {
         await gradeService.createGrade(formData);
+        setSuccessMessage(`Successfully created grade: ${formData.name}`);
       } else {
         await gradeService.updateGrade(selectedGrade.id, formData);
+        setSuccessMessage(`Successfully updated grade: ${formData.name}`);
       }
       setOpenDialog(false);
+      setShowSuccess(true);
       loadData();
     } catch (err) {
       setError('Failed to save grade: ' + err.message);
@@ -142,10 +148,14 @@ const GradeManagement = () => {
 
   const handleAssignStudents = async () => {
     try {
-      for (const student of selectedStudents) {
-        await gradeService.assignStudentToGrade(selectedGrade.id, student.id);
-      }
+      const assignmentPromises = selectedStudents.map(student => 
+        gradeService.assignStudentToGrade(selectedGrade.id, student.id)
+      );
+      await Promise.all(assignmentPromises);
+      
       setOpenAssignDialog(false);
+      setSuccessMessage(`Successfully assigned ${selectedStudents.length} student(s) to ${selectedGrade.name}`);
+      setShowSuccess(true);
       loadData();
     } catch (err) {
       setError('Failed to assign students: ' + err.message);
@@ -156,6 +166,8 @@ const GradeManagement = () => {
     try {
       await gradeService.assignTeacherToGrade(selectedGrade.id, selectedTeacher.id);
       setOpenAssignDialog(false);
+      setSuccessMessage(`Successfully assigned ${selectedTeacher.name} to ${selectedGrade.name}`);
+      setShowSuccess(true);
       loadData();
     } catch (err) {
       setError('Failed to assign teacher: ' + err.message);
@@ -433,6 +445,22 @@ const GradeManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={4000}
+        onClose={() => setShowSuccess(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setShowSuccess(false)} 
+          severity="success" 
+          sx={{ width: '100%' }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
