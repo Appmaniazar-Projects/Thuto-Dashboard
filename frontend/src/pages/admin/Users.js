@@ -629,27 +629,6 @@ const Users = () => {
                         </>
                     )}
                     
-                    {userForm.role === 'student' && (
-                        <TextField
-                            select
-                            margin="dense"
-                            label="Grade(s)"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.grade}
-                            onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
-                            SelectProps={{
-                                multiple: true,
-                            }}
-                            sx={{ mb: 2 }}
-                        >
-                            {grades.map((grade) => (
-                                <MenuItem key={grade.id} value={grade.name}>
-                                    {grade.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    )}
                     
                     {/* Password removed - users authenticate with OTP */}
                 </DialogContent>
