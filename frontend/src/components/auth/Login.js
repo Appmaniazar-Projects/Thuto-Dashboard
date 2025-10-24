@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
-import app from '../../services/firebase';
 import Logo from '../../assets/Logo.png';
-
-const auth = getAuth(app);
 
 const Login = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('phone');
+  const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [canResend, setCanResend] = useState(false);
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
@@ -26,21 +22,27 @@ const Login = () => {
     let formatted = cleaned.substring(0, 3);
     if (cleaned.length > 3) {
       formatted += ' ' + cleaned.substring(3, 6);
-      if (cleaned.length > 6) {
-        formatted += ' ' + cleaned.substring(6, 10);
-      }
+      if (cleaned.length > 6) formatted += ' ' + cleaned.substring(6, 10);
     }
     return formatted;
   };
 
-  // Initialize reCAPTCHA ONCE
+  // Initialize reCAPTCHA once
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', { size: 'invisible' }, auth);
+    if (!window.recaptchaVerifier && auth) {
+      if (process.env.NODE_ENV === 'development') {
+        auth.appVerificationDisabledForTesting = true; // ✅ avoid reCAPTCHA in dev
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        'recaptcha-container',
+        { size: 'invisible' },
+        auth
+      );
     }
   }, []);
 
-  // Handle resend timer (optional UX improvement)
+  // Handle resend timer
   useEffect(() => {
     if (step === 'otp') {
       setCanResend(false);
@@ -49,18 +51,18 @@ const Login = () => {
     }
   }, [step]);
 
+  // Send OTP
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const phoneNumberForFirebase = `+27${phoneNumber.replace(/\s+/g, '').slice(1)}`;
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumberForFirebase, window.recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      window.confirmationResult = confirmation; // ✅ Keep safe globally
+      const firebasePhone = `+27${phoneNumber.replace(/\s+/g, '').slice(1)}`;
+      const confirmation = await signInWithPhoneNumber(auth, firebasePhone, window.recaptchaVerifier);
+      window.confirmationResult = confirmation; // keep globally
       setStep('otp');
-      console.log('📱 OTP sent to', phoneNumberForFirebase);
+      console.log('📱 OTP sent to', firebasePhone);
     } catch (err) {
       console.error('Error sending OTP:', err);
       setError('Failed to send OTP. Please try again.');
@@ -69,9 +71,10 @@ const Login = () => {
     }
   };
 
+  // Verify OTP
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    const confirmation = confirmationResult || window.confirmationResult;
+    const confirmation = window.confirmationResult;
 
     if (!confirmation) {
       setError('Session expired. Please request a new OTP.');
@@ -83,31 +86,27 @@ const Login = () => {
     setError('');
 
     try {
-      console.log('🔐 Verifying OTP...');
       const firebaseUser = await confirmation.confirm(otp);
-      console.log('✅ Firebase verification successful');
-
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
       const firebaseToken = await firebaseUser.user.getIdToken();
 
-      console.log('🚀 Logging into backend...');
+      // Login to backend
       const response = await authService.login(cleanPhone, firebaseToken);
 
-      if (!response || !response.user || !response.token) throw new Error('Invalid response from server');
+      if (!response || !response.user || !response.token) throw new Error('Invalid server response');
 
       const normalizedUser = setAuthData(response.user, response.token);
-      const userRole = normalizedUser.role?.toLowerCase();
       const dashboardMap = {
         teacher: '/teacher/dashboard',
         student: '/student/dashboard',
         parent: '/parent/dashboard',
-        admin: '/admin/dashboard'
+        admin: '/admin/dashboard',
       };
-      navigate(dashboardMap[userRole] || '/dashboard', { replace: true });
+      navigate(dashboardMap[normalizedUser.role?.toLowerCase()] || '/dashboard', { replace: true });
     } catch (err) {
       console.error('❌ Login failed:', err);
       if (err.code?.includes('auth/invalid-verification-code')) {
-        setError('Invalid OTP code. Please try again.');
+        setError('Invalid OTP. Please try again.');
       } else {
         setError(err.message || 'Login failed. Please try again.');
       }
@@ -123,6 +122,7 @@ const Login = () => {
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
           <img src={Logo} alt="Thuto Dashboard" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
         </Box>
+
         {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
 
         {step === 'phone' ? (
@@ -166,6 +166,7 @@ const Login = () => {
             )}
           </Box>
         )}
+
         <div id="recaptcha-container" style={{ display: 'none' }} />
       </Paper>
     </Container>
