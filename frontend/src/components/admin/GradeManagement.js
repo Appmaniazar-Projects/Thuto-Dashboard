@@ -175,22 +175,46 @@ const GradeManagement = () => {
   };
 
   const getGradeStats = (grade) => {
-    // Ensure students and teachers are arrays before using filter
-    const studentsArray = Array.isArray(students) ? students : [];
-    const teachersArray = Array.isArray(teachers) ? teachers : [];
-    
-    const gradeStudents = studentsArray.filter(s => 
-      s.grade === grade.name || s.gradeId === grade.id
-    );
-    const gradeTeachers = teachersArray.filter(t => 
-      t.grades?.some(g => g.id === grade.id) || t.gradeIds?.includes(grade.id)
-    );
-    
-    return {
-      studentCount: gradeStudents.length,
-      teacherCount: gradeTeachers.length
-    };
+  console.log(`Grade ${grade.name} data:`, grade);
+  
+  let studentCount = 0;
+  if (Array.isArray(grade.studentIds)) {
+    studentCount = grade.studentIds.length;
+  } else if (grade.studentIds) {
+    studentCount = 1;
+  }
+  
+  let teacherCount = 0;
+  if (Array.isArray(grade.teacherIds)) {
+    teacherCount = grade.teacherIds.length;
+  } else if (grade.teacherIds) {
+    teacherCount = 1;
+  }
+  
+  let subjectCount = 0;
+  if (Array.isArray(grade.subjectIds)) {
+    subjectCount = grade.subjectIds.length;
+  } else if (grade.subjectIds) {
+    subjectCount = 1;
+  }
+  
+  console.log(`Grade ${grade.name} stats:`, {
+    studentCount,
+    teacherCount,
+    subjectCount,
+    rawData: {
+      studentIds: grade.studentIds,
+      teacherIds: grade.teacherIds,
+      subjectIds: grade.subjectIds
+    }
+  });
+  
+  return {
+    studentCount,
+    teacherCount,
+    subjectCount
   };
+};
 
   if (loading) return <LoadingSpinner message="Loading grade management..." />;
   if (error) return <ErrorDisplay message={error} onRetry={loadData} />;
