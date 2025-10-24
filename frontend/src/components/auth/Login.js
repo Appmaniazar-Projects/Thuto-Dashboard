@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../../services/firebase';
+import { auth, signInWithPhoneNumber } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
 import Logo from '../../assets/Logo.png';
@@ -12,7 +12,7 @@ const Login = () => {
   const [step, setStep] = useState('phone'); // 'phone' | 'otp'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [canResend, setCanResend] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
 
@@ -27,31 +27,7 @@ const Login = () => {
     return formatted;
   };
 
-  // Initialize reCAPTCHA once
-  useEffect(() => {
-    if (!window.recaptchaVerifier && auth) {
-      if (process.env.NODE_ENV === 'development') {
-        auth.appVerificationDisabledForTesting = true; // ✅ avoid reCAPTCHA in dev
-      }
-
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        'recaptcha-container',
-        { size: 'invisible' },
-        auth
-      );
-    }
-  }, []);
-
-  // Handle resend timer
-  useEffect(() => {
-    if (step === 'otp') {
-      setCanResend(false);
-      const timer = setTimeout(() => setCanResend(true), 60000);
-      return () => clearTimeout(timer);
-    }
-  }, [step]);
-
-  // Send OTP
+  // Send OTP without reCAPTCHA
   const handlePhoneSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -59,8 +35,13 @@ const Login = () => {
 
     try {
       const firebasePhone = `+27${phoneNumber.replace(/\s+/g, '').slice(1)}`;
-      const confirmation = await signInWithPhoneNumber(auth, firebasePhone, window.recaptchaVerifier);
-      window.confirmationResult = confirmation; // keep globally
+
+      // ⚠️ Warning: appVerificationDisabledForTesting must be enabled in dev
+      auth.appVerificationDisabledForTesting = true;
+
+      const confirmation = await signInWithPhoneNumber(auth, firebasePhone, null); // null reCAPTCHA
+      setConfirmationResult(confirmation);
+      window.confirmationResult = confirmation; // keep global
       setStep('otp');
       console.log('📱 OTP sent to', firebasePhone);
     } catch (err) {
@@ -74,7 +55,7 @@ const Login = () => {
   // Verify OTP
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    const confirmation = window.confirmationResult;
+    const confirmation = confirmationResult || window.confirmationResult;
 
     if (!confirmation) {
       setError('Session expired. Please request a new OTP.');
@@ -90,7 +71,6 @@ const Login = () => {
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
       const firebaseToken = await firebaseUser.user.getIdToken();
 
-      // Login to backend
       const response = await authService.login(cleanPhone, firebaseToken);
 
       if (!response || !response.user || !response.token) throw new Error('Invalid server response');
@@ -159,15 +139,8 @@ const Login = () => {
                 {loading ? 'Verifying...' : 'Verify OTP'}
               </Button>
             </Box>
-            {canResend && (
-              <Button onClick={handlePhoneSubmit} sx={{ mt: 2 }} disabled={loading}>
-                Resend OTP
-              </Button>
-            )}
           </Box>
         )}
-
-        <div id="recaptcha-container" style={{ display: 'none' }} />
       </Paper>
     </Container>
   );
