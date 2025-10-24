@@ -100,15 +100,14 @@ export const createUser = async (userData) => {
     // Clean and validate user data
     const cleanedUserData = {
       ...userData,
-      // Ensure grade is an array (support multiple grades)
-      grade: Array.isArray(userData.grade) ? userData.grade : (userData.grade ? [userData.grade] : []),
       // Ensure subjects is an array
       subjects: Array.isArray(userData.subjects) ? userData.subjects : [],
       // Remove empty fields
       name: userData.name?.trim() || '',
       lastName: userData.lastName?.trim() || '',
       email: userData.email?.trim() || '',
-      phoneNumber: userData.phoneNumber?.trim() || ''
+      phoneNumber: userData.phoneNumber?.trim() || '',
+      grade: userData.grade?.trim() || ''
     };
     
     // Prepare payload with admin context
