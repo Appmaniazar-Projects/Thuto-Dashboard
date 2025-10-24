@@ -66,7 +66,7 @@ const Users = () => {
         phoneNumber: '',
         role: '',
         subjects: [],
-        grade: [],
+        grade: '',
         schoolId: '',
     });
 
@@ -186,9 +186,9 @@ const Users = () => {
 
         try {
             if (editingUser) {
-                await updateUser(editingUser.id, userForm);
+                await updateUser(editingUser.id, formData);
             } else {
-                await createUser(userForm);
+                await createUser(formData);
             }
             setDialogOpen(false);
             setEditingUser(null);
@@ -223,7 +223,7 @@ const Users = () => {
                 phoneNumber: user.phoneNumber || '',
                 role: normalizeRole(user.role) || '',
                 subjects: user.subjects || [],
-                grade: user.grade || [],
+                grade: user.grade || '',
                 schoolId: user.schoolId || ''
             });
         } else {
@@ -243,7 +243,7 @@ const Users = () => {
             phoneNumber: '',
             role: '',
             subjects: [],
-            grade: []
+            grade: ''
         });
         setFormErrors({});
     };
@@ -618,12 +618,11 @@ const Users = () => {
                                 sx={{ mb: 2 }}
                             >
                                 {grades.map((grade) => {
-                                    // Extract number from grade name (e.g., "Grade 8" -> "8")
-                                    const gradeNumber = grade.name?.match(/\d+/)?.[0] || grade.id || grade.name;
+                                    const gradeValue = grade.name || `Grade ${grade.id}`;
                                     return (
-                                        <MenuItem key={grade.id} value={gradeNumber}>
-                                            {grade.name}
-                                        </MenuItem>
+                                            <MenuItem key={grade.id} value={gradeValue}>
+                                                {grade.name}
+                                            </MenuItem>
                                     );
                                 })}
                             </TextField>
