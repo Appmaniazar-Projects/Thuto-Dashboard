@@ -143,10 +143,6 @@ const studentService = {
   getMyProfile,
   updateProfile,
   
-  // Resources
-  getAvailableResources,
-  downloadResource,
-  
   // Reports
   getMyReports,
   getReportsFromStorage,

@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import attendanceService from '../../services/attendanceService';
 import studentService from '../../services/studentService';
+import resourceService from '../../services/resourceService';
 import StatCard from '../common/StatCard';
 
 const StudentDashboard = () => {
@@ -45,7 +46,7 @@ const StudentDashboard = () => {
         const attendanceStats = await attendanceService.getAttendanceStats();
         
         // Fetch resources count
-        const resources = await studentService.getAvailableResources();
+        const resources = await resourceService.getMyResources();
         
         // Update stats
         setStats({
