@@ -13,6 +13,12 @@ export const DataProvider = ({ children }) => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user.schoolId) return;
 
+    // Only load student data for admin and superadmin users
+    if (user.role !== 'admin' && user.role !== 'superadmin') {
+      console.log('DataContext: Skipping student data load for non-admin user:', user.role);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
