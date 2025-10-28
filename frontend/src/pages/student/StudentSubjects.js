@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import studentService from '../../services/studentService';
+import subjectService from '../../services/subjectService';
 
 const subjectColors = {
   'Mathematics': '#1976d2',
@@ -52,18 +53,46 @@ const StudentSubjects = () => {
     const loadSubjects = async () => {
       try {
         setLoading(true);
-        const response = await studentService.getSubjects();
-        setSubjects(response.data);
+        setError(null);
+        
+        // Get current student's ID from user context
+        if (!user || !user.id) {
+          throw new Error('Student ID not found. Please log in again.');
+        }
+        
+        // Fetch subjects for this specific student using subjectService
+        const studentSubjects = await subjectService.getSubjectsByStudent(user.id);
+        
+        // Check if student has any subjects
+        if (!studentSubjects || studentSubjects.length === 0) {
+          setSubjects([]);
+          setError('No subjects assigned to you yet. Please contact your administrator.');
+          return;
+        }
+        
+        setSubjects(studentSubjects);
       } catch (err) {
         console.error('Failed to load subjects:', err);
-        setError('Failed to load subjects. Please try again later.');
+        
+        // Handle different error types
+        if (err.response?.status === 404) {
+          setError('No subjects found for your account. Please contact your administrator.');
+        } else if (err.response?.status === 500) {
+          setError('Server error while loading subjects. Please try again later.');
+        } else if (err.message) {
+          setError(err.message);
+        } else {
+          setError('Failed to load subjects. Please check your connection and try again.');
+        }
+        
+        setSubjects([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadSubjects();
-  }, []);
+  }, [user]);
 
   const handleSubjectClick = (subject) => {
     setSelectedSubject(subject);
@@ -132,17 +161,17 @@ const StudentSubjects = () => {
                       <Typography variant="h6" component="div">
                         {subject.name}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {subject.code}
-                      </Typography>
+                    {/* <Typography variant="body2" color="text.secondary">
+                      {subject.code}
+                      </Typography> */}
                     </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {subject.teacher}
                   </Typography>
-                  <Typography variant="body2" color="text.primary">
+                  {/* <Typography variant="body2" color="text.primary">
                     {subject.room}
-                  </Typography>
+                  </Typography> */}
                 </CardContent>
               </Card>
             </Grid>

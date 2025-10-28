@@ -128,10 +128,26 @@ export const assignTeacherToSubject = async (subjectId, teacherId) => {
   return response.data;
 };
 
+/**
+ * Get subjects for a specific student
+ * @param {string} studentId - Student ID
+ * @returns {Promise<Array>} Array of subject objects for the student
+ */
+export const getSubjectsByStudent = async (studentId) => {
+  try {
+    const response = await api.get(`/subjects/student/${studentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch subjects for student:', error);
+    throw error;
+  }
+};
+
 const subjectService = {
   createSubject,
   updateSubject,
   getSchoolSubjects,
+  getSubjectsByStudent,
   getSubjectsByTeacher,
   deleteSubject,
   assignTeacherToSubject

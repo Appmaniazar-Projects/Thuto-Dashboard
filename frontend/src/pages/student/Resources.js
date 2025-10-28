@@ -28,7 +28,7 @@ import {
   Clear as ClearIcon,
   FindInPage as FindInPageIcon,
 } from '@mui/icons-material';
-import { getAvailableResources, downloadResource } from '../../services/studentService';
+import { getMyResources, downloadResource } from '../../services/resourceService';
 import { format } from 'date-fns';
 
 const Resources = () => {
@@ -43,7 +43,7 @@ const Resources = () => {
     const fetchResources = async () => {
       try {
         setIsLoading(true);
-        const data = await getAvailableResources();
+        const data = await getMyResources();
         setResources(data);
       } catch (err) {
         console.error('Failed to fetch resources:', err);

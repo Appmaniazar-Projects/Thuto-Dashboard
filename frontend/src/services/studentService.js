@@ -25,116 +25,6 @@ export const updateProfile = async (studentData) => {
   }
 };
 
-/**
- * Resources
- */
-
-export const getAvailableResources = async (filters = {}) => {
-  try {
-    const response = await api.get('/resources/my-resources', { params: filters });
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch resources:', error);
-    throw error;
-  }
-};
-
-/**
- * Get resources from Firebase Storage for current student
- * @param {Object} filters - Filter criteria
- */
-export const getResourcesFromStorage = async (filters = {}) => {
-  try {
-    const schoolId = localStorage.getItem('schoolId');
-    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    if (!schoolId) {
-      throw new Error('School ID not found');
-    }
-
-    const criteria = {
-      schoolId,
-      fileType: 'resource',
-      targetAudience: 'students',
-      ...filters
-    };
-
-    // Get resources from Firebase Storage
-    const storageResources = await fileUploadService.getFiles(criteria);
-    
-    // Also get resources that target 'all' users
-    const allUsersCriteria = {
-      ...criteria,
-      targetAudience: 'all'
-    };
-    const allUsersResources = await fileUploadService.getFiles(allUsersCriteria);
-    
-    // Combine and deduplicate resources
-    const allResources = [...storageResources, ...allUsersResources];
-    const uniqueResources = allResources.filter((resource, index, self) => 
-      index === self.findIndex(r => r.filePath === resource.filePath)
-    );
-    
-    return uniqueResources;
-  } catch (error) {
-    console.error('Failed to fetch resources from storage:', error);
-    throw error;
-  }
-};
-
-/**
- * Download resource directly from Firebase Storage
- * @param {string} downloadURL - Firebase Storage download URL
- * @param {string} filename - File name for download
- */
-export const downloadResourceFromStorage = async (downloadURL, filename) => {
-  try {
-    const response = await fetch(downloadURL);
-    const blob = await response.blob();
-    
-    // Create a temporary URL for the blob
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    
-    // Cleanup
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Error downloading resource from storage:', error);
-    throw error;
-  }
-};
-
-export const downloadResource = async (resourceId, filename) => {
-  try {
-    const response = await api.get(`/student/resources/${resourceId}/download`, {
-      responseType: 'blob',
-    });
-    
-    // Create a temporary URL for the blob
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename || `resource-${resourceId}`);
-    document.body.appendChild(link);
-    link.click();
-    
-    // Cleanup
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error(`Error downloading resource ${resourceId}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Reports
- */
 
 /**
  * Get student reports from backend
@@ -256,8 +146,6 @@ const studentService = {
   // Resources
   getAvailableResources,
   downloadResource,
-  getResourcesFromStorage,
-  downloadResourceFromStorage,
   
   // Reports
   getMyReports,

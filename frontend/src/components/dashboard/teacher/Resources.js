@@ -62,9 +62,9 @@ const TeacherResources = () => {
       try {
         setLoading(true);
         const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getTeacherResources(),
-          subjectService.getSubjectsByTeacher(),
-          gradeService.getGradesByTeacher()
+          getSchoolResources(),
+          subjectService.getSchoolSubjects(),
+          gradeService.getSchoolGrades()
         ]);
         setResources(resourcesData || []);
         setSubjects(subjectsData || []);
@@ -96,12 +96,15 @@ const TeacherResources = () => {
       setError('');
       setSuccess('');
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('subjectId', selectedSubject);
-      formData.append('gradeId', selectedGrade);
+      const resourceMetadata = {
+        title: file.name.split('.')[0], // Use filename as title
+        description: `Resource for ${subjects.find(s => s.id === selectedSubject)?.name || 'subject'}`,
+        category: 'teaching-material',
+        subjectId: selectedSubject,
+        gradeId: selectedGrade
+      };
       
-      const newResource = await uploadResource(formData);
+      const newResource = await uploadResourceWithFile(file, resourceMetadata);
       
       setResources([newResource, ...resources]);
       setFile(null);
@@ -160,26 +163,38 @@ const TeacherResources = () => {
     <Paper sx={{ p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">Resources</Typography>
+      </Box>
+
+      {/* Subject and Grade Selection */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <TextField
           select
-          size="small"
-          value={selectedClass}
-          onChange={(e) => setSelectedClass(e.target.value)}
+          label="Subject"
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
           sx={{ minWidth: 200 }}
-          disabled={classes.length === 0}
+          disabled={uploading}
         >
-          {classes.length === 0 ? (
-            <MenuItem value="">No classes available</MenuItem>
-          ) : (
-            [
-              <MenuItem key="all" value="all">All Classes</MenuItem>,
-              ...classes.map((cls) => (
-                <MenuItem key={cls.id} value={cls.id}>
-                  {cls.name}
-                </MenuItem>
-              ))
-            ]
-          )}
+          {subjects.map((subject) => (
+            <MenuItem key={subject.id} value={subject.id}>
+              {subject.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        
+        <TextField
+          select
+          label="Grade"
+          value={selectedGrade}
+          onChange={(e) => setSelectedGrade(e.target.value)}
+          sx={{ minWidth: 200 }}
+          disabled={uploading}
+        >
+          {grades.map((grade) => (
+            <MenuItem key={grade.id} value={grade.id}>
+              {grade.name}
+            </MenuItem>
+          ))}
         </TextField>
       </Box>
 
