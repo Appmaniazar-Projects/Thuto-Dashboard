@@ -167,7 +167,7 @@ const StudentSubjects = () => {
                     </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
-                    {subject.teacher}
+                     Teacher: {subject.teacher?.name || subject.teacherName || subject.assignedTeacher?.name || 'Not assigned'}
                   </Typography>
                   {/* <Typography variant="body2" color="text.primary">
                     {subject.room}
@@ -212,7 +212,10 @@ const StudentSubjects = () => {
                 <Divider component="li" />
                 <ListItem>
                   <ListItemIcon><PersonIcon /></ListItemIcon>
-                  <ListItemText primary="Teacher" secondary={selectedSubject.teacher} />
+                  <ListItemText
+                    primary="Teacher"
+                    secondary={selectedSubject.teacher?.name || selectedSubject.teacherName || selectedSubject.assignedTeacher?.name || 'Not assigned'}
+                    />
                 </ListItem>
                 <Divider component="li" />
                 
