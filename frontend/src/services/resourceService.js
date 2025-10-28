@@ -38,12 +38,11 @@ const getCurrentSchoolId = () => {
  * @param {Object} filters - Optional query parameters for filtering
  * @returns {Promise<Array>} List of resources for current user
  */
-export const getMyResources = async (filters = {}) => {
+export const getMyResources = async () => {
   try {
     const response = await api.get('/resources/my-resources', {
       params: {
         userId: getCurrentUserId(), // Pass as query param if backend needs it
-        ...filters
       }
     });
     return response.data;
