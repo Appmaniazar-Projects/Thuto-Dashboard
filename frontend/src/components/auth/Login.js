@@ -114,9 +114,7 @@ const Login = () => {
       setAuthData(user, token);
       
       // Navigate based on user role
-      const dashboardPath = user?.role === 'TEACHER' ? '/teacher/dashboard' : 
-                           user?.role === 'STUDENT' ? '/student/dashboard' :
-                           user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
+      const dashboardPath = user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
       navigate(dashboardPath);
     } catch (err) {
       console.error('❌ Login process failed:', err);
