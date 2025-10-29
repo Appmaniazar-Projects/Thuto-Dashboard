@@ -559,15 +559,13 @@ const ParentDashboard = () => {
             </Box>
             
             {events.length === 0 ? (
-              <Box textAlign="center" py={4}>
-                <EventIcon color="disabled" sx={{ fontSize: 50, mb: 2 }} />
-                <Typography variant="body1" color="textSecondary">
-                  No upcoming events.
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  School events will appear here when scheduled.
-                </Typography>
-              </Box>
+              <Paper sx={{ p: 2, height: 150, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+                <Box>
+                  <EventIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h6" color="text.secondary">Upcoming Events</Typography>
+                  <Typography variant="body2" color="text.secondary">No events scheduled</Typography>
+                </Box>
+              </Paper>
             ) : (
               <List disablePadding>
                 {events.slice(0, 3).map((event, index) => (
@@ -627,15 +625,13 @@ const ParentDashboard = () => {
             </Box>
             
             {announcements.length === 0 ? (
-              <Box textAlign="center" py={4}>
-                <AnnounceIcon color="disabled" sx={{ fontSize: 50, mb: 2 }} />
-                <Typography variant="body1" color="textSecondary">
-                  No recent announcements.
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  School announcements will appear here when posted.
-                </Typography>
-              </Box>
+              <Paper sx={{ p: 2, height: 150, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+                <Box>
+                  <AnnounceIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h6" color="text.secondary">Announcements</Typography>
+                  <Typography variant="body2" color="text.secondary">No recent announcements</Typography>
+                </Box>
+              </Paper>
             ) : (
               <List disablePadding>
                 {announcements.slice(0, 3).map((announcement, index) => (

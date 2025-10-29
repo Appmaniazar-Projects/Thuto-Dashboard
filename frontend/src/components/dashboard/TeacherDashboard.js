@@ -262,115 +262,95 @@ const filteredResources = useMemo(() => {
         </Grid>
       </Grid>
 
-      {/* Left Column */}
-      <Grid item xs={12} md={8}>
-        {/* Announcements */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6" fontWeight="bold">Announcements</Typography>
-            <Chip 
-              label="Coming Soon" 
-              color="primary" 
-              size="small"
-              icon={<InfoIcon fontSize="small" />}
-            />
-          </Box>
-          <Box textAlign="center" py={4}>
-            <Typography variant="body1" color="text.secondary">
-              The announcements feature is coming soon. You'll be able to post and manage class announcements here.
-            </Typography>
-          </Box>
-        </Paper>
+      <Grid container spacing={4}>
+        {/* Left Column */}
+        <Grid item xs={12} md={8}>
+          {/* Announcements */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Announcements</Typography>
+            <Paper sx={{ p: 2, height: 200, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+              <Box>
+                <AnnounceIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h6" color="text.secondary">Announcements</Typography>
+                <Typography variant="body2" color="text.secondary">Feature coming soon</Typography>
+              </Box>
+            </Paper>
+          </Paper>
 
-        {/* Recent Resources */}
-        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>Recent Resources</Typography>
-          {filteredResources.length === 0 ? (
-            <Box textAlign="center" py={4}>
-              <FolderIcon color="disabled" sx={{ fontSize: 60, mb: 2 }} />
-              <Typography variant="h6" color="textSecondary">
-                {resources.length === 0 ? 'No resources available yet.' : 'No resources match your filters.'}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                {resources.length === 0 
-                  ? 'Upload your first resource to get started.' 
-                  : 'Try adjusting your filters to see more resources.'}
-              </Typography>
-            </Box>
-          ) : (
-            <List disablePadding>
-              {filteredResources.map((resource, index) => (
-                <ListItem key={resource.id} disablePadding sx={{ mb: 1 }}>
-                  <ListItemIcon><FolderIcon color="primary" /></ListItemIcon>
-                  <ListItemText 
-                    primary={resource.fileName}
-                    secondary={`Uploaded on: ${new Date(resource.uploadDate).toLocaleDateString()}`}
-                  />
-                  <Button size="small" variant="outlined" href={resource.fileUrl} target="_blank">View</Button>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </Paper>
-      </Grid>
+          {/* Recent Resources */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Recent Resources</Typography>
+            {filteredResources.length === 0 ? (
+              <Box textAlign="center" py={4}>
+                <FolderIcon color="disabled" sx={{ fontSize: 60, mb: 2 }} />
+                <Typography variant="h6" color="textSecondary">
+                  {resources.length === 0 ? 'No resources available yet.' : 'No resources match your filters.'}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  {resources.length === 0 
+                    ? 'Upload your first resource to get started.' 
+                    : 'Try adjusting your filters to see more resources.'}
+                </Typography>
+              </Box>
+            ) : (
+              <List disablePadding>
+                {filteredResources.map((resource, index) => (
+                  <ListItem key={resource.id} disablePadding sx={{ mb: 1 }}>
+                    <ListItemIcon><FolderIcon color="primary" /></ListItemIcon>
+                    <ListItemText 
+                      primary={resource.fileName}
+                      secondary={`Uploaded on: ${new Date(resource.uploadDate).toLocaleDateString()}`}
+                    />
+                    <Button size="small" variant="outlined" href={resource.fileUrl} target="_blank">View</Button>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Paper>
+        </Grid>
 
-      {/* Right Column */}
-      <Grid item xs={12} md={4}>
-        {/* Quick Actions */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>Quick Actions</Typography>
-          <Button
-            fullWidth
-            variant="contained"
-            startIcon={<AssignmentIcon />}
-            component={RouterLink}
-            to="/teacher/resources"
-            sx={{ mb: 2 }}
-          >
-            Manage Resources
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<AnnounceIcon />}
-            disabled
-          >
-            Post Announcement
-            <Chip 
-              label="Coming Soon" 
-              size="small" 
-              sx={{ ml: 1, height: 20, '& .MuiChip-label': { px: 1 } }} 
-            />
-          </Button>
-        </Paper>
+        {/* Right Column */}
+        <Grid item xs={12} md={4}>
+          {/* Quick Actions */}
+          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Quick Actions</Typography>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<AssignmentIcon />}
+              component={RouterLink}
+              to="/teacher/resources"
+              sx={{ mb: 2 }}
+            >
+              Manage Resources
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<AnnounceIcon />}
+              disabled
+            >
+              Post Announcement
+              <Chip 
+                label="Coming Soon" 
+                size="small" 
+                sx={{ ml: 1, height: 20, '& .MuiChip-label': { px: 1 } }} 
+              />
+            </Button>
+          </Paper>
 
-        {/* Today's Classes */}
-        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight="bold" mb={2}>Today's Classes</Typography>
-          <Box textAlign="center" py={4}>
-            <Typography variant="body1" color="text.secondary">
-              The class schedule feature is coming soon. You'll be able to view and manage your daily classes here.
-            </Typography>
-          </Box>
-        </Paper>
-        
-        {/* Recent Messages */}
-        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6" fontWeight="bold">Recent Messages</Typography>
-            <Chip 
-              label="Coming Soon" 
-              color="primary" 
-              size="small"
-              icon={<InfoIcon fontSize="small" />}
-            />
-          </Box>
-          <Box textAlign="center" py={4}>
-            <Typography variant="body1" color="text.secondary">
-              The messaging feature is coming soon.
-            </Typography>
-          </Box>
-        </Paper>
+          {/* Today's Classes */}
+          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" fontWeight="bold" mb={2}>Today's Classes</Typography>
+            <Paper sx={{ p: 2, height: 200, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+              <Box>
+                <SchoolIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                <Typography variant="h6" color="text.secondary">Class Schedule</Typography>
+                <Typography variant="body2" color="text.secondary">Feature coming soon</Typography>
+              </Box>
+            </Paper>
+          </Paper>
+        </Grid>
       </Grid>
     </Box>
   );
