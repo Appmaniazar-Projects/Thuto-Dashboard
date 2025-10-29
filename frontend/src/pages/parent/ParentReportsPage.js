@@ -25,13 +25,18 @@ const ParentAttendance = () => {
 
   useEffect(() => {
     const loadInitialData = async () => {
+      console.log('ParentReportsPage - Parent object:', parent);
+      console.log('ParentReportsPage - Phone number:', parent?.phoneNumber);
+      
       if (!parent) {
+        console.log('ParentReportsPage - No parent object found');
         setLoading(false);
         return;
       }
 
       // Check if parent has phoneNumber
       if (!parent.phoneNumber) {
+        console.error('ParentReportsPage - No phone number found in parent object');
         setError('Phone number not found. Please update your profile.');
         setLoading(false);
         return;
@@ -40,6 +45,7 @@ const ParentAttendance = () => {
       try {
         setLoading(true);
         setError(null);
+        console.log('ParentReportsPage - Calling getMyChildren with phoneNumber:', parent.phoneNumber);
         // 1. Fetch children directly from the parentService
         const childProfiles = await parentService.getMyChildren(parent.phoneNumber);
         setChildren(childProfiles);
