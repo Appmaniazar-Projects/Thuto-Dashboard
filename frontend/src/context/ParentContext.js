@@ -29,7 +29,7 @@ export const ParentProvider = ({ children }) => {
     };
 
     loadChildren();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedChild = childrenData.find(child => child.id === selectedChildId) || null;
 
