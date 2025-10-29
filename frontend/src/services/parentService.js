@@ -98,12 +98,13 @@ const parentService = {
 
   /**
    * Fetches academic reports for a specific child
+   * @param {string} phoneNumber - The parent's phone number
    * @param {string} studentId - The ID of the student
    * @returns {Promise<Array>} List of academic reports
    */
-  getChildAcademicReports: async (studentId) => {
+  getChildAcademicReports: async (phoneNumber, studentId) => {
     try {
-      const response = await api.get(`/parent/students/${studentId}/reports`);
+      const response = await api.get(`/parent/${phoneNumber}/students/${studentId}/reports`);
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
