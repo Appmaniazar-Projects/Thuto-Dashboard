@@ -102,8 +102,16 @@ const StudentAttendance = () => {
         const response = await getStudentAttendance(user.id, startDate, endDate);
         setAttendanceData(response);
       } catch (err) {
-        // Handle API errors gracefully
-        setError('Failed to load attendance data. Please try again.');
+        // Handle API errors gracefully - distinguish between API errors and empty data
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          // 404 might mean no attendance records exist, which is not an error
+          setAttendanceData([]);
+          setError('');
+        } else {
+          setError('Failed to load attendance data. Please try again.');
+        }
         console.error('Attendance fetch error:', err);
       } finally {
         // Always clear loading state regardless of success/failure

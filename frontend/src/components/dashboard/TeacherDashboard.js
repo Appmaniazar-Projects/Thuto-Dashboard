@@ -74,7 +74,19 @@ const TeacherDashboard = () => {
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again.');
+        
+        // Handle different error types - distinguish between API errors and empty data
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          // 404 might mean no data exists, which is not an error
+          setResources([]);
+          setTeacherSubjects([]);
+          setTeacherGrades([]);
+          setError('');
+        } else {
+          setError('Failed to load dashboard data. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
@@ -274,7 +286,17 @@ const filteredResources = useMemo(() => {
         <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
           <Typography variant="h6" fontWeight="bold" mb={2}>Recent Resources</Typography>
           {filteredResources.length === 0 ? (
-            <Typography color="text.secondary" textAlign="center">No recent resources found.</Typography>
+            <Box textAlign="center" py={4}>
+              <FolderIcon color="disabled" sx={{ fontSize: 60, mb: 2 }} />
+              <Typography variant="h6" color="textSecondary">
+                {resources.length === 0 ? 'No resources available yet.' : 'No resources match your filters.'}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                {resources.length === 0 
+                  ? 'Upload your first resource to get started.' 
+                  : 'Try adjusting your filters to see more resources.'}
+              </Typography>
+            </Box>
           ) : (
             <List disablePadding>
               {filteredResources.map((resource, index) => (
@@ -325,28 +347,11 @@ const filteredResources = useMemo(() => {
         {/* Today's Classes */}
         <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
           <Typography variant="h6" fontWeight="bold" mb={2}>Today's Classes</Typography>
-          {filteredClasses.length === 0 ? (
-            <Typography color="text.secondary" textAlign="center">No classes scheduled for today.</Typography>
-          ) : (
-            <List disablePadding>
-              {filteredClasses.slice(0, 3).map((cls) => (
-                <ListItem 
-                  key={cls.id}
-                  button 
-                  component={RouterLink}
-                  to={`/teacher/attendance/${cls.id}`}
-                  sx={{ borderRadius: 1, mb: 1, '&:hover': { bgcolor: 'action.hover' } }}
-                >
-                  <ListItemText
-                    primary={cls.name}
-                    secondary={cls.period}
-                    primaryTypographyProps={{ fontWeight: 'medium', noWrap: true }}
-                  />
-                  <Chip label="Attend" size="small" color="primary" />
-                </ListItem>
-              ))}
-            </List>
-          )}
+          <Box textAlign="center" py={4}>
+            <Typography variant="body1" color="text.secondary">
+              The class schedule feature is coming soon. You'll be able to view and manage your daily classes here.
+            </Typography>
+          </Box>
         </Paper>
         
         {/* Recent Messages */}

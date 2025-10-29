@@ -47,7 +47,17 @@ const Resources = () => {
         setResources(data);
       } catch (err) {
         console.error('Failed to fetch resources:', err);
-        setError('Failed to load resources. Please try again later.');
+        
+        // Only show error message for actual API failures, not empty data
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          // 404 might mean no resources exist, which is not an error
+          setResources([]);
+          setError('');
+        } else {
+          setError('Failed to load resources. Please try again later.');
+        }
       } finally {
         setIsLoading(false);
       }
