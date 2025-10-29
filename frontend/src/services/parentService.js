@@ -4,11 +4,10 @@ const parentService = {
   /**
    * Fetches the parent's children
    * @returns {Promise<Array>} List of children
-   * parent/{phoneNumber}/children
    */
-  getMyChildren: async (phoneNumber) => {
+  getMyChildren: async () => {
     try {
-      const response = await api.get(`/parent/${phoneNumber}/children`);
+      const response = await api.get('/parent/children');
       return response.data || [];
     } catch (error) {
       console.error('Failed to fetch children:', error);
@@ -16,21 +15,20 @@ const parentService = {
     }
   },
 
-/**
- * Fetches details for a specific child
- * @param {string} phoneNumber - The parent's phone number
- * @param {string} childId - The ID of the child
- * @returns {Promise<Object>} Child details
- */
-getChildDetails: async (phoneNumber, childId) => {
-  try {
-    const response = await api.get(`/parent/${phoneNumber}/children/child/${childId}`);
-    return response.data || {};
-  } catch (error) {
-    console.error(`Failed to fetch details for child ${childId}:`, error);
-    throw new Error('Failed to load child details.');
-  }
-},
+  /**
+   * Fetches details for a specific child
+   * @param {string} childId - The ID of the child
+   * @returns {Promise<Object>} Child details
+   */
+  getChildDetails: async (childId) => {
+    try {
+      const response = await api.get(`/parent/children/${childId}`);
+      return response.data || {};
+    } catch (error) {
+      console.error(`Failed to fetch details for child ${childId}:`, error);
+      throw new Error('Failed to load child details.');
+    }
+  },
 
   /**
    * Fetches upcoming events for the parent's children
@@ -81,13 +79,31 @@ getChildDetails: async (phoneNumber, childId) => {
   },
 
   /**
+   * Fetches attendance records for a specific child
+   * @param {string} studentId - The ID of the student
+   * @param {Object} [params] - Query parameters (e.g., { month: 1, year: 2023 })
+   * @returns {Promise<Array>} Attendance data
+   */
+  getChildAttendance: async (studentId, params = {}) => {
+    try {
+      const response = await api.get(`/attendance/student/${studentId}`, { 
+        params 
+      });
+      return response.data || [];
+    } catch (error) {
+      console.error(`Failed to fetch attendance for student ${studentId}:`, error);
+      return []; // Return empty array instead of throwing to prevent UI breakage
+    }
+  },
+
+  /**
    * Fetches academic reports for a specific child
    * @param {string} studentId - The ID of the student
    * @returns {Promise<Array>} List of academic reports
    */
   getChildAcademicReports: async (studentId) => {
     try {
-      const response = await api.get(`/parent/${parentId}/students/${studentId}/reports`);
+      const response = await api.get(`/parent/students/${studentId}/reports`);
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
