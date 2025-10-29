@@ -240,9 +240,9 @@ export const getTeacherStudents = async () => {
 /**
  * Get recent resources uploaded by the teacher
  */
-export const getRecentResources = async (limit = 5) => {
+export const getRecentResources = async () => {
   try {
-    const response = await api.get(`/teacher/resources/recent?limit=${limit}`);
+    const response = await api.get('/teacher/resources/recent');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch recent resources:', error);

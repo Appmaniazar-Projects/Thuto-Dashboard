@@ -6,17 +6,17 @@ import {
   Typography,
   Button,
   Grid,
-  Card,
-  CardContent,
-  CardActions,
+  Paper,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Divider
 } from '@mui/material';
 import {
   School as StudentIcon,
   FamilyRestroom as ParentIcon,
   MenuBook as TeacherIcon,
-  AdminPanelSettings as AdminIcon
+  AdminPanelSettings as AdminIcon,
+  ArrowForward as ArrowIcon
 } from '@mui/icons-material';
 import Logo from '../../assets/Logo.png';
 
@@ -29,22 +29,22 @@ const LandingPage = () => {
     {
       title: 'Students, Parents & Teachers',
       description: 'Access your educational dashboard with subjects, resources, attendance, and reports',
-      icon: <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-        <StudentIcon sx={{ fontSize: 40, color: theme.palette.primary.main }} />
-        <ParentIcon sx={{ fontSize: 40, color: theme.palette.secondary.main }} />
-        <TeacherIcon sx={{ fontSize: 40, color: theme.palette.success.main }} />
+      icon: <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', alignItems: 'center' }}>
+        <StudentIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+        <ParentIcon sx={{ fontSize: 32, color: theme.palette.secondary.main }} />
+        <TeacherIcon sx={{ fontSize: 32, color: theme.palette.success.main }} />
       </Box>,
       path: '/login',
       color: theme.palette.primary.main,
-      buttonText: 'Login'
+      buttonText: 'Continue to Login'
     },
     {
-      title: 'Administrators',
+      title: 'School Administrators',
       description: 'Manage school operations, user accounts, and system settings',
-      icon: <AdminIcon sx={{ fontSize: 60, color: theme.palette.warning.main }} />,
+      icon: <AdminIcon sx={{ fontSize: 48, color: theme.palette.warning.main }} />,
       path: '/admin/login',
       color: theme.palette.warning.main,
-      buttonText: 'Admin Login'
+      buttonText: 'Admin Access'
     }
   ];
 
@@ -56,177 +56,177 @@ const LandingPage = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        backgroundColor: '#ffffff',
         display: 'flex',
-        alignItems: 'center',
-        py: 4
+        flexDirection: 'column',
+        py: { xs: 4, md: 6 }
       }}
     >
-      <Container maxWidth="lg">
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
-          {/* Logo */}
-          <Box sx={{ mb: 3 }}>
+      <Container maxWidth="lg" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Header Section */}
+        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
+          <Box sx={{ mb: 4 }}>
             <img
               src={Logo}
               alt="Thuto"
               style={{
-                height: isMobile ? '100px' : '140px',
+                height: isMobile ? '80px' : '100px',
                 width: 'auto'
               }}
             />
           </Box>
           
-          {/* Welcome Text */}
           <Typography
             variant={isMobile ? 'h3' : 'h2'}
             component="h1"
             sx={{
-              color: 'white',
-              fontWeight: 'bold',
+              color: theme.palette.text.primary,
+              fontWeight: 700,
               mb: 2,
-              textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+              fontSize: { xs: '2rem', md: '3rem' }
             }}
           >
             Welcome to Thuto
           </Typography>
           
           <Typography
-            variant={isMobile ? 'h6' : 'h5'}
+            variant="h5"
             sx={{
-              color: 'rgba(255,255,255,0.9)',
-              mb: 4,
-              textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+              color: theme.palette.text.secondary,
+              mb: 3,
+              fontWeight: 400,
+              fontSize: { xs: '1.2rem', md: '1.5rem' }
             }}
           >
-            Your Educational Management Platform
+            Educational Management Platform
           </Typography>
+          
+          <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 4 }} />
           
           <Typography
             variant="body1"
             sx={{
-              color: 'rgba(255,255,255,0.8)',
-              mb: 6,
-              maxWidth: '600px',
+              color: theme.palette.text.secondary,
+              maxWidth: '500px',
               mx: 'auto',
-              fontSize: '1.1rem'
+              fontSize: '1.1rem',
+              lineHeight: 1.6
             }}
           >
-            Please select your access type to continue to the appropriate dashboard
+            Choose your access type to continue to your personalized dashboard
           </Typography>
         </Box>
 
-        {/* Role Selection Cards */}
-        <Grid container spacing={4} justifyContent="center">
-          {userTypes.map((userType, index) => (
-            <Grid item xs={12} md={6} key={index}>
-              <Card
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all 0.3s ease-in-out',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    transform: 'translateY(-12px)',
-                    boxShadow: theme.shadows[20],
-                    '& .role-icon': {
-                      transform: 'scale(1.1)'
-                    }
-                  },
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  minHeight: '320px'
-                }}
-                onClick={() => handleRoleSelect(userType.path)}
-              >
-                <CardContent
+        {/* Role Selection Section */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          <Grid container spacing={4} justifyContent="center">
+            {userTypes.map((userType, index) => (
+              <Grid item xs={12} sm={6} md={5} key={index}>
+                <Paper
+                  elevation={0}
                   sx={{
-                    flexGrow: 1,
+                    p: 4,
+                    textAlign: 'center',
+                    border: `2px solid ${theme.palette.grey[200]}`,
+                    borderRadius: 3,
+                    transition: 'all 0.3s ease-in-out',
+                    cursor: 'pointer',
+                    height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    p: 4
+                    '&:hover': {
+                      borderColor: userType.color,
+                      boxShadow: `0 8px 25px rgba(0,0,0,0.1)`,
+                      transform: 'translateY(-4px)',
+                      '& .role-icon': {
+                        transform: 'scale(1.1)'
+                      },
+                      '& .arrow-icon': {
+                        transform: 'translateX(4px)'
+                      }
+                    }
                   }}
+                  onClick={() => handleRoleSelect(userType.path)}
                 >
                   <Box
                     className="role-icon"
                     sx={{
                       mb: 3,
                       transition: 'transform 0.3s ease-in-out',
-                      minHeight: '80px',
                       display: 'flex',
-                      alignItems: 'center'
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      minHeight: '60px'
                     }}
                   >
                     {userType.icon}
                   </Box>
                   
                   <Typography
-                    variant="h4"
+                    variant="h5"
                     component="h2"
                     sx={{
-                      fontWeight: 'bold',
-                      mb: 3,
-                      color: userType.color,
-                      fontSize: isMobile ? '1.5rem' : '2rem'
+                      fontWeight: 600,
+                      mb: 2,
+                      color: theme.palette.text.primary,
+                      fontSize: { xs: '1.3rem', md: '1.5rem' }
                     }}
                   >
                     {userType.title}
                   </Typography>
                   
                   <Typography
-                    variant="body1"
-                    color="text.secondary"
+                    variant="body2"
                     sx={{
-                      flexGrow: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      fontSize: '1.1rem',
-                      lineHeight: 1.6
+                      color: theme.palette.text.secondary,
+                      mb: 4,
+                      flex: 1,
+                      fontSize: '1rem',
+                      lineHeight: 1.5
                     }}
                   >
                     {userType.description}
                   </Typography>
-                </CardContent>
-                
-                <CardActions sx={{ p: 4, pt: 0 }}>
+                  
                   <Button
                     variant="contained"
-                    fullWidth
                     size="large"
+                    endIcon={<ArrowIcon className="arrow-icon" sx={{ transition: 'transform 0.3s ease-in-out' }} />}
                     sx={{
                       backgroundColor: userType.color,
+                      color: 'white',
+                      py: 1.5,
+                      px: 4,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      fontSize: '1rem',
+                      borderRadius: 2,
+                      boxShadow: 'none',
                       '&:hover': {
                         backgroundColor: userType.color,
-                        filter: 'brightness(0.9)'
-                      },
-                      py: 2,
-                      fontWeight: 'bold',
-                      textTransform: 'none',
-                      fontSize: '1.2rem',
-                      borderRadius: 2
+                        filter: 'brightness(0.9)',
+                        boxShadow: `0 4px 12px rgba(0,0,0,0.15)`
+                      }
                     }}
                   >
                     {userType.buttonText}
                   </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
 
         {/* Footer */}
-        <Box sx={{ textAlign: 'center', mt: 8 }}>
+        <Box sx={{ textAlign: 'center', mt: 6, pt: 4 }}>
           <Typography
             variant="body2"
             sx={{
-              color: 'rgba(255,255,255,0.7)',
-              textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+              color: theme.palette.text.disabled,
               fontSize: '0.9rem'
             }}
           >
-            © 2025 Thuto Educational Management System
+            2025 Thuto Educational Management System
           </Typography>
         </Box>
       </Container>

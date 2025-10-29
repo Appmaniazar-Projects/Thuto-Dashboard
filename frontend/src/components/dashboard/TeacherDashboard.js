@@ -49,11 +49,24 @@ const TeacherDashboard = () => {
         setLoading(true);
         setError(null);
         
+        // Check if user data is available
+        if (!user) {
+          setError('Teacher information not available. Please log in again.');
+          return;
+        }
+        
+        // Get teacher identifier (prefer id, fallback to phoneNumber)
+        const teacherId = user.id || user.phoneNumber;
+        if (!teacherId) {
+          setError('Teacher ID not found. Please log in again.');
+          return;
+        }
+        
         // Fetch classes and resources in parallel
-        const [resourceData, gradesData] = await Promise.all([
-          getRecentResources(10), // Get more resources for filtering
-          subjectService.getSubjectsByTeacher(), // Get teacher's subjects
-          gradeService.getGradesByTeacher() // Get teacher's grades
+        const [resourceData, subjectsData, gradesData] = await Promise.all([
+          getRecentResources(), // Get all resources
+          subjectService.getSubjectsByTeacher(teacherId), // Get teacher's subjects
+          gradeService.getGradesByTeacher(teacherId) // Get teacher's grades
         ]);
         setResources(resourceData || []);
         setTeacherSubjects(subjectsData || []);
@@ -68,7 +81,7 @@ const TeacherDashboard = () => {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user]);
 
   // Apply filters to classes
   // const filteredClasses = useMemo(() => {
