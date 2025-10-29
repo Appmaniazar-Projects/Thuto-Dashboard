@@ -11,7 +11,8 @@ import {
   ListItemIcon
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
-import { getChildAcademicReports } from '../../services/parentService'; // We will add this function
+import parentService from '../../services/parentService';
+import { useAuth } from '../../context/AuthContext';
 
 // Mock function to generate PDF, replace with actual implementation later
 const generatePDF = (report) => {
@@ -20,6 +21,7 @@ const generatePDF = (report) => {
 };
 
 const AcademicReportsView = ({ childId }) => {
+  const { user } = useAuth();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,8 +36,15 @@ const AcademicReportsView = ({ childId }) => {
       try {
         setLoading(true);
         setError('');
-        // This service function needs to be created
-        const data = await getChildAcademicReports(childId);
+        
+        // Check if user has phoneNumber
+        if (!user?.phoneNumber) {
+          setError('Phone number not found. Please update your profile.');
+          setLoading(false);
+          return;
+        }
+        
+        const data = await parentService.getChildAcademicReports(user.phoneNumber, childId);
         setReports(data);
       } catch (err) {
         setError('Failed to fetch academic reports.');
@@ -46,7 +55,7 @@ const AcademicReportsView = ({ childId }) => {
     };
 
     fetchReports();
-  }, [childId]);
+  }, [childId, user]);
 
   if (loading) {
     return (
