@@ -71,14 +71,14 @@ const TeacherDashboard = () => {
   }, []);
 
   // Apply filters to classes
-  const filteredClasses = useMemo(() => {
-    return classes.filter(cls => {
-      return (
-        (!filters.subject || cls.subject === filters.subject) &&
-        (!filters.grade || cls.grade === filters.grade)
-      );
-    });
-  }, [classes, filters]);
+  // const filteredClasses = useMemo(() => {
+  //   return classes.filter(cls => {
+  //     return (
+  //       (!filters.subject || cls.subject === filters.subject) &&
+  //       (!filters.grade || cls.grade === filters.grade)
+  //     );
+  //   });
+  // }, [classes, filters]);
 
   // Apply filters to resources
 const filteredResources = useMemo(() => {

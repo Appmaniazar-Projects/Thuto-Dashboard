@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 
 const Login = lazy(() => import('./components/auth/Login'));
 const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
+const LandingPage = lazy(() => import('./components/auth/LandingPage'));
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage'));
@@ -66,7 +67,8 @@ const ResetPassword = lazy(() => import('./components/auth/ResetPassword'));
 
 
 export const publicRoutes = [
-  { path: '/', element: <Navigate to="/login" replace /> },
+  { path: '/', element: <LandingPage /> },
+  { path: '/landing', element: <LandingPage /> },
   { path: '/login', element: <Login /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
