@@ -25,8 +25,7 @@ const ParentAttendance = () => {
 
   useEffect(() => {
     const loadInitialData = async () => {
-      if (!parent || !parent.children || parent.children.length === 0) {
-        setError('No children are linked to your profile.');
+      if (!parent) {
         setLoading(false);
         return;
       }
@@ -40,6 +39,7 @@ const ParentAttendance = () => {
 
       try {
         setLoading(true);
+        setError(null);
         // 1. Fetch children directly from the parentService
         const childProfiles = await parentService.getMyChildren(parent.phoneNumber);
         setChildren(childProfiles);
@@ -54,6 +54,8 @@ const ParentAttendance = () => {
         // 3. Default to first child
         if (childProfiles.length > 0) {
           setSelectedChildId(childProfiles[0].id);
+        } else {
+          setError('No children are linked to your profile.');
         }
 
       } catch (err) {
