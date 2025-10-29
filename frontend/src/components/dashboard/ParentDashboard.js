@@ -50,8 +50,19 @@ const ParentDashboard = () => {
         setLoading(true);
         setError('');
         
+        console.log('ParentDashboard - User object:', user);
+        console.log('ParentDashboard - Phone number:', user?.phoneNumber);
+        
+        // Check if user has phoneNumber
+        if (!user?.phoneNumber) {
+          console.error('ParentDashboard - No phone number found in user object');
+          setError('Phone number not found. Please update your profile.');
+          setLoading(false);
+          return;
+        }
+        
         // Fetch children data first
-        const childrenData = await parentService.getMyChildren();
+        const childrenData = await parentService.getMyChildren(user.phoneNumber);
         if (childrenData && childrenData.length > 0) {
           setChildren(childrenData);
           

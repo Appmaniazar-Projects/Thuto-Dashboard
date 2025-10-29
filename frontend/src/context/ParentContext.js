@@ -14,7 +14,22 @@ export const ParentProvider = ({ children }) => {
     const loadChildren = async () => {
       try {
         setLoading(true);
-        const data = await parentService.getMyChildren();
+        // Get phoneNumber from localStorage
+        const storedUser = localStorage.getItem('user');
+        const userData = storedUser ? JSON.parse(storedUser) : null;
+        const phoneNumber = userData?.phoneNumber;
+        
+        console.log('ParentContext - User data:', userData);
+        console.log('ParentContext - Phone number:', phoneNumber);
+        
+        if (!phoneNumber) {
+          console.error('ParentContext - No phone number found in user data');
+          setError('Phone number not found. Please log in again.');
+          setLoading(false);
+          return;
+        }
+        
+        const data = await parentService.getMyChildren(phoneNumber);
         setChildrenData(data);
         // Auto-select first child if none selected
         if (data.length > 0 && !selectedChildId) {
