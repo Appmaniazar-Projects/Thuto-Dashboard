@@ -81,14 +81,11 @@ const parentService = {
   /**
    * Fetches attendance records for a specific child
    * @param {string} studentId - The ID of the student
-   * @param {Object} [params] - Query parameters (e.g., { month: 1, year: 2023 })
    * @returns {Promise<Array>} Attendance data
    */
-  getChildAttendance: async (studentId, params = {}) => {
+  getChildAttendance: async (studentId) => {
     try {
-      const response = await api.get(`/attendance/student/${studentId}`, { 
-        params 
-      });
+      const response = await api.get(`/attendance/student/${studentId}`);
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch attendance for student ${studentId}:`, error);

@@ -108,6 +108,7 @@ const filteredResources = useMemo(() => {
       totalSubjects: teacherSubjects.length,
       totalGrades: teacherGrades.length,
       totalResources: filteredResources.length,
+      totalStudents: 0, // TODO: Fetch actual student count from backend
       subjectGradeCombinations: teacherSubjects.length * teacherGrades.length
     };
   }, [teacherSubjects, teacherGrades, filteredResources]);

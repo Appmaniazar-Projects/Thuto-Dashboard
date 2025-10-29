@@ -59,9 +59,9 @@ const ParentDashboard = () => {
             setFilters(prev => ({ ...prev, childId: childrenData[0].id }));
           }
           
-          // Fetch attendance for all children in parallel
+          // Fetch attendance for all children in parallel (no filters sent to backend)
           const attendancePromises = childrenData.map(child => 
-            parentService.getChildAttendance(child.id, filters)
+            parentService.getChildAttendance(child.id)
           );
           
           const attendanceResults = await Promise.allSettled(attendancePromises);

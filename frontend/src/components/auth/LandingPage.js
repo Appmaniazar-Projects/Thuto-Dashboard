@@ -5,7 +5,6 @@ import {
   Container,
   Typography,
   Button,
-  Grid,
   Paper,
   useTheme,
   useMediaQuery,
@@ -59,117 +58,114 @@ const LandingPage = () => {
         backgroundColor: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
-        py: { xs: 4, md: 6 }
+        py: { xs: 3, md: 4 }
       }}
     >
-      <Container maxWidth="lg" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Container maxWidth="sm" sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header Section */}
-        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
-          <Box sx={{ mb: 4 }}>
+        <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 6 } }}>
+          <Box sx={{ mb: 3 }}>
             <img
               src={Logo}
               alt="Thuto"
               style={{
-                height: isMobile ? '80px' : '100px',
+                height: isMobile ? '70px' : '90px',
                 width: 'auto'
               }}
             />
           </Box>
           
           <Typography
-            variant={isMobile ? 'h3' : 'h2'}
+            variant="h3"
             component="h1"
             sx={{
               color: theme.palette.text.primary,
               fontWeight: 700,
               mb: 2,
-              fontSize: { xs: '2rem', md: '3rem' }
+              fontSize: { xs: '1.8rem', md: '2.2rem' }
             }}
           >
             Welcome to Thuto
           </Typography>
           
           <Typography
-            variant="h5"
+            variant="h6"
             sx={{
               color: theme.palette.text.secondary,
               mb: 3,
               fontWeight: 400,
-              fontSize: { xs: '1.2rem', md: '1.5rem' }
+              fontSize: { xs: '1rem', md: '1.1rem' }
             }}
           >
             Educational Management Platform
           </Typography>
           
-          <Divider sx={{ maxWidth: '200px', mx: 'auto', mb: 4 }} />
+          <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3 }} />
           
           <Typography
-            variant="body1"
+            variant="body2"
             sx={{
               color: theme.palette.text.secondary,
-              maxWidth: '500px',
-              mx: 'auto',
-              fontSize: '1.1rem',
-              lineHeight: 1.6
+              fontSize: { xs: '0.9rem', md: '1rem' },
+              lineHeight: 1.5
             }}
           >
-            Choose your access type to continue to your personalized dashboard
+            Choose your access type to continue
           </Typography>
         </Box>
 
         {/* Role Selection Section */}
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-          <Grid container spacing={4} justifyContent="center">
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Box sx={{ width: '100%' }}>
             {userTypes.map((userType, index) => (
-              <Grid item xs={12} sm={6} md={5} key={index}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 4,
-                    textAlign: 'center',
-                    border: `2px solid ${theme.palette.grey[200]}`,
-                    borderRadius: 3,
-                    transition: 'all 0.3s ease-in-out',
-                    cursor: 'pointer',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      borderColor: userType.color,
-                      boxShadow: `0 8px 25px rgba(0,0,0,0.1)`,
-                      transform: 'translateY(-4px)',
-                      '& .role-icon': {
-                        transform: 'scale(1.1)'
-                      },
-                      '& .arrow-icon': {
-                        transform: 'translateX(4px)'
-                      }
+              <Paper
+                key={index}
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, md: 3 },
+                  mb: { xs: 2, md: 2.5 },
+                  textAlign: 'center',
+                  border: `2px solid ${theme.palette.grey[200]}`,
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease-in-out',
+                  cursor: 'pointer',
+                  width: '100%',
+                  '&:hover': {
+                    borderColor: userType.color,
+                    boxShadow: `0 6px 20px rgba(0,0,0,0.08)`,
+                    transform: 'translateY(-2px)',
+                    '& .role-icon': {
+                      transform: 'scale(1.05)'
+                    },
+                    '& .arrow-icon': {
+                      transform: 'translateX(4px)'
                     }
-                  }}
-                  onClick={() => handleRoleSelect(userType.path)}
-                >
+                  }
+                }}
+                onClick={() => handleRoleSelect(userType.path)}
+              >
                   <Box
                     className="role-icon"
                     sx={{
-                      mb: 3,
+                      mb: 2,
                       transition: 'transform 0.3s ease-in-out',
                       display: 'flex',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      minHeight: '60px'
+                      minHeight: '50px'
                     }}
                   >
                     {userType.icon}
                   </Box>
                   
                   <Typography
-                    variant="h5"
+                    variant="h6"
                     component="h2"
                     sx={{
                       fontWeight: 600,
-                      mb: 2,
+                      mb: 1.5,
                       color: theme.palette.text.primary,
-                      fontSize: { xs: '1.3rem', md: '1.5rem' }
+                      fontSize: { xs: '1.1rem', md: '1.25rem' }
                     }}
                   >
                     {userType.title}
@@ -179,10 +175,9 @@ const LandingPage = () => {
                     variant="body2"
                     sx={{
                       color: theme.palette.text.secondary,
-                      mb: 4,
-                      flex: 1,
-                      fontSize: '1rem',
-                      lineHeight: 1.5
+                      mb: 3,
+                      fontSize: { xs: '0.85rem', md: '0.9rem' },
+                      lineHeight: 1.4
                     }}
                   >
                     {userType.description}
@@ -191,15 +186,16 @@ const LandingPage = () => {
                   <Button
                     variant="contained"
                     size="large"
+                    fullWidth
                     endIcon={<ArrowIcon className="arrow-icon" sx={{ transition: 'transform 0.3s ease-in-out' }} />}
                     sx={{
                       backgroundColor: userType.color,
                       color: 'white',
-                      py: 1.5,
+                      py: { xs: 1.2, md: 1.5 },
                       px: 4,
                       fontWeight: 600,
                       textTransform: 'none',
-                      fontSize: '1rem',
+                      fontSize: { xs: '0.95rem', md: '1rem' },
                       borderRadius: 2,
                       boxShadow: 'none',
                       '&:hover': {
@@ -212,21 +208,20 @@ const LandingPage = () => {
                     {userType.buttonText}
                   </Button>
                 </Paper>
-              </Grid>
             ))}
-          </Grid>
+          </Box>
         </Box>
 
         {/* Footer */}
-        <Box sx={{ textAlign: 'center', mt: 6, pt: 4 }}>
+        <Box sx={{ textAlign: 'center', mt: { xs: 4, md: 5 }, pt: 3 }}>
           <Typography
             variant="body2"
             sx={{
               color: theme.palette.text.disabled,
-              fontSize: '0.9rem'
+              fontSize: { xs: '0.8rem', md: '0.85rem' }
             }}
           >
-            2025 Thuto Educational Management System
+            © 2025 Thuto Educational Management System
           </Typography>
         </Box>
       </Container>

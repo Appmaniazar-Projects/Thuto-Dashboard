@@ -1,10 +1,39 @@
+/**
+ * Student Service Module
+ * 
+ * This service module provides comprehensive functionality for student-related operations
+ * in the Thuto Dashboard. It handles profile management, report access, and document
+ * retrieval for student users.
+ * 
+ * Key Features:
+ * - Student profile management (view/update)
+ * - Academic report access and downloads
+ * - School document retrieval
+ * - Firebase Storage integration for file handling
+ * - Backward compatibility with legacy API endpoints
+ * 
+ * @module StudentService
+ * @author Thuto Dashboard Team
+ * @version 2.0.0
+ * @since 1.0.0
+ */
+
 import api from './api';
 import fileUploadService from './fileUploadService';
 
-/**
- * Student Profile - Updated to match backend API structure
- */
+// ==================== STUDENT PROFILE MANAGEMENT ====================
 
+/**
+ * Retrieves the current student's profile information using their phone number
+ * 
+ * @param {string} phoneNumber - The student's phone number (used as identifier)
+ * @returns {Promise<Object>} Promise resolving to student profile data
+ * @throws {Error} Throws error if profile not found or API request fails
+ * 
+ * @example
+ * const profile = await getMyProfile('0123456789');
+ * console.log(profile.name, profile.email);
+ */
 export const getMyProfile = async (phoneNumber) => {
   try {
     const response = await api.get(`/student/${phoneNumber}`);
@@ -15,6 +44,22 @@ export const getMyProfile = async (phoneNumber) => {
   }
 };
 
+/**
+ * Updates the current student's profile information
+ * 
+ * @param {Object} studentData - Updated student profile data
+ * @param {string} studentData.name - Student's full name
+ * @param {string} studentData.email - Student's email address
+ * @param {string} [studentData.phoneNumber] - Student's phone number
+ * @returns {Promise<Object>} Promise resolving to updated profile data
+ * @throws {Error} Throws error if update fails or validation errors occur
+ * 
+ * @example
+ * const updatedProfile = await updateProfile({
+ *   name: 'John Doe',
+ *   email: 'john.doe@example.com'
+ * });
+ */
 export const updateProfile = async (studentData) => {
   try {
     const response = await api.put('/student/updateStudent', studentData);
@@ -27,7 +72,7 @@ export const updateProfile = async (studentData) => {
 
 
 /**
- * Get student reports from backend
+ * Get student reports from backend (alias for backward compatibility)
  */
 export const getMyReports = async () => {
   try {

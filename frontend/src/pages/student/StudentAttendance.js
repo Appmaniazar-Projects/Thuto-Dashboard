@@ -1,3 +1,21 @@
+/**
+ * StudentAttendance Component
+ * 
+ * This component displays a student's attendance records in a tabular format
+ * with filtering capabilities by month. It fetches attendance data from the
+ * backend and provides visual indicators for different attendance statuses.
+ * 
+ * Features:
+ * - Monthly attendance filtering
+ * - Visual status indicators (Present, Absent, Late)
+ * - Responsive design with loading and error states
+ * - Date range selection for attendance records
+ * 
+ * @component
+ * @author Thuto Dashboard Team
+ * @version 1.0.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Box, 
@@ -27,34 +45,75 @@ import {
   Cancel as AbsentIcon,
   EmojiEvents as AchievementIcon
 } from '@mui/icons-material';
-import studentService from '../../services/studentService';
+import { getStudentAttendance } from '../../services/attendanceService';
+import { useAuth } from '../../context/AuthContext';
 import { format, parseISO } from 'date-fns';
 
+/**
+ * Main StudentAttendance functional component
+ * Manages student attendance display and filtering functionality
+ */
 const StudentAttendance = () => {
+  // Get current authenticated user from context
+  const { user } = useAuth();
+  
+  // State for selected month filter (format: YYYY-MM)
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7)
   );
+  
+  // State for storing fetched attendance records
   const [attendanceData, setAttendanceData] = useState(null);
+  
+  // Loading state for API calls
   const [loading, setLoading] = useState(true);
+  
+  // Error state for handling API failures
   const [error, setError] = useState(null);
 
+  /**
+   * Effect hook to fetch attendance data when component mounts or dependencies change
+   * Dependencies: selectedMonth, user
+   */
   useEffect(() => {
+    /**
+     * Async function to fetch student attendance data from the API
+     * Handles user validation, date range calculation, and error states
+     */
     const fetchAttendance = async () => {
       try {
+        // Set loading state and clear any previous errors
         setLoading(true);
         setError(null);
-        const response = await studentService.getAttendance(selectedMonth);
-        setAttendanceData(response.data);
+        
+        // Validate user authentication before making API call
+        if (!user?.id) {
+          setError('User information not available. Please log in again.');
+          return;
+        }
+        
+        // Calculate date range for selected month
+        // Start date: First day of selected month
+        const startDate = new Date(selectedMonth + '-01');
+        // End date: Last day of selected month
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        
+        // Fetch attendance data from API service
+        const response = await getStudentAttendance(user.id, startDate, endDate);
+        setAttendanceData(response);
       } catch (err) {
+        // Handle API errors gracefully
         setError('Failed to load attendance data. Please try again.');
-        console.error(err);
+        console.error('Attendance fetch error:', err);
       } finally {
+        // Always clear loading state regardless of success/failure
         setLoading(false);
       }
     };
 
+    // Execute the fetch function
     fetchAttendance();
-  }, [selectedMonth]);
+  }, [selectedMonth, user]); // Re-run when month selection or user changes
 
   // Function to generate month options for the dropdown
   const generateMonthOptions = () => {
