@@ -31,10 +31,17 @@ const ParentAttendance = () => {
         return;
       }
 
+      // Check if parent has phoneNumber
+      if (!parent.phoneNumber) {
+        setError('Phone number not found. Please update your profile.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         // 1. Fetch children directly from the parentService
-        const childProfiles = await parentService.getMyChildren();
+        const childProfiles = await parentService.getMyChildren(parent.phoneNumber);
         setChildren(childProfiles);
 
         // 2. Fetch attendance for each child

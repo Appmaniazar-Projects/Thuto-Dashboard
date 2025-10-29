@@ -5,10 +5,12 @@ import {
 } from '@mui/material';
 import { Assessment as AssessmentIcon, Download as DownloadIcon } from '@mui/icons-material';
 import { useParent } from '../../context/ParentContext';
+import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
 
 const AcademicReportsPage = () => {
   const { children, loading: childrenLoading, error: childrenError } = useParent();
+  const { user } = useAuth();
   const [selectedChildId, setSelectedChildId] = useState('');
   const [reports, setReports] = useState([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
@@ -26,7 +28,16 @@ const AcademicReportsPage = () => {
         try {
           setIsLoadingReports(true);
           setReportsError('');
-          const data = await parentService.getChildReports(selectedChildId);
+          
+          // Check if user has phoneNumber
+          if (!user?.phoneNumber) {
+            setReportsError('Phone number not found. Please update your profile.');
+            setReports([]);
+            setIsLoadingReports(false);
+            return;
+          }
+          
+          const data = await parentService.getChildAcademicReports(user.phoneNumber, selectedChildId);
           setReports(data || []);
         } catch (err) {
           console.error('Error fetching reports:', err);
@@ -38,7 +49,7 @@ const AcademicReportsPage = () => {
       };
       fetchReports();
     }
-  }, [selectedChildId]);
+  }, [selectedChildId, user]);
 
   const handleChildChange = (event) => {
     setSelectedChildId(event.target.value);
