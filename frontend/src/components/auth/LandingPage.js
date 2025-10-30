@@ -58,7 +58,8 @@ const LandingPage = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%)',
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         py: { xs: 3, md: 4 }
@@ -233,10 +234,46 @@ const LandingPage = () => {
               fontSize: { xs: '0.85rem', md: '0.9rem' }
             }}
           >
-            © 2025 Thuto Educational Management System
+            2025 Thuto Educational Management System
           </Typography>
         </Box>
       </Container>
+      
+      {/* Add keyframes for animations */}
+      <style>
+        {`
+          @keyframes fadeInDown {
+            from {
+              opacity: 0;
+              transform: translateY(-30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </Box>
   );
 };
