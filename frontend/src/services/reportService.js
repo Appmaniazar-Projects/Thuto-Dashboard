@@ -180,12 +180,11 @@ export const getReportFilters = async () => {
 
 /**
  * Get student's own reports (student view)
- * @param {Object} params - Query parameters (optional filters)
  * @returns {Promise<Array>} List of student's reports
  */
-export const getMyReports = async (params = {}) => {
+export const getMyReports = async () => {
   try {
-    const response = await api.get('/student/reports', { params });
+    const response = await api.get('/student/reports');
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student reports:', error);
