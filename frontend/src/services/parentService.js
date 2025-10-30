@@ -3,11 +3,12 @@ import api from './api';
 const parentService = {
   /**
    * Fetches the parent's children
+   * @param {string} phoneNumber - The parent's phone number
    * @returns {Promise<Array>} List of children
    */
-  getMyChildren: async () => {
+  getMyChildren: async (phoneNumber) => {
     try {
-      const response = await api.get('/parent/children');
+      const response = await api.get(`/parent/${phoneNumber}/children`);
       return response.data || [];
     } catch (error) {
       console.error('Failed to fetch children:', error);
@@ -17,12 +18,13 @@ const parentService = {
 
   /**
    * Fetches details for a specific child
+   * @param {string} phoneNumber - The parent's phone number
    * @param {string} childId - The ID of the child
    * @returns {Promise<Object>} Child details
    */
-  getChildDetails: async (childId) => {
+  getChildDetails: async (phoneNumber, childId) => {
     try {
-      const response = await api.get(`/parent/children/${childId}`);
+      const response = await api.get(`/parent/${phoneNumber}/children/child/${childId}`);
       return response.data || {};
     } catch (error) {
       console.error(`Failed to fetch details for child ${childId}:`, error);
