@@ -5,19 +5,20 @@ import {
   Container,
   Typography,
   Button,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  Divider,
   Grid,
   Card,
-  CardContent,
-  Divider,
-  useTheme,
-  useMediaQuery
+  CardContent
 } from '@mui/material';
 import {
   School as StudentIcon,
   FamilyRestroom as ParentIcon,
   MenuBook as TeacherIcon,
   AdminPanelSettings as AdminIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowIcon
 } from '@mui/icons-material';
 import Logo from '../../assets/Logo.png';
 
@@ -30,21 +31,21 @@ const LandingPage = () => {
     {
       title: 'Students, Parents & Teachers',
       description: 'Access your educational dashboard with subjects, resources, attendance, and reports',
-      icon: <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center' }}>
-        <StudentIcon sx={{ fontSize: 48, color: '#667eea' }} />
-        <ParentIcon sx={{ fontSize: 48, color: '#f093fb' }} />
-        <TeacherIcon sx={{ fontSize: 48, color: '#4facfe' }} />
+      icon: <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', alignItems: 'center' }}>
+        <StudentIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+        <ParentIcon sx={{ fontSize: 32, color: theme.palette.secondary.main }} />
+        <TeacherIcon sx={{ fontSize: 32, color: theme.palette.success.main }} />
       </Box>,
       path: '/login',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: theme.palette.primary.main,
       buttonText: 'Continue to Login'
     },
     {
       title: 'School Administrators',
       description: 'Manage school operations, user accounts, and system settings',
-      icon: <AdminIcon sx={{ fontSize: 64, color: '#f093fb' }} />,
+      icon: <AdminIcon sx={{ fontSize: 48, color: theme.palette.warning.main }} />,
       path: '/admin/login',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      color: theme.palette.warning.main,
       buttonText: 'Admin Access'
     }
   ];
@@ -79,7 +80,7 @@ const LandingPage = () => {
         },
       }}
     >
-      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4 } }}>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
           {/* Logo */}
           <Box 
@@ -94,60 +95,46 @@ const LandingPage = () => {
               style={{
                 height: isMobile ? '70px' : '90px',
                 width: 'auto',
-                filter: 'brightness(0) invert(1)',
-                dropShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                filter: 'brightness(0) invert(1)' // Make logo white
               }}
             />
           </Box>
           
-          {/* Welcome Text */}
           <Typography
-            variant={isMobile ? 'h4' : 'h3'}
+            variant="h3"
             component="h1"
             sx={{
               color: 'white',
               fontWeight: 700,
               mb: 2,
-              textShadow: '2px 4px 8px rgba(0,0,0,0.4)',
-              animation: 'fadeInUp 1s ease-out 0.2s both'
+              fontSize: { xs: '2rem', md: '2.5rem' }
             }}
           >
             Welcome to Thuto
           </Typography>
           
           <Typography
-            variant={isMobile ? 'subtitle1' : 'h6'}
+            variant="h6"
             sx={{
-              color: 'rgba(255,255,255,0.95)',
-              mb: 2,
-              fontWeight: 500,
-              textShadow: '1px 2px 4px rgba(0,0,0,0.3)',
-              animation: 'fadeInUp 1s ease-out 0.4s both'
+              color: 'rgba(255, 255, 255, 0.9)',
+              mb: 3,
+              fontWeight: 400,
+              fontSize: { xs: '1.1rem', md: '1.3rem' }
             }}
           >
             Educational Management Platform
           </Typography>
           
-          <Divider 
-            sx={{ 
-              maxWidth: '100px', 
-              mx: 'auto', 
-              my: 3, 
-              borderColor: 'rgba(255,255,255,0.3)',
-              borderWidth: 2,
-              animation: 'fadeIn 1s ease-out 0.6s both'
-            }} 
-          />
+          <Divider sx={{ maxWidth: '150px', mx: 'auto', mb: 3, bgcolor: 'rgba(255, 255, 255, 0.3)' }} />
           
           <Typography
             variant="body1"
             sx={{
-              color: 'rgba(255,255,255,0.85)',
-              maxWidth: '650px',
-              mx: 'auto',
-              fontSize: isMobile ? '1rem' : '1.15rem',
-              lineHeight: 1.7,
-              animation: 'fadeInUp 1s ease-out 0.8s both'
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontSize: { xs: '1rem', md: '1.1rem' },
+              lineHeight: 1.6,
+              maxWidth: '600px',
+              mx: 'auto'
             }}
           >
             Choose your access type to continue to your personalized dashboard
@@ -155,78 +142,50 @@ const LandingPage = () => {
         </Box>
 
         {/* Role Selection Cards */}
-        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
+        <Grid container spacing={3} justifyContent="center">
           {userTypes.map((userType, index) => (
             <Grid 
               item 
               xs={12} 
-              sm={12} 
+              sm={6} 
               md={6} 
-              lg={6}
               key={index}
               sx={{
-                animation: `fadeInUp 1s ease-out ${1 + index * 0.2}s both`,
-                display: 'flex'
+                animation: `fadeInUp 1s ease-out ${1 + index * 0.2}s both`
               }}
             >
               <Card
                 elevation={8}
                 sx={{
-                  width: '100%',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
-                  background: 'rgba(255, 255, 255, 0.98)',
-                  backdropFilter: 'blur(20px)',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
-                  borderRadius: { xs: 2, sm: 3, md: 4 },
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: 3,
                   overflow: 'hidden',
                   position: 'relative',
-                  minHeight: { xs: '320px', sm: '360px', md: '400px' },
                   '&::before': {
                     content: '""',
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: '5px',
+                    height: '4px',
                     background: userType.gradient,
-                    animation: 'shimmer 3s ease-in-out infinite',
-                  },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: `linear-gradient(135deg, transparent 0%, ${userType.gradient.split('(')[1].split(')')[0].split(',')[0].trim()} 100%)`,
-                    opacity: 0,
-                    transition: 'opacity 0.4s ease',
-                    pointerEvents: 'none',
                   },
                   '&:hover': {
-                    transform: { xs: 'translateY(-4px)', md: 'translateY(-12px) scale(1.03)' },
-                    boxShadow: '0 25px 50px rgba(0,0,0,0.35)',
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                    '&::after': {
-                      opacity: 0.05,
-                    },
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
                     '& .role-icon': {
-                      transform: { xs: 'scale(1.1)', md: 'scale(1.2) rotate(8deg)' },
-                      '& svg': {
-                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
-                      }
+                      transform: 'scale(1.15) rotate(5deg)'
                     },
                     '& .access-button': {
                       background: userType.gradient,
-                      transform: { xs: 'scale(1.02)', md: 'scale(1.08)' },
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                    },
-                    '& .card-title': {
-                      transform: 'scale(1.05)',
+                      transform: 'scale(1.05)'
                     }
                   },
                 }}
@@ -239,61 +198,38 @@ const LandingPage = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    p: { xs: 3, sm: 4, md: 5 },
-                    pb: { xs: 2, sm: 3 },
-                    position: 'relative',
-                    zIndex: 1
+                    p: 4,
+                    pb: 2
                   }}
                 >
                   <Box
                     className="role-icon"
                     sx={{
-                      mb: { xs: 2, sm: 3 },
-                      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                      minHeight: { xs: '70px', sm: '80px', md: '100px' },
-                      width: { xs: '100px', sm: '120px', md: '140px' },
-                      height: { xs: '100px', sm: '120px', md: '140px' },
+                      mb: 3,
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      minHeight: '80px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      p: { xs: 2, sm: 3 },
+                      p: 2,
                       borderRadius: '50%',
-                      background: userType.gradient,
-                      opacity: 0.15,
-                      position: 'relative',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        inset: '-4px',
-                        borderRadius: '50%',
-                        background: userType.gradient,
-                        opacity: 0.2,
-                        filter: 'blur(10px)',
-                        animation: 'pulse 2s ease-in-out infinite',
-                      },
-                      '& > *': {
-                        position: 'relative',
-                        zIndex: 1,
-                      }
+                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
                     }}
                   >
                     {userType.icon}
                   </Box>
                   
                   <Typography
-                    className="card-title"
                     variant="h5"
                     component="h2"
                     sx={{
                       fontWeight: 700,
-                      mb: { xs: 1.5, sm: 2 },
+                      mb: 2,
                       background: userType.gradient,
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      fontSize: { xs: '1.25rem', sm: '1.4rem', md: '1.6rem' },
-                      transition: 'transform 0.3s ease',
-                      lineHeight: 1.3
+                      fontSize: isMobile ? '1.3rem' : '1.5rem'
                     }}
                   >
                     {userType.title}
@@ -303,11 +239,9 @@ const LandingPage = () => {
                     variant="body1"
                     sx={{
                       color: 'text.secondary',
-                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                      lineHeight: { xs: 1.6, md: 1.8 },
-                      mb: { xs: 3, sm: 4 },
-                      px: { xs: 0, sm: 1, md: 2 },
-                      fontWeight: 400
+                      fontSize: isMobile ? '0.95rem' : '1.05rem',
+                      lineHeight: 1.7,
+                      mb: 3
                     }}
                   >
                     {userType.description}
@@ -318,46 +252,19 @@ const LandingPage = () => {
                     variant="contained"
                     fullWidth
                     size="large"
-                    endIcon={<ArrowForwardIcon sx={{ 
-                      transition: 'transform 0.3s ease',
-                      '.access-button:hover &': {
-                        transform: 'translateX(4px)'
-                      }
-                    }} />}
+                    endIcon={<ArrowForwardIcon />}
                     sx={{
                       background: userType.gradient,
                       color: 'white',
-                      py: { xs: 1.5, sm: 1.75, md: 2 },
-                      px: { xs: 3, sm: 4 },
+                      py: 1.5,
                       fontWeight: 600,
                       textTransform: 'none',
-                      fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
-                      borderRadius: { xs: 2, md: 3 },
-                      boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        width: '0',
-                        height: '0',
-                        borderRadius: '50%',
-                        background: 'rgba(255,255,255,0.3)',
-                        transform: 'translate(-50%, -50%)',
-                        transition: 'width 0.6s, height 0.6s',
-                      },
+                      fontSize: isMobile ? '1rem' : '1.1rem',
+                      borderRadius: 2,
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                      transition: 'all 0.3s ease',
                       '&:hover': {
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-                        '&::before': {
-                          width: '300px',
-                          height: '300px',
-                        }
-                      },
-                      '&:active': {
-                        transform: 'scale(0.98)'
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
                       }
                     }}
                   >
@@ -370,20 +277,12 @@ const LandingPage = () => {
         </Grid>
 
         {/* Footer */}
-        <Box 
-          sx={{ 
-            textAlign: 'center', 
-            mt: 8,
-            animation: 'fadeIn 1s ease-out 1.5s both'
-          }}
-        >
+        <Box sx={{ textAlign: 'center', mt: { xs: 4, md: 6 }, pt: 3 }}>
           <Typography
             variant="body2"
             sx={{
-              color: 'rgba(255,255,255,0.8)',
-              textShadow: '1px 1px 3px rgba(0,0,0,0.4)',
-              fontSize: '0.9rem',
-              fontWeight: 500
+              color: 'rgba(255, 255, 255, 0.7)',
+              fontSize: { xs: '0.85rem', md: '0.9rem' }
             }}
           >
             2025 Thuto Educational Management System

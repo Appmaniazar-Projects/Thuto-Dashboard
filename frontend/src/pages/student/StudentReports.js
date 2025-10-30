@@ -26,7 +26,7 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import studentService from '../../services/studentService';
+import { getMyReports } from '../../services/reportService';
 import { format } from 'date-fns';
 
 const StudentReports = () => {
@@ -56,12 +56,30 @@ const StudentReports = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await studentService.getReports();
-      setReports(response.data);
-      setFilteredReports(response.data);
+      const response = await getMyReports();
+      
+      // Handle successful response (even if empty)
+      const reportsData = Array.isArray(response) ? response : [];
+      setReports(reportsData);
+      setFilteredReports(reportsData);
+      
+      // Clear any previous errors on successful fetch
+      setError('');
     } catch (error) {
       console.error('Failed to fetch reports:', error);
-      setError('Could not load your reports. Please try again later.');
+      
+      // Only show error message for actual API failures, not empty data
+      if (error.response?.status === 500 || error.code === 'ERR_NETWORK') {
+        setError('Unable to connect to the server. Please check your connection and try again.');
+      } else if (error.response?.status === 404) {
+        // 404 might mean no reports exist, which is not an error
+        setReports([]);
+        setFilteredReports([]);
+        setError('');
+      } else {
+        setError('Could not load your reports. Please try again later.');
+      }
+      
       setNotification({
         open: true,
         message: 'Failed to load reports',
