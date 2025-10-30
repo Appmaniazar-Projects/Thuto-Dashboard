@@ -104,7 +104,7 @@ const LandingPage = () => {
         },
       }}
     >
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container maxWidth={false} sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4, lg: 6 } }}>
         <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 } }}>
           {/* Logo */}
           <Box 
