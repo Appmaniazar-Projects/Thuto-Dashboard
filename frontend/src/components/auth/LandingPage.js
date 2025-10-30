@@ -79,7 +79,7 @@ const LandingPage = () => {
         },
       }}
     >
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4 } }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
           {/* Logo */}
           <Box 
@@ -155,50 +155,78 @@ const LandingPage = () => {
         </Box>
 
         {/* Role Selection Cards */}
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
           {userTypes.map((userType, index) => (
             <Grid 
               item 
               xs={12} 
-              sm={6} 
+              sm={12} 
               md={6} 
+              lg={6}
               key={index}
               sx={{
-                animation: `fadeInUp 1s ease-out ${1 + index * 0.2}s both`
+                animation: `fadeInUp 1s ease-out ${1 + index * 0.2}s both`,
+                display: 'flex'
               }}
             >
               <Card
                 elevation={8}
                 sx={{
+                  width: '100%',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  borderRadius: 3,
+                  background: 'rgba(255, 255, 255, 0.98)',
+                  backdropFilter: 'blur(20px)',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: { xs: 2, sm: 3, md: 4 },
                   overflow: 'hidden',
                   position: 'relative',
+                  minHeight: { xs: '320px', sm: '360px', md: '400px' },
                   '&::before': {
                     content: '""',
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
-                    height: '4px',
+                    height: '5px',
                     background: userType.gradient,
+                    animation: 'shimmer 3s ease-in-out infinite',
+                  },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(135deg, transparent 0%, ${userType.gradient.split('(')[1].split(')')[0].split(',')[0].trim()} 100%)`,
+                    opacity: 0,
+                    transition: 'opacity 0.4s ease',
+                    pointerEvents: 'none',
                   },
                   '&:hover': {
-                    transform: 'translateY(-8px) scale(1.02)',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    transform: { xs: 'translateY(-4px)', md: 'translateY(-12px) scale(1.03)' },
+                    boxShadow: '0 25px 50px rgba(0,0,0,0.35)',
+                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                    '&::after': {
+                      opacity: 0.05,
+                    },
                     '& .role-icon': {
-                      transform: 'scale(1.15) rotate(5deg)'
+                      transform: { xs: 'scale(1.1)', md: 'scale(1.2) rotate(8deg)' },
+                      '& svg': {
+                        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'
+                      }
                     },
                     '& .access-button': {
                       background: userType.gradient,
-                      transform: 'scale(1.05)'
+                      transform: { xs: 'scale(1.02)', md: 'scale(1.08)' },
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                    },
+                    '& .card-title': {
+                      transform: 'scale(1.05)',
                     }
                   },
                 }}
@@ -211,38 +239,61 @@ const LandingPage = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    p: 4,
-                    pb: 2
+                    p: { xs: 3, sm: 4, md: 5 },
+                    pb: { xs: 2, sm: 3 },
+                    position: 'relative',
+                    zIndex: 1
                   }}
                 >
                   <Box
                     className="role-icon"
                     sx={{
-                      mb: 3,
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      minHeight: '80px',
+                      mb: { xs: 2, sm: 3 },
+                      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                      minHeight: { xs: '70px', sm: '80px', md: '100px' },
+                      width: { xs: '100px', sm: '120px', md: '140px' },
+                      height: { xs: '100px', sm: '120px', md: '140px' },
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      p: 2,
+                      p: { xs: 2, sm: 3 },
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
+                      background: userType.gradient,
+                      opacity: 0.15,
+                      position: 'relative',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: '-4px',
+                        borderRadius: '50%',
+                        background: userType.gradient,
+                        opacity: 0.2,
+                        filter: 'blur(10px)',
+                        animation: 'pulse 2s ease-in-out infinite',
+                      },
+                      '& > *': {
+                        position: 'relative',
+                        zIndex: 1,
+                      }
                     }}
                   >
                     {userType.icon}
                   </Box>
                   
                   <Typography
+                    className="card-title"
                     variant="h5"
                     component="h2"
                     sx={{
                       fontWeight: 700,
-                      mb: 2,
+                      mb: { xs: 1.5, sm: 2 },
                       background: userType.gradient,
                       backgroundClip: 'text',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
-                      fontSize: isMobile ? '1.3rem' : '1.5rem'
+                      fontSize: { xs: '1.25rem', sm: '1.4rem', md: '1.6rem' },
+                      transition: 'transform 0.3s ease',
+                      lineHeight: 1.3
                     }}
                   >
                     {userType.title}
@@ -252,9 +303,11 @@ const LandingPage = () => {
                     variant="body1"
                     sx={{
                       color: 'text.secondary',
-                      fontSize: isMobile ? '0.95rem' : '1.05rem',
-                      lineHeight: 1.7,
-                      mb: 3
+                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                      lineHeight: { xs: 1.6, md: 1.8 },
+                      mb: { xs: 3, sm: 4 },
+                      px: { xs: 0, sm: 1, md: 2 },
+                      fontWeight: 400
                     }}
                   >
                     {userType.description}
@@ -265,19 +318,46 @@ const LandingPage = () => {
                     variant="contained"
                     fullWidth
                     size="large"
-                    endIcon={<ArrowForwardIcon />}
+                    endIcon={<ArrowForwardIcon sx={{ 
+                      transition: 'transform 0.3s ease',
+                      '.access-button:hover &': {
+                        transform: 'translateX(4px)'
+                      }
+                    }} />}
                     sx={{
                       background: userType.gradient,
                       color: 'white',
-                      py: 1.5,
+                      py: { xs: 1.5, sm: 1.75, md: 2 },
+                      px: { xs: 3, sm: 4 },
                       fontWeight: 600,
                       textTransform: 'none',
-                      fontSize: isMobile ? '1rem' : '1.1rem',
-                      borderRadius: 2,
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
-                      transition: 'all 0.3s ease',
+                      fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
+                      borderRadius: { xs: 2, md: 3 },
+                      boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: '0',
+                        height: '0',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.3)',
+                        transform: 'translate(-50%, -50%)',
+                        transition: 'width 0.6s, height 0.6s',
+                      },
                       '&:hover': {
-                        boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                        '&::before': {
+                          width: '300px',
+                          height: '300px',
+                        }
+                      },
+                      '&:active': {
+                        transform: 'scale(0.98)'
                       }
                     }}
                   >
@@ -342,6 +422,26 @@ const LandingPage = () => {
             }
             to {
               opacity: 1;
+            }
+          }
+          
+          @keyframes pulse {
+            0%, 100% {
+              transform: scale(1);
+              opacity: 0.2;
+            }
+            50% {
+              transform: scale(1.05);
+              opacity: 0.3;
+            }
+          }
+          
+          @keyframes shimmer {
+            0% {
+              background-position: -200% center;
+            }
+            100% {
+              background-position: 200% center;
             }
           }
         `}
