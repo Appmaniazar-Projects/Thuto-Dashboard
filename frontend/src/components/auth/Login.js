@@ -183,7 +183,7 @@ const Login = () => {
   return (
     <Container 
       component="main" 
-      maxWidth="xs
+      maxWidth="xs"
       sx={{
         minHeight: '100vh',  
         display: 'flex',
