@@ -27,7 +27,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Paper, Typography, TextField, Button, Box, Alert, img } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
