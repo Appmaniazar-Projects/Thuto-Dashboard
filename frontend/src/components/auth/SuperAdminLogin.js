@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
@@ -61,9 +61,16 @@ const SuperAdminLogin = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%'
+      }}
+    >
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 400 }}>
+         <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
            <img 
              src={Logo} 
              alt="Thuto Dashboard" 
@@ -74,7 +81,7 @@ const SuperAdminLogin = () => {
              }} 
           />
         </Box>
-        <Typography variant="h4" align="center" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography variant="h4" align="center" color="text.secondary" sx={{ mb: 1.5 }}>
           Super Admin Login
         </Typography>
 
@@ -130,7 +137,7 @@ const SuperAdminLogin = () => {
           </Box>
         </Box>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 
