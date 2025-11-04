@@ -185,24 +185,15 @@ const Login = () => {
       component="main" 
       maxWidth="xs"
       sx={{
-        height: '100vh',
+        minHeight: '100vh',  
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        p: 2
+        justifyContent: 'center'
+    
       }}
     >
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          width: '100%',
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center' 
-        }}
-      >
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
             alt="Thuto Dashboard" 
