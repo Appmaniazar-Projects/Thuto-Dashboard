@@ -27,7 +27,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert, img } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Alert, img } from '@mui/material';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
@@ -181,18 +181,15 @@ const Login = () => {
   };
 
   return (
-    <Container 
-      component="main" 
-      maxWidth="xs"
+    <Box
       sx={{
-        minHeight: '100vh',  
         display: 'flex',
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'center'
-    
+        width: '100%'
       }}
     >
-      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 400 }}>
         <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
@@ -257,7 +254,7 @@ const Login = () => {
         )}
         <div id="recaptcha-container" style={{ display: 'none' }} />
       </Paper>
-    </Container>
+    </Box>
   );
 };
 
