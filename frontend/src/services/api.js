@@ -41,9 +41,9 @@ api.interceptors.request.use(
       '/superadmin/',
       '/master/',
       '/attendance/',
-      '/resource/'
-
-      
+      '/resources/',
+      '/teacher/resources/',
+      '/api/grades/'
     ];
 
     const shouldExcludeSchoolId = excludedPaths.some(path => config.url.includes(path));
