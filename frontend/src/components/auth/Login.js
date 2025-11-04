@@ -1,3 +1,30 @@
+/**
+ * Login Component
+ * 
+ * This component handles the authentication flow for students, teachers, and parents
+ * using Firebase phone number authentication with OTP verification. It provides a
+ * two-step login process: phone number entry and OTP verification.
+ * 
+ * Authentication Flow:
+ * 1. User enters phone number
+ * 2. Firebase sends OTP via SMS
+ * 3. User enters OTP code
+ * 4. Firebase verifies OTP
+ * 5. Backend validates user and returns JWT token
+ * 6. User is redirected to appropriate dashboard
+ * 
+ * Features:
+ * - Phone number validation and formatting
+ * - Firebase reCAPTCHA integration
+ * - OTP verification with resend functionality
+ * - Automatic role-based navigation
+ * - Comprehensive error handling
+ * 
+ * @component
+ * @author Thuto Dashboard Team
+ * @version 2.0.0
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Paper, Typography, TextField, Button, Box, Alert, img } from '@mui/material';
@@ -9,14 +36,33 @@ import Logo from '../../assets/Logo.png';
 
 const auth = getAuth(app);
 
+/**
+ * Main Login functional component
+ * Handles the complete authentication flow for phone-based login
+ */
 const Login = () => {
+  // Form state for phone number input (formatted as XXX XXX XXXX)
   const [phoneNumber, setPhoneNumber] = useState('');
+  
+  // OTP code entered by user (6 digits)
   const [otp, setOtp] = useState('');
+  
+  // Current step in authentication flow ('phone' or 'otp')
   const [step, setStep] = useState('phone');
+  
+  // Loading state for API calls and Firebase operations
   const [loading, setLoading] = useState(false);
+  
+  // Error message display state
   const [error, setError] = useState('');
+  
+  // Firebase confirmation result from phone authentication
   const [confirmationResult, setConfirmationResult] = useState(null);
+  
+  // Navigation hook for redirecting after successful login
   const navigate = useNavigate();
+  
+  // Authentication context for setting user data and tokens
   const { setAuthData } = useAuth();
 
   // Format phone: 076 123 4567
@@ -101,16 +147,12 @@ const Login = () => {
 
     try {
       // Step 1: Verify OTP with Firebase
-      console.log('🔐 Verifying OTP with Firebase...');
       await confirmationResult.confirm(otp);
-      console.log('✅ Firebase OTP verification successful');
       
       // Step 2: Login with backend
-      console.log('🚀 Logging in with backend...');
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
       const { user, token } = await authService.login(cleanPhone);
       
-      console.log('✅ Backend login successful:', { user: user?.name, role: user?.role });
       setAuthData(user, token);
       
       // Navigate based on user role
@@ -139,9 +181,19 @@ const Login = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+    <Container 
+      component="main" 
+      maxWidth="xs"
+      sx={{
+        minHeight: '100vh',  
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+    
+      }}
+    >
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
             alt="Thuto Dashboard" 

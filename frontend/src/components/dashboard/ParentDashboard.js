@@ -16,7 +16,8 @@ import {
   FilterAlt as FilterIcon,
   CheckCircle as PresentIcon,
   Cancel as AbsentIcon,
-  Help as UnknownIcon
+  Help as UnknownIcon,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
@@ -49,8 +50,19 @@ const ParentDashboard = () => {
         setLoading(true);
         setError('');
         
+        console.log('ParentDashboard - User object:', user);
+        console.log('ParentDashboard - Phone number:', user?.phoneNumber);
+        
+        // Check if user has phoneNumber
+        if (!user?.phoneNumber) {
+          console.error('ParentDashboard - No phone number found in user object');
+          setError('Phone number not found. Please update your profile.');
+          setLoading(false);
+          return;
+        }
+        
         // Fetch children data first
-        const childrenData = await parentService.getMyChildren();
+        const childrenData = await parentService.getMyChildren(user.phoneNumber);
         if (childrenData && childrenData.length > 0) {
           setChildren(childrenData);
           
@@ -59,9 +71,9 @@ const ParentDashboard = () => {
             setFilters(prev => ({ ...prev, childId: childrenData[0].id }));
           }
           
-          // Fetch attendance for all children in parallel
+          // Fetch attendance for all children in parallel (no filters sent to backend)
           const attendancePromises = childrenData.map(child => 
-            parentService.getChildAttendance(child.id, filters)
+            parentService.getChildAttendance(child.id)
           );
           
           const attendanceResults = await Promise.allSettled(attendancePromises);
@@ -81,11 +93,28 @@ const ParentDashboard = () => {
           setEvents(eventsRes.status === 'fulfilled' ? eventsRes.value : []);
           
         } else {
-          setError('No children found for this account.');
+          // No children found - still show dashboard but with placeholder data
+          setChildren([]);
+          setAttendance([]);
+          setAnnouncements([]);
+          setEvents([]);
         }
       } catch (err) {
         console.error('Error loading parent dashboard:', err);
-        setError('Failed to load dashboard. Please try again later.');
+        
+        // Handle different error types - distinguish between API errors and empty data
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          // 404 might mean no data exists, which is not an error
+          setChildren([]);
+          setAttendance([]);
+          setAnnouncements([]);
+          setEvents([]);
+          setError('');
+        } else {
+          setError('Failed to load dashboard. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -363,9 +392,17 @@ const ParentDashboard = () => {
             </Box>
             
             {filteredAttendance.length === 0 ? (
-              <Typography color="text.secondary" textAlign="center" py={4}>
-                No attendance records found for the selected filters.
-              </Typography>
+              <Box textAlign="center" py={4}>
+                <SchoolIcon color="disabled" sx={{ fontSize: 60, mb: 2 }} />
+                <Typography variant="h6" color="textSecondary">
+                  {attendance.length === 0 ? 'No attendance records available yet.' : 'No records match your filters.'}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  {attendance.length === 0 
+                    ? 'Attendance records will appear here once teachers start recording daily attendance.'
+                    : 'Try adjusting your filters to see more records.'}
+                </Typography>
+              </Box>
             ) : (
               <List disablePadding>
                 {filteredAttendance.slice(0, 5).map((record, index) => {
@@ -429,9 +466,15 @@ const ParentDashboard = () => {
           <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
             <Typography variant="h6" fontWeight="bold" mb={2}>Subject-wise Attendance</Typography>
             {Object.keys(stats.subjectStats).length === 0 ? (
-              <Typography color="text.secondary" textAlign="center" py={2}>
-                No subject data available for the selected filters.
-              </Typography>
+              <Box textAlign="center" py={4}>
+                <SchoolIcon color="disabled" sx={{ fontSize: 50, mb: 2 }} />
+                <Typography variant="body1" color="textSecondary">
+                  No subject data available for the selected filters.
+                </Typography>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                  Subject statistics will appear here when attendance data is available.
+                </Typography>
+              </Box>
             ) : (
               <Grid container spacing={2}>
                 {Object.entries(stats.subjectStats).map(([subject, { present, total }]) => {
@@ -527,9 +570,13 @@ const ParentDashboard = () => {
             </Box>
             
             {events.length === 0 ? (
-              <Typography color="text.secondary" textAlign="center" py={2}>
-                No upcoming events.
-              </Typography>
+              <Paper sx={{ p: 2, height: 150, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+                <Box>
+                  <EventIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h6" color="text.secondary">Upcoming Events</Typography>
+                  <Typography variant="body2" color="text.secondary">No events scheduled</Typography>
+                </Box>
+              </Paper>
             ) : (
               <List disablePadding>
                 {events.slice(0, 3).map((event, index) => (
@@ -589,9 +636,13 @@ const ParentDashboard = () => {
             </Box>
             
             {announcements.length === 0 ? (
-              <Typography color="text.secondary" textAlign="center" py={2}>
-                No recent announcements.
-              </Typography>
+              <Paper sx={{ p: 2, height: 150, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50' }}>
+                <Box>
+                  <AnnounceIcon color="disabled" sx={{ fontSize: 40, mb: 1 }} />
+                  <Typography variant="h6" color="text.secondary">Announcements</Typography>
+                  <Typography variant="body2" color="text.secondary">No recent announcements</Typography>
+                </Box>
+              </Paper>
             ) : (
               <List disablePadding>
                 {announcements.slice(0, 3).map((announcement, index) => (

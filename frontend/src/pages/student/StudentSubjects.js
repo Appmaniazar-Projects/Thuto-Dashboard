@@ -74,11 +74,13 @@ const StudentSubjects = () => {
       } catch (err) {
         console.error('Failed to load subjects:', err);
         
-        // Handle different error types
-        if (err.response?.status === 404) {
-          setError('No subjects found for your account. Please contact your administrator.');
-        } else if (err.response?.status === 500) {
-          setError('Server error while loading subjects. Please try again later.');
+        // Handle different error types - distinguish between API errors and empty data
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          // 404 might mean no subjects exist, which is not an error
+          setSubjects([]);
+          setError('');
         } else if (err.message) {
           setError(err.message);
         } else {
@@ -127,9 +129,15 @@ const StudentSubjects = () => {
       </Typography>
 
       {subjects.length === 0 ? (
-        <Alert severity="info">
-          You are not enrolled in any subjects yet.
-        </Alert>
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <BookIcon color="disabled" sx={{ fontSize: 60, mb: 2 }} />
+          <Typography variant="h6" color="textSecondary">
+            No subjects available yet.
+          </Typography>
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+            Your subjects will appear here once they are assigned by your administrator.
+          </Typography>
+        </Paper>
       ) : (
         <Grid container spacing={3}>
           {subjects.map((subject) => (

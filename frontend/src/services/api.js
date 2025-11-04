@@ -35,12 +35,20 @@ api.interceptors.request.use(
       console.warn('Error parsing user data for schoolId:', e);
     }
 
-    // Add schoolId to requests that need it (exclude auth and superadmin endpoints)
-    if (userData && userData.schoolId && 
-        !config.url.includes('/auth/') && 
-        !config.url.includes('/superadmin/') &&
-        !config.url.includes('/master/')) {
-      
+    // Add schoolId to requests that need it (exclude specific services and endpoints)
+    const excludedPaths = [
+      '/auth/',
+      '/superadmin/',
+      '/master/',
+      '/attendance/',
+      '/resources/',
+      '/teacher/resources/',
+      '/api/grades/'
+    ];
+
+    const shouldExcludeSchoolId = excludedPaths.some(path => config.url.includes(path));
+
+    if (userData?.schoolId && !shouldExcludeSchoolId) {
       // Add schoolId as query parameter
       if (!config.params) {
         config.params = {};

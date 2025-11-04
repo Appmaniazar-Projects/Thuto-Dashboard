@@ -31,3 +31,9 @@ code {
 .css-* {
   margin-left: 0 !important;
 }
+
+/* Remove max-width constraint from landing page header */
+.css-d3ww3e {
+  max-width: none !important;
+  width: 100% !important;
+}

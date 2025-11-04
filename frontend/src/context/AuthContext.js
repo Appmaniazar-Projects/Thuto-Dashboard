@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }) => {
       // Call backend logout endpoint if available
       if (currentUser?.id) {
         try {
-          await api.post(`/api/auth/${currentUser.id}/logout`);
+          await api.post(`/auth/${currentUser.id}/logout`);
         } catch (apiError) {
           console.warn('Logout API failed, continuing client-side cleanup', apiError);
         }
