@@ -181,8 +181,17 @@ const Login = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Container 
+      component="main" 
+      maxWidth="xs"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
