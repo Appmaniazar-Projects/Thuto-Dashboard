@@ -185,6 +185,7 @@ const Login = () => {
       component="main" 
       maxWidth="xs"
       sx={{
+ New-branch
         minHeight: '100vh',  
         display: 'flex',
         alignItems: 'center',
@@ -193,6 +194,25 @@ const Login = () => {
       }}
     >
       <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2
+      }}
+    >
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 4, 
+          width: '100%',
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center' 
+        }}
+      >
+main
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
