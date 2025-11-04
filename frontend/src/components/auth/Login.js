@@ -192,8 +192,8 @@ const Login = () => {
     
       }}
     >
-      <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
             alt="Thuto Dashboard" 
