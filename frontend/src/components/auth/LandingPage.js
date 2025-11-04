@@ -62,13 +62,16 @@ const LandingPage = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         background: 'linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #667eea 100%)',
-        position: 'relative',
         display: 'flex',
         alignItems: 'center',
+        overflowY: 'auto',
         py: { xs: 4, md: 6 },
-        overflow: 'hidden',
         '&::before': {
           content: '""',
           position: 'absolute',
