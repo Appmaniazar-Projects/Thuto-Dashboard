@@ -242,7 +242,11 @@ export const getTeacherStudents = async () => {
  */
 export const getRecentResources = async () => {
   try {
-    const response = await api.get('/teacher/resources/recent');
+    const response = await api.get('/teacher/resources/recent', {
+      params: {
+        schoolId: localStorage.getItem('schoolId')
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch recent resources:', error);
