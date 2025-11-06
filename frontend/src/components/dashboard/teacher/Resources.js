@@ -61,17 +61,31 @@ const TeacherResources = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError('');
         const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getTeacherResources(),
-          subjectService.getSchoolSubjects(),
-          gradeService.getSchoolGrades()
+          getTeacherResources().catch(err => {
+            console.error('Error fetching resources:', err);
+            return [];
+          }),
+          subjectService.getSchoolSubjects().catch(err => {
+            console.error('Error fetching subjects:', err);
+            return [];
+          }),
+          gradeService.getSchoolGrades().catch(err => {
+            console.error('Error fetching grades:', err);
+            return [];
+          })
         ]);
         setResources(resourcesData || []);
         setSubjects(subjectsData || []);
         setGrades(gradesData || []);
+        
+        if (!resourcesData || resourcesData.length === 0) {
+          setError('No resources found. Upload your first resource to get started!');
+        }
       } catch (err) {
         console.error('Failed to fetch data:', err);
-        setError('Failed to load resources. Please try again later.');
+        setError('Failed to load resources. The server encountered an error. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -263,7 +277,9 @@ const TeacherResources = () => {
       <Divider sx={{ my: 2 }} />
 
       <Typography variant="subtitle1" gutterBottom>
-        {selectedClass === 'all' ? 'All Resources' : 'Class Resources'}
+        {filteredResources.length} {filteredResources.length === 1 ? 'Resource' : 'Resources'} found
+        {selectedSubject && ` for selected subject`}
+        {selectedGrade && ` and grade`}
       </Typography>
       
       {filteredResources.length > 0 ? (
