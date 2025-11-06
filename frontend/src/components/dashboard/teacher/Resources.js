@@ -62,7 +62,7 @@ const TeacherResources = () => {
       try {
         setLoading(true);
         const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getSchoolResources(),
+          getTeacherResources(),
           subjectService.getSchoolSubjects(),
           gradeService.getSchoolGrades()
         ]);
@@ -136,15 +136,11 @@ const TeacherResources = () => {
     }
   };
 
-  // const filteredResources = selectedGrade === 'all' 
-  //   ? resources 
-  //   : resources.filter(r => r.gradeId === selectedGrade);
-
   const filteredResources = resources.filter(resource => {
-  const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
-  const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
-  return matchesSubject && matchesGrade;
-});
+    const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
+    const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
+    return matchesSubject && matchesGrade;
+  });
 
   const getFileType = (filename) => {
     if (!filename) return 'File';
