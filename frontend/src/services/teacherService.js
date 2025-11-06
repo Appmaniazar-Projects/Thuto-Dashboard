@@ -6,7 +6,9 @@ import fileUploadService from './fileUploadService';
  */
 export const getMyStudents = async () => {
   try {
-    const response = await api.get('/teacher/students');
+    const teacher = JSON.parse(localStorage.getItem('user'));
+    const phoneNumber = teacher.phoneNumber;
+    const response = await api.get(`/teacher/${phoneNumber}/students`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch students:', error);
