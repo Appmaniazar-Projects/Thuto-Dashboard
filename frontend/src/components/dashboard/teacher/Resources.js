@@ -136,9 +136,15 @@ const TeacherResources = () => {
     }
   };
 
-  const filteredResources = selectedClass === 'all' 
-    ? resources 
-    : resources.filter(r => r.classId === selectedClass);
+  // const filteredResources = selectedGrade === 'all' 
+  //   ? resources 
+  //   : resources.filter(r => r.gradeId === selectedGrade);
+
+  const filteredResources = resources.filter(resource => {
+  const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
+  const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
+  return matchesSubject && matchesGrade;
+});
 
   const getFileType = (filename) => {
     if (!filename) return 'File';
