@@ -243,11 +243,11 @@ export const getTeacherStudents = async () => {
 export const getRecentResources = async () => {
 
    // Get admin info and handle different data structures
-    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     
     // Extract schoolId from various possible locations
     const finalSchoolId = localStorage.getItem('schoolId') || 
-                          adminInfo.schoolId;
+                          userInfo.schoolId;
   try {
     const response = await api.get('/teacher/resources/recent', {
       params: {
