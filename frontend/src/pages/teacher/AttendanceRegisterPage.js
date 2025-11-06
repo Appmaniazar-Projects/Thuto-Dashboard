@@ -32,7 +32,8 @@ const AttendanceRegisterPage = () => {
     const fetchTeacherData = async () => {
       try {
         setLoading(true);
-        const teacherId = localStorage.getItem('teacherId');
+        const teacher = JSON.parse(localStorage.getItem('user'));
+        const teacherId = teacher.id;
         // Fetch teacher's assigned subjects and grades
         const [subjects, grades] = await Promise.all([
           subjectService.getSubjectsByTeacher(teacherId),
