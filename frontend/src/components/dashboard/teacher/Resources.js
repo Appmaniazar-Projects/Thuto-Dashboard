@@ -62,7 +62,7 @@ const TeacherResources = () => {
       try {
         setLoading(true);
         const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getTeacherResources(),
+          getSchoolResources(),
           subjectService.getSchoolSubjects(),
           gradeService.getSchoolGrades()
         ]);
