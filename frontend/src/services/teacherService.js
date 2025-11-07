@@ -27,7 +27,7 @@ export const getTeacherResources = async () => {
     // Extract schoolId from various possible locations
     const finalTeacherId = localStorage.getItem('teacherId') || 
                           userInfo.id;
-    const response = await api.get('/teacher/resources/recent', {
+    const response = await api.get('/teacher/resources', {
       params: {
         teacherId: finalTeacherId
       }
