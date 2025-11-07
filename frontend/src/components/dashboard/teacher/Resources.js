@@ -80,7 +80,7 @@ const TeacherResources = () => {
         setSubjects(subjectsData || []);
         setGrades(gradesData || []);
         
-        if (!resourcesData || resourcesData.length === 0) {
+        if (!resourcesData) {
           setError('No resources found. Upload your first resource to get started!');
         }
       } catch (err) {
