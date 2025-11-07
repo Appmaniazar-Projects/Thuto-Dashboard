@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Paper, Typography, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
 import Logo from '../../assets/Logo.png';
@@ -78,9 +78,16 @@ const AdminLogin = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Paper elevation={3} sx={{ p: 4, mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%'
+      }}
+    >
+      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 400 }}>
+        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
             alt="Thuto Dashboard" 
@@ -91,7 +98,7 @@ const AdminLogin = () => {
             }} 
           />
         </Box>
-        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+        <Typography component="h1" variant="h5" sx={{ mb: 1.5 }}>
           Admin Login
         </Typography>
 
@@ -159,7 +166,7 @@ const AdminLogin = () => {
           </Box>
         </Box>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 
