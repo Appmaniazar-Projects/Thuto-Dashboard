@@ -99,7 +99,7 @@ const LandingPage = () => {
         },
         '@keyframes pulse': {
           '0%, 100%': { opacity: 1 },
-          '50%': { opacity: 0.7 },
+          '50%': { opacity: 0.6 },
         },
         '@keyframes moveBackground': {
           '0%': { transform: 'translate(0, 0)' },
