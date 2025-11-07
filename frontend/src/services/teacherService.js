@@ -92,10 +92,11 @@ export const uploadResource = async ({
       gradeId: gradeId || null,
       subjectId: subjectId || null,
       targetAudience,
-      uploadDate: uploadResult.uploadDate
+      uploadDate: uploadResult.uploadDate,
+      teacherId: userInfo.id
     };
 
-    const response = await api.post('/teacher/resources/upload', resourcePayload);
+    const response = await api.post('/resources/upload', resourcePayload);
     
     return {
       ...response.data,
