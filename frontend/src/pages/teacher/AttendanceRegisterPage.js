@@ -32,10 +32,12 @@ const AttendanceRegisterPage = () => {
     const fetchTeacherData = async () => {
       try {
         setLoading(true);
+        const teacher = JSON.parse(localStorage.getItem('user'));
+        const teacherId = teacher.id;
         // Fetch teacher's assigned subjects and grades
         const [subjects, grades] = await Promise.all([
-          subjectService.getSubjectsByTeacher(),
-          gradeService.getGradesByTeacher()
+          subjectService.getSubjectsByTeacher(teacherId),
+          gradeService.getGradesByTeacher(teacherId)
         ]);
         
         // Create class combinations from subjects and grades

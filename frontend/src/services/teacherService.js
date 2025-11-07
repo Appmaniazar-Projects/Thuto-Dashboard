@@ -6,7 +6,9 @@ import fileUploadService from './fileUploadService';
  */
 export const getMyStudents = async () => {
   try {
-    const response = await api.get('/teacher/students');
+    const teacher = JSON.parse(localStorage.getItem('user'));
+    const phoneNumber = teacher.phoneNumber;
+    const response = await api.get(`/teacher/${phoneNumber}/students`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch students:', error);
@@ -19,7 +21,17 @@ export const getMyStudents = async () => {
  */
 export const getTeacherResources = async () => {
   try {
-    const response = await api.get('/teacher/resources');
+       // Get admin info and handle different data structures
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Extract schoolId from various possible locations
+    const finalTeacherId = localStorage.getItem('teacherId') || 
+                          userInfo.id;
+    const response = await api.get('/teacher/resources/recent', {
+      params: {
+        teacherId: finalTeacherId
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch teacher resources:', error);
@@ -241,8 +253,19 @@ export const getTeacherStudents = async () => {
  * Get recent resources uploaded by the teacher
  */
 export const getRecentResources = async () => {
+
+   // Get admin info and handle different data structures
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Extract schoolId from various possible locations
+    const finalSchoolId = localStorage.getItem('schoolId') || 
+                          userInfo.schoolId;
   try {
-    const response = await api.get('/teacher/resources/recent');
+    const response = await api.get('/teacher/resources/recent', {
+      params: {
+        schoolId: finalSchoolId
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch recent resources:', error);
