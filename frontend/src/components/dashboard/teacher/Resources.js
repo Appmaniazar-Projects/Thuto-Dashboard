@@ -118,7 +118,7 @@ const TeacherResources = () => {
         gradeId: selectedGrade
       };
       
-      const newResource = await teacherService.uploadResource(file, resourceMetadata);
+      const newResource = await uploadResource(file, resourceMetadata);
       
       setResources([newResource, ...resources]);
       setFile(null);
