@@ -255,7 +255,7 @@ const TeacherResources = () => {
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!file || uploading || !selectedGrade || classes.length === 0}
+          disabled={!file || uploading || !selectedGrade || !selectedSubject}
           startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
         >
           {uploading ? 'Uploading...' : 'Upload'}
