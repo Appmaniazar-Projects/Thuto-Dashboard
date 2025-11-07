@@ -21,7 +21,17 @@ export const getMyStudents = async () => {
  */
 export const getTeacherResources = async () => {
   try {
-    const response = await api.get('/teacher/resources');
+       // Get admin info and handle different data structures
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // Extract schoolId from various possible locations
+    const finalTeacherId = localStorage.getItem('teacherId') || 
+                          userInfo.id;
+    const response = await api.get('/teacher/resources/recent', {
+      params: {
+        teacherId: finalTeacherId
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch teacher resources:', error);
