@@ -70,8 +70,8 @@ const LandingPage = () => {
         background: 'linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #667eea 100%)',
         display: 'flex',
         alignItems: 'center',
-        overflowY: 'auto',
-        py: { xs: 4, md: 6 },
+        justifyContent: 'center',
+        overflow: 'hidden',
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -107,15 +107,15 @@ const LandingPage = () => {
         },
       }}
     >
-      <Container maxWidth={false} sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4, lg: 6 } }}>
-        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 8 }, maxWidth: 'none', width: '100%' }}>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4 }, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+        <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 3 }, maxWidth: 'none', width: '100%' }}>
           {/* Logo */}
           <Box 
             sx={{ 
-              mb: 3,
+              mb: 2,
               animation: 'fadeInDown 1s ease-out',
               display: 'inline-block',
-              p: 2,
+              p: 1.5,
               borderRadius: '20px',
               background: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
@@ -126,7 +126,7 @@ const LandingPage = () => {
               src={Logo}
               alt="Thuto"
               style={{
-                height: isMobile ? '60px' : '80px',
+                height: isMobile ? '50px' : '60px',
                 width: 'auto',
                 filter: 'brightness(0) invert(1) drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
               }}
@@ -135,12 +135,12 @@ const LandingPage = () => {
           
           {/* Welcome Text */}
           <Typography
-            variant={isMobile ? 'h3' : 'h2'}
+            variant={isMobile ? 'h4' : 'h3'}
             component="h1"
             sx={{
               color: 'white',
               fontWeight: 800,
-              mb: 2,
+              mb: 1.5,
               textShadow: '0 4px 12px rgba(0,0,0,0.5)',
               animation: 'fadeInUp 1s ease-out 0.2s both',
               letterSpacing: '-0.02em'
@@ -150,10 +150,10 @@ const LandingPage = () => {
           </Typography>
           
           <Typography
-            variant={isMobile ? 'h6' : 'h5'}
+            variant={isMobile ? 'body1' : 'h6'}
             sx={{
               color: 'rgba(255,255,255,0.9)',
-              mb: 3,
+              mb: 2,
               fontWeight: 400,
               textShadow: '0 2px 8px rgba(0,0,0,0.3)',
               animation: 'fadeInUp 1s ease-out 0.4s both'
@@ -165,21 +165,21 @@ const LandingPage = () => {
           <Box
             sx={{
               display: 'inline-block',
-              px: 4,
-              py: 1.5,
+              px: 3,
+              py: 1,
               borderRadius: '50px',
               background: 'rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               animation: 'fadeIn 1s ease-out 0.6s both',
-              mb: 2
+              mb: 1.5
             }}
           >
             <Typography
-              variant="body1"
+              variant="body2"
               sx={{
                 color: 'rgba(255,255,255,0.95)',
-                fontSize: isMobile ? '0.95rem' : '1.1rem',
+                fontSize: isMobile ? '0.85rem' : '0.95rem',
                 fontWeight: 500,
               }}
             >
@@ -189,7 +189,7 @@ const LandingPage = () => {
         </Box>
 
         {/* Role Selection Cards */}
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
           {userTypes.map((userType, index) => (
             <Grid 
               item 
@@ -260,7 +260,7 @@ const LandingPage = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    p: { xs: 3, md: 4 },
+                    p: { xs: 2, md: 3 },
                     position: 'relative',
                     zIndex: 1,
                   }}
@@ -268,14 +268,14 @@ const LandingPage = () => {
                   <Box
                     className="role-icon"
                     sx={{
-                      mb: 3,
+                      mb: 2,
                       transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                      minHeight: '90px',
+                      minHeight: '70px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      p: 3,
-                      borderRadius: '24px',
+                      p: 2,
+                      borderRadius: '20px',
                       background: `linear-gradient(135deg, ${userType.color}15, ${userType.color}05)`,
                       border: `2px solid ${userType.color}30`,
                       position: 'relative',
@@ -283,7 +283,7 @@ const LandingPage = () => {
                         content: '""',
                         position: 'absolute',
                         inset: -2,
-                        borderRadius: '24px',
+                        borderRadius: '20px',
                         padding: '2px',
                         background: userType.gradient,
                         WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -297,13 +297,13 @@ const LandingPage = () => {
                   </Box>
                   
                   <Typography
-                    variant="h5"
+                    variant="h6"
                     component="h2"
                     sx={{
                       fontWeight: 700,
-                      mb: 1.5,
+                      mb: 1,
                       color: 'white',
-                      fontSize: isMobile ? '1.25rem' : '1.5rem',
+                      fontSize: isMobile ? '1.1rem' : '1.25rem',
                       textShadow: '0 2px 8px rgba(0,0,0,0.3)'
                     }}
                   >
@@ -311,32 +311,32 @@ const LandingPage = () => {
                   </Typography>
                   
                   <Typography
-                    variant="body1"
+                    variant="body2"
                     sx={{
                       color: 'rgba(255,255,255,0.75)',
-                      fontSize: isMobile ? '0.9rem' : '1rem',
-                      lineHeight: 1.6,
-                      mb: 3
+                      fontSize: isMobile ? '0.85rem' : '0.9rem',
+                      lineHeight: 1.5,
+                      mb: 2
                     }}
                   >
                     {userType.description}
                   </Typography>
                   
                   {/* Features List */}
-                  <Stack spacing={1} sx={{ mb: 3, width: '100%' }}>
+                  <Stack spacing={0.75} sx={{ mb: 2, width: '100%' }}>
                     {userType.features.map((feature, idx) => (
                       <Box
                         key={idx}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 1,
+                          gap: 0.75,
                           color: 'rgba(255,255,255,0.8)',
-                          fontSize: '0.9rem'
+                          fontSize: '0.85rem'
                         }}
                       >
-                        <CheckIcon sx={{ fontSize: 18, color: userType.color }} />
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                        <CheckIcon sx={{ fontSize: 16, color: userType.color }} />
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}>
                           {feature}
                         </Typography>
                       </Box>
@@ -352,11 +352,11 @@ const LandingPage = () => {
                     sx={{
                       background: userType.gradient,
                       color: 'white',
-                      py: { xs: 1.5, md: 1.75 },
+                      py: { xs: 1.25, md: 1.5 },
                       fontWeight: 700,
                       textTransform: 'none',
-                      fontSize: isMobile ? '1rem' : '1.1rem',
-                      borderRadius: 3,
+                      fontSize: isMobile ? '0.9rem' : '1rem',
+                      borderRadius: 2.5,
                       boxShadow: `0 8px 20px ${userType.color}40`,
                       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                       border: '1px solid rgba(255,255,255,0.2)',
@@ -393,15 +393,15 @@ const LandingPage = () => {
         <Box 
           sx={{ 
             textAlign: 'center', 
-            mt: { xs: 6, md: 8 },
+            mt: { xs: 2, md: 3 },
             animation: 'fadeIn 1s ease-out 1.5s both'
           }}
         >
           <Box
             sx={{
               display: 'inline-block',
-              px: 3,
-              py: 1.5,
+              px: 2.5,
+              py: 1,
               borderRadius: '50px',
               background: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
@@ -412,7 +412,7 @@ const LandingPage = () => {
               variant="body2"
               sx={{
                 color: 'rgba(255,255,255,0.7)',
-                fontSize: '0.85rem',
+                fontSize: '0.75rem',
                 fontWeight: 500,
                 letterSpacing: '0.5px'
               }}
