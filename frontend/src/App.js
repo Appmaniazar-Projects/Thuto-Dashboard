@@ -23,6 +23,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { SystemMessageProvider } from './context/SystemMessageContext';
 import { DataProvider } from './context/DataContext';
 import { SchoolBrandingProvider } from './context/SchoolBrandingContext';
+import { ParentProvider } from './context/ParentContext';
 
 // Theme
 import theme from './styles/theme';
@@ -34,8 +35,8 @@ const getTheme = (mode = 'light') => createTheme({
     mode,
     ...(mode === 'dark' ? {
       background: {
-        default: '#121212',
-        paper: '#1e1e1e',
+        default: '#121213',
+        paper: '#bb8b8bff',
       },
       text: {
         primary: '#ffffff',
@@ -69,8 +70,9 @@ function App() {
               <NotificationProvider>
                 <SystemMessageProvider>
                   <EventsProvider>
-                    <ScrollToTop />
-                    <Routes>
+                    <ParentProvider>
+                      <ScrollToTop />
+                      <Routes>
                       {/* Public routes */}
                       {publicRoutes.map((route, i) => (
                         <Route
@@ -113,7 +115,8 @@ function App() {
                           />
                         ))}
                       </Route>
-                    </Routes>
+                      </Routes>
+                    </ParentProvider>
                   </EventsProvider>
                 </SystemMessageProvider>
               </NotificationProvider>
