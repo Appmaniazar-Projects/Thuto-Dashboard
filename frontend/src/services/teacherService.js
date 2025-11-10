@@ -61,7 +61,7 @@ export const uploadResource = async ({
   try {
     // Get current user info from token or context
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId');
+    const schoolId = userInfo.schoolId;
     
     if (!schoolId) {
       throw new Error('School ID not found');
@@ -116,7 +116,7 @@ export const uploadResource = async ({
 export const uploadMultipleResources = async (resources, onProgress = null) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId');
+    const schoolId = userInfo.schoolId;
     
     if (!schoolId) {
       throw new Error('School ID not found');
