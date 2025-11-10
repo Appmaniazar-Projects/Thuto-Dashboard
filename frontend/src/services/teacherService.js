@@ -41,23 +41,23 @@ export const getTeacherResources = async () => {
 
 /**
  * Upload a new resource with Firebase Storage integration
- * @param {Object} resourceData - The resource data including file and metadata
- * @param {File} resourceData.file - The file to upload
- * @param {string} resourceData.title - Title of the resource
- * @param {string} resourceData.description - Description of the resource
- * @param {string} resourceData.gradeId - Grade ID (optional)
- * @param {string} resourceData.subjectId - Subject ID (optional)
- * @param {string} resourceData.targetAudience - Target audience (students/parents/all)
- * @param {Function} onProgress - Progress callback function
+ * @param {File} file - The file to upload
+ * @param {Object} metadata - The resource metadata
+ * @param {string} metadata.title - Title of the resource
+ * @param {string} metadata.description - Description of the resource
+ * @param {string} metadata.gradeId - Grade ID (optional)
+ * @param {string} metadata.subjectId - Subject ID (optional)
+ * @param {string} [metadata.targetAudience=students] - Target audience (students/parents/all)
+ * @param {Function} [onProgress] - Progress callback function
  */
-export const uploadResource = async ({ 
-  file, 
-  title, 
-  description = '', 
-  gradeId = '', 
-  subjectId = '', 
-  targetAudience = 'students' 
-}, onProgress = null) => {
+export const uploadResource = async (file, metadata, onProgress = null) => {
+  const { 
+    title, 
+    description = '', 
+    gradeId = '', 
+    subjectId = '', 
+    targetAudience = 'students' 
+  } = metadata || {};
   try {
     // Get current user info from token or context
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
@@ -69,13 +69,13 @@ export const uploadResource = async ({
 
     // Upload file to Firebase Storage
     const uploadMetadata = {
-      schoolId,
-      uploadedBy: userInfo.id || userInfo.phoneNumber,
+      schoolId: schoolId,
+      uploadedBy: userInfo.email,
       userRole: 'teacher',
       fileType: 'resource',
       targetAudience,
-      gradeId,
-      subjectId
+      gradeId: gradeId || null,
+      subjectId: subjectId || null
     };
 
     const uploadResult = await fileUploadService.uploadFile(file, uploadMetadata, onProgress);
