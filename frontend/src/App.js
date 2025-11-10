@@ -36,7 +36,7 @@ const getTheme = (mode = 'light') => createTheme({
     ...(mode === 'dark' ? {
       background: {
         default: '#121212',
-        paper: '#1e1e1e',
+        paper: '#bb8b8bff',
       },
       text: {
         primary: '#ffffff',
