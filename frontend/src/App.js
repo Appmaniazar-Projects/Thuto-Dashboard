@@ -23,6 +23,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { SystemMessageProvider } from './context/SystemMessageContext';
 import { DataProvider } from './context/DataContext';
 import { SchoolBrandingProvider } from './context/SchoolBrandingContext';
+import { ParentProvider } from './context/ParentContext';
 
 // Theme
 import theme from './styles/theme';
@@ -69,8 +70,9 @@ function App() {
               <NotificationProvider>
                 <SystemMessageProvider>
                   <EventsProvider>
-                    <ScrollToTop />
-                    <Routes>
+                    <ParentProvider>
+                      <ScrollToTop />
+                      <Routes>
                       {/* Public routes */}
                       {publicRoutes.map((route, i) => (
                         <Route
@@ -113,7 +115,8 @@ function App() {
                           />
                         ))}
                       </Route>
-                    </Routes>
+                      </Routes>
+                    </ParentProvider>
                   </EventsProvider>
                 </SystemMessageProvider>
               </NotificationProvider>
