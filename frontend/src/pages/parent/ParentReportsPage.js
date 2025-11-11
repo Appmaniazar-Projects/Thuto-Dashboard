@@ -20,6 +20,8 @@ const ParentAttendance = () => {
   const [children, setChildren] = useState([]);
   const [attendanceData, setAttendanceData] = useState({});
   const [selectedChildId, setSelectedChildId] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -79,6 +81,36 @@ const ParentAttendance = () => {
     setSelectedChildId(event.target.value);
   };
 
+  const handleMonthChange = (event) => {
+    setSelectedMonth(event.target.value);
+  };
+
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
+  };
+
+  // Generate all 12 months of the year
+  const generateMonthOptions = () => {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return monthNames.map((name, index) => ({
+      value: index,
+      label: name
+    }));
+  };
+
+  // Generate year options (current year and past 5 years)
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = 0; i < 6; i++) {
+      years.push(currentYear - i);
+    }
+    return years;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Present': return 'success';
@@ -97,7 +129,16 @@ const ParentAttendance = () => {
     }
   };
 
-  const currentChildData = attendanceData[selectedChildId] || [];
+  // Filter attendance data by selected month and year
+  const currentChildData = useMemo(() => {
+    const allData = attendanceData[selectedChildId] || [];
+    return allData.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate.getMonth() === selectedMonth && 
+             recordDate.getFullYear() === selectedYear;
+    });
+  }, [attendanceData, selectedChildId, selectedMonth, selectedYear]);
+
   const selectedChildInfo = children.find(child => child.id === selectedChildId);
 
   const attendanceSummary = useMemo(() => {
@@ -181,7 +222,7 @@ const ParentAttendance = () => {
         </Typography>
         
         <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel id="child-select-label">Select Child</InputLabel>
               <Select
@@ -197,11 +238,47 @@ const ParentAttendance = () => {
                 ))}
               </Select>
             </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="month-select-label">Month</InputLabel>
+              <Select
+                labelId="month-select-label"
+                value={selectedMonth}
+                label="Month"
+                onChange={handleMonthChange}
+              >
+                {generateMonthOptions().map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="year-select-label">Year</InputLabel>
+              <Select
+                labelId="year-select-label"
+                value={selectedYear}
+                label="Year"
+                onChange={handleYearChange}
+              >
+                {generateYearOptions().map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={() => handleDownloadReport(selectedChildId)}
-              sx={{ ml: 2 }}
+              fullWidth
             >
               Download Report
             </Button>
