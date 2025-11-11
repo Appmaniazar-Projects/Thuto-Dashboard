@@ -38,6 +38,9 @@ const style = {
 
 const AdminAttendancePage = () => {
   const [submissions, setSubmissions] = useState([]);
+  const [filteredSubmissions, setFilteredSubmissions] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
@@ -50,12 +53,55 @@ const AdminAttendancePage = () => {
       setLoading(true);
       const data = await getAttendanceSubmissions();
       setSubmissions(data);
+      filterSubmissions(data, selectedMonth, selectedYear);
     } catch (err) {
       setError('Failed to load attendance submissions.');
       console.error(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterSubmissions = (data, month, year) => {
+    const filtered = data.filter(sub => {
+      const subDate = new Date(sub.date);
+      return subDate.getMonth() === month && subDate.getFullYear() === year;
+    });
+    setFilteredSubmissions(filtered);
+  };
+
+  // Generate all 12 months of the year
+  const generateMonthOptions = () => {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return monthNames.map((name, index) => ({
+      value: index,
+      label: name
+    }));
+  };
+
+  // Generate year options (current year and past 5 years)
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = 0; i < 6; i++) {
+      years.push(currentYear - i);
+    }
+    return years;
+  };
+
+  const handleMonthChange = (event) => {
+    const newMonth = event.target.value;
+    setSelectedMonth(newMonth);
+    filterSubmissions(submissions, newMonth, selectedYear);
+  };
+
+  const handleYearChange = (event) => {
+    const newYear = event.target.value;
+    setSelectedYear(newYear);
+    filterSubmissions(submissions, selectedMonth, newYear);
   };
 
   useEffect(() => {
@@ -92,6 +138,51 @@ const AdminAttendancePage = () => {
     <Box>
       <PageTitle title="Manage Attendance" subtitle="Review and edit attendance records submitted by teachers." />
 
+      {/* Month and Year Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Month</InputLabel>
+              <Select
+                value={selectedMonth}
+                label="Month"
+                onChange={handleMonthChange}
+                disabled={loading}
+              >
+                {generateMonthOptions().map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Year</InputLabel>
+              <Select
+                value={selectedYear}
+                label="Year"
+                onChange={handleYearChange}
+                disabled={loading}
+              >
+                {generateYearOptions().map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={12} md={6}>
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredSubmissions.length} of {submissions.length} records
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
+
       {loading && <CircularProgress />}
       {error && <Alert severity="error">{error}</Alert>}
 
@@ -109,7 +200,8 @@ const AdminAttendancePage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {submissions.map((sub) => (
+              {filteredSubmissions.length > 0 ? (
+                filteredSubmissions.map((sub) => (
                 <TableRow key={sub.id}>
                   <TableCell>{new Date(sub.date).toLocaleDateString()}</TableCell>
                   <TableCell>{sub.teacherName}</TableCell>
@@ -122,7 +214,16 @@ const AdminAttendancePage = () => {
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography sx={{ p: 3, color: 'text.secondary' }}>
+                      No attendance records found for {generateMonthOptions()[selectedMonth].label} {selectedYear}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

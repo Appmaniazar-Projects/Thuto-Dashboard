@@ -41,6 +41,7 @@ const StudentReports = () => {
   });
   const [filters, setFilters] = useState({
     reportType: 'all',
+    month: 'all',
     year: 'all',
   });
 
@@ -105,6 +106,12 @@ const StudentReports = () => {
       result = result.filter(report => report.type === filters.reportType);
     }
     
+    if (filters.month !== 'all') {
+      result = result.filter(report => 
+        new Date(report.issueDate).getMonth() === parseInt(filters.month)
+      );
+    }
+    
     if (filters.year !== 'all') {
       result = result.filter(report => 
         new Date(report.issueDate).getFullYear().toString() === filters.year
@@ -112,6 +119,18 @@ const StudentReports = () => {
     }
     
     setFilteredReports(result);
+  };
+
+  // Generate all 12 months of the year
+  const generateMonthOptions = () => {
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return monthNames.map((name, index) => ({
+      value: index,
+      label: name
+    }));
   };
 
   const handleFilterChange = (event) => {
@@ -200,6 +219,23 @@ const StudentReports = () => {
             </Select>
           </FormControl>
           
+          <FormControl sx={{ minWidth: 150 }} size="small">
+            <InputLabel>Month</InputLabel>
+            <Select
+              name="month"
+              value={filters.month}
+              onChange={handleFilterChange}
+              label="Month"
+            >
+              <MenuItem value="all">All Months</MenuItem>
+              {generateMonthOptions().map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
           <FormControl sx={{ minWidth: 120 }} size="small">
             <InputLabel>Year</InputLabel>
             <Select
@@ -235,11 +271,11 @@ const StudentReports = () => {
               ? 'No reports available yet.' 
               : 'No reports match your filters.'}
           </Typography>
-          {reports.length > 0 && filters.reportType !== 'all' && (
+          {reports.length > 0 && (filters.reportType !== 'all' || filters.month !== 'all' || filters.year !== 'all') && (
             <Button
               variant="text"
               color="primary"
-              onClick={() => setFilters({ reportType: 'all', year: 'all' })}
+              onClick={() => setFilters({ reportType: 'all', month: 'all', year: 'all' })}
               sx={{ mt: 1 }}
             >
               Clear filters
