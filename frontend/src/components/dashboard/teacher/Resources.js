@@ -309,9 +309,9 @@ const TeacherResources = () => {
                       />
                     )}
                     {new Date(resource.uploadedAt).toLocaleDateString()}
-                    {resource.description && (
+                    {resource.name && (
                       <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
-                        {resource.description}
+                        {resource.name}
                       </Box>
                     )}
                   </>
