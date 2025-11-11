@@ -172,10 +172,20 @@ const TeacherResources = () => {
     }
   };
 
-  const handleDownload = async (resourceId, fileName) => {
+  const handleDownload = async (resourceId, fileName, fileUrl) => {
     try {
       setLoading(true);
-      await downloadResource(resourceId);
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      
       setSuccess(`Downloading ${fileName}...`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -370,7 +380,7 @@ const TeacherResources = () => {
               <ListItemSecondaryAction>
                 <IconButton 
                   edge="end" 
-                  onClick={() => handleDownload(resource.id, resource.fileName || 'resource')}
+                  onClick={() => handleDownload(resource.id, resource.fileName || 'resource', resource.fileUrl)}
                   sx={{ mr: 1 }}
                 >
                   <DownloadIcon />
