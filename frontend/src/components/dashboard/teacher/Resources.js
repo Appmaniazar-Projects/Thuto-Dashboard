@@ -10,7 +10,8 @@ import { useDropzone } from 'react-dropzone';
 import { 
   getTeacherResources, 
   uploadResource,
-  deleteResource 
+  deleteResource,
+  downloadResource 
 } from '../../../services/teacherService';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
@@ -168,6 +169,20 @@ const TeacherResources = () => {
       setError(err.response?.data?.message || 'Failed to upload resource. Please try again.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDownload = async (resourceId, fileName) => {
+    try {
+      setLoading(true);
+      await downloadResource(resourceId);
+      setSuccess(`Downloading ${fileName}...`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      setError('Failed to download resource. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -355,8 +370,7 @@ const TeacherResources = () => {
               <ListItemSecondaryAction>
                 <IconButton 
                   edge="end" 
-                  href={`/api/teacher/resources/download/${resource.id}`} 
-                  download
+                  onClick={() => handleDownload(resource.id, resource.fileName || 'resource')}
                   sx={{ mr: 1 }}
                 >
                   <DownloadIcon />

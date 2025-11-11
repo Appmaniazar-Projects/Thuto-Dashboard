@@ -298,10 +298,54 @@ export const getResourcesFromStorage = async (filters = {}) => {
   }
 };
 
+/**
+ * Download a resource file
+ * @param {string} resourceId - The ID of the resource to download
+ */
+export const downloadResource = async (resourceId) => {
+  try {
+    const response = await api.get(`/teacher/resources/download/${resourceId}`, {
+      responseType: 'blob' // Important for file downloads
+    });
+    
+    // Create a blob from the response
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    
+    // Create a temporary anchor element to trigger the download
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Get the filename from the content-disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'resource';
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch != null && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to download resource:', error);
+    throw error;
+  }
+};
+
 const teacherService = {
   getMyStudents,
   getTeacherResources,
   uploadResource,
+  downloadResource,
   uploadMultipleResources,
   deleteResource,
   uploadStudentReport,
