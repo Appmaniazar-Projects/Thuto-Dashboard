@@ -17,6 +17,7 @@ import gradeService from '../../../services/gradeService';
 
 const TeacherResources = () => {
   const [allResources, setAllResources] = useState([]);
+  const [filteredResources, setFilteredResources] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -40,7 +41,9 @@ const TeacherResources = () => {
         filtered = filtered.filter(resource => resource.gradeId === selectedGrade);
       }
       
-      setAllResources(filtered);
+      setFilteredResources(filtered);
+    } else {
+      setFilteredResources([]);
     }
   }, [selectedSubject, selectedGrade, allResources]);
 
@@ -182,11 +185,7 @@ const TeacherResources = () => {
     }
   };
 
-  const filteredResources = resources.filter(resource => {
-    const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
-    const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
-    return matchesSubject && matchesGrade;
-  });
+  // Filtering is handled by the useEffect hook above
 
   const getFileType = (filename) => {
     if (!filename) return 'File';
@@ -199,7 +198,7 @@ const TeacherResources = () => {
     return 'File';
   };
 
-  if (loading && filteredResources.length === 0) {
+  if (loading && allResources.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
