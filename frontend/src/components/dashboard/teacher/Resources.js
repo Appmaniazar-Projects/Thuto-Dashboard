@@ -16,7 +16,7 @@ import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
 
 const TeacherResources = () => {
-  const [resources, setResources] = useState([]);
+  const [allResources, setAllResources] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -26,6 +26,23 @@ const TeacherResources = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Filter resources when subject or grade changes
+  useEffect(() => {
+    if (allResources.length > 0) {
+      let filtered = [...allResources];
+      
+      if (selectedSubject) {
+        filtered = filtered.filter(resource => resource.subjectId === selectedSubject);
+      }
+      
+      if (selectedGrade) {
+        filtered = filtered.filter(resource => resource.gradeId === selectedGrade);
+      }
+      
+      setAllResources(filtered);
+    }
+  }, [selectedSubject, selectedGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -76,7 +93,8 @@ const TeacherResources = () => {
             return [];
           })
         ]);
-        setResources(resourcesData || []);
+        setAllResources(resourcesData || []);
+        setAllResources(resourcesData || []);
         setSubjects(subjectsData || []);
         setGrades(gradesData || []);
         
@@ -120,7 +138,19 @@ const TeacherResources = () => {
       
       const newResource = await uploadResource(file, resourceMetadata);
       
-      setResources([newResource, ...resources]);
+      // Add the new resource to the beginning of the list and update both states
+      const updatedResources = [newResource, ...allResources];
+      setAllResources(updatedResources);
+      
+      // Update filtered resources if needed
+      let filtered = [newResource, ...filteredResources];
+      if (selectedSubject && newResource.subjectId !== selectedSubject) {
+        filtered = filtered.filter(r => r.subjectId === selectedSubject);
+      }
+      if (selectedGrade && newResource.gradeId !== selectedGrade) {
+        filtered = filtered.filter(r => r.gradeId === selectedGrade);
+      }
+      setFilteredResources(filtered);
       setFile(null);
       setSuccess('Resource uploaded successfully!');
       
@@ -139,7 +169,9 @@ const TeacherResources = () => {
     
     try {
       await deleteResource(id);
-      setResources(resources.filter(r => r.id !== id));
+      const updatedResources = allResources.filter(r => r.id !== id);
+      setAllResources(updatedResources);
+      setFilteredResources(filteredResources.filter(r => r.id !== id));
       setSuccess('Resource deleted successfully!');
       
       // Clear success message after 3 seconds
@@ -167,7 +199,7 @@ const TeacherResources = () => {
     return 'File';
   };
 
-  if (loading && resources.length === 0) {
+  if (loading && filteredResources.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
