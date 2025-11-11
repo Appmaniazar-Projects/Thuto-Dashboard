@@ -35,12 +35,19 @@ const TeacherResources = () => {
       return;
     }
 
+    console.log('Filtering with:', { selectedSubject, selectedGrade });
+    console.log('All resources:', allResources);
+
     let filtered = allResources.filter(resource => {
-      const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
-      const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
+      const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
+      const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
+      
+      console.log('Resource:', resource, 'matchesSubject:', matchesSubject, 'matchesGrade:', matchesGrade);
+      
       return matchesSubject && matchesGrade;
     });
     
+    console.log('Filtered resources:', filtered);
     setFilteredResources(filtered);
   }, [selectedSubject, selectedGrade, allResources]);
 
