@@ -30,21 +30,18 @@ const TeacherResources = () => {
 
   // Filter resources when subject or grade changes
   useEffect(() => {
-    if (allResources.length > 0) {
-      let filtered = [...allResources];
-      
-      if (selectedSubject) {
-        filtered = filtered.filter(resource => resource.subjectId === selectedSubject);
-      }
-      
-      if (selectedGrade) {
-        filtered = filtered.filter(resource => resource.gradeId === selectedGrade);
-      }
-      
-      setFilteredResources(filtered);
-    } else {
+    if (allResources.length === 0) {
       setFilteredResources([]);
+      return;
     }
+
+    let filtered = allResources.filter(resource => {
+      const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
+      const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
+      return matchesSubject && matchesGrade;
+    });
+    
+    setFilteredResources(filtered);
   }, [selectedSubject, selectedGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
