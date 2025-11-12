@@ -10,13 +10,15 @@ import { useDropzone } from 'react-dropzone';
 import { 
   getTeacherResources, 
   uploadResource,
-  deleteResource 
+  deleteResource,
+  downloadResource 
 } from '../../../services/teacherService';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
 
 const TeacherResources = () => {
-  const [resources, setResources] = useState([]);
+  const [allResources, setAllResources] = useState([]);
+  const [filteredResources, setFilteredResources] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -26,6 +28,29 @@ const TeacherResources = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Filter resources when subject or grade changes
+  useEffect(() => {
+    if (allResources.length === 0) {
+      setFilteredResources([]);
+      return;
+    }
+
+    console.log('Filtering with:', { selectedSubject, selectedGrade });
+    console.log('All resources:', allResources);
+
+    let filtered = allResources.filter(resource => {
+      const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
+      const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
+      
+      console.log('Resource:', resource, 'matchesSubject:', matchesSubject, 'matchesGrade:', matchesGrade);
+      
+      return matchesSubject && matchesGrade;
+    });
+    
+    console.log('Filtered resources:', filtered);
+    setFilteredResources(filtered);
+  }, [selectedSubject, selectedGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -76,7 +101,8 @@ const TeacherResources = () => {
             return [];
           })
         ]);
-        setResources(resourcesData || []);
+        setAllResources(resourcesData || []);
+        setAllResources(resourcesData || []);
         setSubjects(subjectsData || []);
         setGrades(gradesData || []);
         
@@ -118,9 +144,21 @@ const TeacherResources = () => {
         gradeId: selectedGrade
       };
       
-      const newResource = await uploadResourceWithFile(file, resourceMetadata);
+      const newResource = await uploadResource(file, resourceMetadata);
       
-      setResources([newResource, ...resources]);
+      // Add the new resource to the beginning of the list and update both states
+      const updatedResources = [newResource, ...allResources];
+      setAllResources(updatedResources);
+      
+      // Update filtered resources if needed
+      let filtered = [newResource, ...filteredResources];
+      if (selectedSubject && newResource.subjectId !== selectedSubject) {
+        filtered = filtered.filter(r => r.subjectId === selectedSubject);
+      }
+      if (selectedGrade && newResource.gradeId !== selectedGrade) {
+        filtered = filtered.filter(r => r.gradeId === selectedGrade);
+      }
+      setFilteredResources(filtered);
       setFile(null);
       setSuccess('Resource uploaded successfully!');
       
@@ -134,12 +172,38 @@ const TeacherResources = () => {
     }
   };
 
+  const handleDownload = async (resourceId, fileName, fileUrl) => {
+    try {
+      setLoading(true);
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      
+      setSuccess(`Downloading ${fileName}...`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      setError('Failed to download resource. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this resource?')) return;
     
     try {
       await deleteResource(id);
-      setResources(resources.filter(r => r.id !== id));
+      const updatedResources = allResources.filter(r => r.id !== id);
+      setAllResources(updatedResources);
+      setFilteredResources(filteredResources.filter(r => r.id !== id));
       setSuccess('Resource deleted successfully!');
       
       // Clear success message after 3 seconds
@@ -150,11 +214,7 @@ const TeacherResources = () => {
     }
   };
 
-  const filteredResources = resources.filter(resource => {
-    const matchesSubject = !selectedSubject || resource.subjectId === selectedSubject;
-    const matchesGrade = !selectedGrade || resource.gradeId === selectedGrade;
-    return matchesSubject && matchesGrade;
-  });
+  // Filtering is handled by the useEffect hook above
 
   const getFileType = (filename) => {
     if (!filename) return 'File';
@@ -167,7 +227,7 @@ const TeacherResources = () => {
     return 'File';
   };
 
-  if (loading && resources.length === 0) {
+  if (loading && allResources.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
         <CircularProgress />
@@ -255,7 +315,7 @@ const TeacherResources = () => {
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!file || uploading || !selectedClass || classes.length === 0}
+          disabled={!file || uploading || !selectedGrade || !selectedSubject}
           startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
         >
           {uploading ? 'Uploading...' : 'Upload'}
@@ -309,9 +369,9 @@ const TeacherResources = () => {
                       />
                     )}
                     {new Date(resource.uploadedAt).toLocaleDateString()}
-                    {resource.description && (
+                    {resource.name && (
                       <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
-                        {resource.description}
+                        {resource.name}
                       </Box>
                     )}
                   </>
@@ -320,8 +380,7 @@ const TeacherResources = () => {
               <ListItemSecondaryAction>
                 <IconButton 
                   edge="end" 
-                  href={`/api/teacher/resources/download/${resource.id}`} 
-                  download
+                  onClick={() => handleDownload(resource.id, resource.fileName || 'resource', resource.fileUrl)}
                   sx={{ mr: 1 }}
                 >
                   <DownloadIcon />

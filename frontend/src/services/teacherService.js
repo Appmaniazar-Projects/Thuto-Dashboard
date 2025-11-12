@@ -41,27 +41,27 @@ export const getTeacherResources = async () => {
 
 /**
  * Upload a new resource with Firebase Storage integration
- * @param {Object} resourceData - The resource data including file and metadata
- * @param {File} resourceData.file - The file to upload
- * @param {string} resourceData.title - Title of the resource
- * @param {string} resourceData.description - Description of the resource
- * @param {string} resourceData.gradeId - Grade ID (optional)
- * @param {string} resourceData.subjectId - Subject ID (optional)
- * @param {string} resourceData.targetAudience - Target audience (students/parents/all)
- * @param {Function} onProgress - Progress callback function
+ * @param {File} file - The file to upload
+ * @param {Object} metadata - The resource metadata
+ * @param {string} metadata.title - Title of the resource
+ * @param {string} metadata.description - Description of the resource
+ * @param {string} metadata.gradeId - Grade ID (optional)
+ * @param {string} metadata.subjectId - Subject ID (optional)
+ * @param {string} [metadata.targetAudience=students] - Target audience (students/parents/all)
+ * @param {Function} [onProgress] - Progress callback function
  */
-export const uploadResource = async ({ 
-  file, 
-  title, 
-  description = '', 
-  gradeId = '', 
-  subjectId = '', 
-  targetAudience = 'students' 
-}, onProgress = null) => {
+export const uploadResource = async (file, metadata, onProgress = null) => {
+  const { 
+    title, 
+    description = '', 
+    gradeId = '', 
+    subjectId = '', 
+    targetAudience = 'students' 
+  } = metadata || {};
   try {
     // Get current user info from token or context
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId');
+    const schoolId = userInfo.schoolId;
     
     if (!schoolId) {
       throw new Error('School ID not found');
@@ -69,13 +69,13 @@ export const uploadResource = async ({
 
     // Upload file to Firebase Storage
     const uploadMetadata = {
-      schoolId,
-      uploadedBy: userInfo.id || userInfo.phoneNumber,
+      schoolId: schoolId,
+      uploadedBy: userInfo.email,
       userRole: 'teacher',
       fileType: 'resource',
       targetAudience,
-      gradeId,
-      subjectId
+      gradeId: gradeId || null,
+      subjectId: subjectId || null
     };
 
     const uploadResult = await fileUploadService.uploadFile(file, uploadMetadata, onProgress);
@@ -92,10 +92,11 @@ export const uploadResource = async ({
       gradeId: gradeId || null,
       subjectId: subjectId || null,
       targetAudience,
-      uploadDate: uploadResult.uploadDate
+      uploadDate: uploadResult.uploadDate,
+      teacherId: userInfo.id
     };
 
-    const response = await api.post('/teacher/resources/upload', resourcePayload);
+    const response = await api.post('/resources/upload', resourcePayload);
     
     return {
       ...response.data,
@@ -115,7 +116,7 @@ export const uploadResource = async ({
 export const uploadMultipleResources = async (resources, onProgress = null) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId');
+    const schoolId = userInfo.schoolId;
     
     if (!schoolId) {
       throw new Error('School ID not found');
@@ -241,7 +242,9 @@ export const uploadStudentReport = async ({
  */
 export const getTeacherStudents = async () => {
   try {
-    const response = await api.get('/teacher/students');
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const phoneNumber = userInfo.phoneNumber;
+    const response = await api.get(`/teacher/${phoneNumber}/students`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch teacher students:', error);
@@ -297,10 +300,54 @@ export const getResourcesFromStorage = async (filters = {}) => {
   }
 };
 
+/**
+ * Download a resource file
+ * @param {string} resourceId - The ID of the resource to download
+ */
+export const downloadResource = async (resourceId) => {
+  try {
+    const response = await api.get(`/teacher/resources/download/${resourceId}`, {
+      responseType: 'blob' // Important for file downloads
+    });
+    
+    // Create a blob from the response
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    
+    // Create a temporary anchor element to trigger the download
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Get the filename from the content-disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = 'resource';
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch != null && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to download resource:', error);
+    throw error;
+  }
+};
+
 const teacherService = {
   getMyStudents,
   getTeacherResources,
   uploadResource,
+  downloadResource,
   uploadMultipleResources,
   deleteResource,
   uploadStudentReport,

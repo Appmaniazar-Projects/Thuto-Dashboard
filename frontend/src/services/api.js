@@ -44,7 +44,8 @@ api.interceptors.request.use(
       '/resources/',
       '/grades/',
       '/teacher/',
-      '/admin/'
+      '/admin/',
+      '/parent/'
 
     ];
 
