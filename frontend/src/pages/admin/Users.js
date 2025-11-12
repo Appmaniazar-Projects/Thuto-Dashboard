@@ -618,12 +618,12 @@ const Users = () => {
                                 sx={{ mb: 2 }}
                             >
                                 {grades.map((grade) => {
-                                    const gradeValue = grade.name || `Grade ${grade.id}`;
-                                    return (
-                                            <MenuItem key={grade.id} value={gradeValue}>
+
+                                    
+                                            <MenuItem key={grade.id} value={grade.id}>
                                                 {grade.name}
                                             </MenuItem>
-                                    );
+                                    
                                 })}
                             </TextField>
                         </>

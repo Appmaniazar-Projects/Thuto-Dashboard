@@ -157,7 +157,7 @@ export const updateUser = async (userId, userData) => {
     // Only include non-empty optional fields
     if (userData.schoolId) essentialFields.schoolId = userData.schoolId;
     if (userData.subjects && userData.subjects.length > 0) essentialFields.subjects = userData.subjects;
-    if (userData.grade && userData.grade.length > 0) essentialFields.grade = userData.grade.id;
+    if (userData.grade && userData.grade.length > 0) essentialFields.grade = userData.grade;
     
     const updatePayload = {
       ...essentialFields,
