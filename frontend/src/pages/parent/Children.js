@@ -11,7 +11,14 @@ import {
   Divider,
   Chip,
   CircularProgress,
-  Alert
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from '@mui/material';
 import { Face as ChildIcon, Add as AddIcon, Event as EventIcon, Assessment as GradesIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +52,44 @@ const Children = () => {
   }
 
   if (children.length === 0) {
-    return <Alert severity="info" sx={{ m: 3 }}>No children are linked to your profile yet.</Alert>;
+    return (
+      <Box sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" fontWeight="bold">
+            My Children
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => alert('Navigate to add child page')}
+          >
+            Link New Child
+          </Button>
+        </Box>
+
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableCell>Name</TableCell>
+                <TableCell>School</TableCell>
+                <TableCell>Grade & Class</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    No children are linked to your profile yet. (0 children)
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
   }
 
   return (
