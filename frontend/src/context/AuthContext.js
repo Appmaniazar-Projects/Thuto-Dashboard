@@ -105,6 +105,9 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
   
+      // Save the user role BEFORE clearing the user
+      const userRole = currentUser?.role;
+  
       // Call backend logout endpoint if available
       if (currentUser?.id) {
         try {
@@ -134,7 +137,6 @@ export const AuthProvider = ({ children }) => {
   
       // Determine redirect path: send most users to the Landing page.
       // Keep superadmin redirected to their dedicated login.
-      const userRole = currentUser?.role;
       let redirectPath = '/landing';
       if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(userRole)) {
         redirectPath = '/superadmin/login';
