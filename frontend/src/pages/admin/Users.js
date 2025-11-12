@@ -617,9 +617,10 @@ const Users = () => {
                                 onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
                                 sx={{ mb: 2 }}
                             >
-                                {grades.map((grade) => {    
+                                {grades.map((grade) => {
+                                    const gradeValue = grade.id || grade.name;
                                     return (
-                                            <MenuItem key={grade.id} value={grade.id}>
+                                            <MenuItem key={grade.id} value={gradeValue}>
                                                 {grade.name}
                                             </MenuItem>
                                     );
