@@ -132,13 +132,12 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(null);
       setError('');
   
-      // Determine redirect path
+      // Determine redirect path: send most users to the Landing page.
+      // Keep superadmin redirected to their dedicated login.
       const userRole = currentUser?.role;
-      let redirectPath = '/login';
+      let redirectPath = '/landing';
       if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(userRole)) {
         redirectPath = '/superadmin/login';
-      } else if (userRole === 'admin') {
-        redirectPath = '/admin/login';
       }
   
       enqueueSnackbar('Logged out successfully!', { variant: 'info' });
