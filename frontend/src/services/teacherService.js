@@ -153,7 +153,7 @@ export const uploadMultipleResources = async (resources, onProgress = null) => {
 export const deleteResource = async (resourceId) => {
   try {
     // Get resource details first to get Firebase path
-    const response = await api.get(`/teacher/resources/${resourceId}`);
+    const response = await api.delete(`/teacher/resources/${resourceId}`);
     const resource = response.data;
 
     // Delete from Firebase Storage if filePath exists
