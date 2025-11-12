@@ -203,17 +203,17 @@ const ParentDashboard = () => {
     );
   }
 
-  // Generate month options (last 6 months)
+  // Generate month options (all 12 months of the year)
   const monthOptions = [];
-  const currentDate = new Date();
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 12; i++) {
     const date = new Date();
-    date.setMonth(currentDate.getMonth() - i);
+    date.setMonth(i);
     monthOptions.push({
-      value: date.getMonth() + 1,
+      value: i + 1,
       label: date.toLocaleString('default', { month: 'long' })
     });
   }
+  const currentDate = new Date();
 
   // Generate year options (current year and previous year)
   const yearOptions = [
