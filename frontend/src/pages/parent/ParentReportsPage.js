@@ -203,7 +203,43 @@ const ParentAttendance = () => {
   }
 
   if (error) {
-    return <Alert severity="error" sx={{ m: 3 }}>{error}</Alert>;
+    return (
+      <Box sx={{ p: 3 }}>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" gutterBottom>
+            <CalendarIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Children's Attendance
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            Track your children's daily attendance records and view attendance statistics.
+          </Typography>
+        </Paper>
+
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableCell>Student Name</TableCell>
+                <TableCell>Grade</TableCell>
+                <TableCell>Present</TableCell>
+                <TableCell>Absent</TableCell>
+                <TableCell>Late</TableCell>
+                <TableCell>Total</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body1" color="text.secondary">
+                    0
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
   }
 
   if (children.length === 0 && !loading) {
