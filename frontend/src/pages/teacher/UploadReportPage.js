@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem, TextField, Snackbar, Alert } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { getMyStudents } from '../../services/teacherService';
+import { getTeacherStudents as getMyStudents } from '../../services/teacherService';
 import { uploadTeacherStudentReport } from '../../services/reportService';
 
 // Mock data for report types, can be fetched from a service later

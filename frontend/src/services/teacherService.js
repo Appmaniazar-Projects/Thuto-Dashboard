@@ -244,7 +244,7 @@ export const getTeacherStudents = async () => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const phoneNumber = userInfo.phoneNumber;
-    const response = await api.get(`/${phoneNumber}/teacher/students`);
+    const response = await api.get(`/teacher/${phoneNumber}/students`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch teacher students:', error);
