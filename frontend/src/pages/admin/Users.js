@@ -586,7 +586,7 @@ const Users = () => {
                         ))}
                     </TextField>
                     
-                    {userForm.role === 'teacher' && userForm.role === 'student' && (
+                    {(userForm.role === 'teacher' || userForm.role === 'student') && (
                         <>
                             <TextField
                                 select
