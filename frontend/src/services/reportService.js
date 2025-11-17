@@ -242,6 +242,7 @@ export const uploadTeacherStudentReport = async (studentId, file, reportType) =>
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const schoolId = userInfo.schoolId;
+    const teacherId = userInfo.id;
     
     if (!schoolId) {
       throw new Error('School ID not found');
@@ -265,6 +266,8 @@ export const uploadTeacherStudentReport = async (studentId, file, reportType) =>
     const reportData = {
       studentId,
       reportType,
+      teacherId, 
+      schoolId,
       fileName: uploadResult.fileName,
       fileUrl: uploadResult.downloadURL,
       filePath: uploadResult.filePath,
