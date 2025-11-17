@@ -241,7 +241,7 @@ export const getTeacherStudentReports = async (studentId) => {
 export const uploadTeacherStudentReport = async (studentId, file, reportType) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId');
+    const schoolId = userInfo.schoolId;
     
     if (!schoolId) {
       throw new Error('School ID not found');
