@@ -1,4 +1,5 @@
 import api from './api';
+import fileUploadService from './fileUploadService';
 
 /**
  * Upload an individual student's academic report (teacher/admin view)
@@ -236,27 +237,50 @@ export const getTeacherStudentReports = async (studentId) => {
   }
 };
 
-/**
- * Upload report for a student (teacher function)
- * @param {string} studentId - Student ID
- * @param {File} file - Report file
- * @param {string} description - Report description
- * @returns {Promise<Object>} Upload response
- */
-export const uploadTeacherStudentReport = async (studentId, file, description) => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('description', description);
-
+// Update the uploadTeacherStudentReport function
+export const uploadTeacherStudentReport = async (studentId, file, reportType) => {
   try {
-    const response = await api.post(`/teacher/students/${studentId}/reports`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId');
+    
+    if (!schoolId) {
+      throw new Error('School ID not found');
+    }
+
+    // Upload file to Firebase Storage
+    const uploadMetadata = {
+      schoolId,
+      uploadedBy: userInfo.id || userInfo.email,
+      userRole: 'teacher',
+      fileType: 'report',
+      targetAudience: 'teachers,parents', // Reports are typically for teachers and parents
+      reportType,
+      studentId // Include student ID in metadata for better organization
+    };
+
+    // Upload the file to Firebase
+    const uploadResult = await fileUploadService.uploadFile(file, uploadMetadata);
+
+    // Send report data to backend
+    const reportData = {
+      studentId,
+      reportType,
+      fileName: uploadResult.fileName,
+      fileUrl: uploadResult.downloadURL,
+      filePath: uploadResult.filePath,
+      fileSize: uploadResult.fileSize,
+      fileType: uploadResult.fileType,
+      uploadDate: new Date().toISOString()
+    };
+
+    const response = await api.post('/reports/teacher/upload', reportData);
+    
+    return {
+      ...response.data,
+      firebaseData: uploadResult
+    };
   } catch (error) {
-    console.error(`Failed to upload report for student ${studentId}:`, error);
+    console.error('Failed to upload report:', error);
     throw error;
   }
 };

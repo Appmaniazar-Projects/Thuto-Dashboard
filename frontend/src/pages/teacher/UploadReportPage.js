@@ -47,29 +47,61 @@ const UploadReportPage = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedStudent || !selectedReportType || !selectedFile) {
-      setNotification({ open: true, message: 'Please fill all fields and select a file.', severity: 'warning' });
-      return;
-    }
+// ... (keep existing imports and state) ...
 
-    try {
-      setLoading(true);
-      await uploadTeacherStudentReport(selectedStudent, selectedFile, selectedReportType);
-      setNotification({ open: true, message: `Successfully uploaded report for the selected student.`, severity: 'success' });
+const handleUpload = async () => {
+  if (!selectedStudent || !selectedReportType || !selectedFile) {
+    setNotification({ 
+      open: true, 
+      message: 'Please fill all fields and select a file.', 
+      severity: 'warning' 
+    });
+    return;
+  }
 
-      // Reset form
-      setSelectedStudent('');
-      setSelectedReportType('');
-      setSelectedFile(null);
-      document.getElementById('file-upload-input').value = '';
-    } catch (error) {
-      console.error('Failed to upload report:', error);
-      setNotification({ open: true, message: 'Failed to upload report. Please try again.', severity: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    
+    // Show upload progress
+    setNotification({ 
+      open: true, 
+      message: 'Uploading report...', 
+      severity: 'info',
+      autoHideDuration: null // Don't auto-hide while uploading
+    });
+
+    // Upload the report
+    const result = await uploadTeacherStudentReport(
+      selectedStudent, 
+      selectedFile, 
+      selectedReportType
+    );
+
+    // Show success message
+    setNotification({ 
+      open: true, 
+      message: `Successfully uploaded ${result.fileName} for the selected student.`, 
+      severity: 'success' 
+    });
+
+    // Reset form
+    setSelectedStudent('');
+    setSelectedReportType('');
+    setSelectedFile(null);
+    document.getElementById('file-upload-input').value = '';
+  } catch (error) {
+    console.error('Failed to upload report:', error);
+    setNotification({ 
+      open: true, 
+      message: error.message || 'Failed to upload report. Please try again.', 
+      severity: 'error' 
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ... (keep the rest of the component code) ...
 
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
