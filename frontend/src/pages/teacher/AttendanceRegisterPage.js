@@ -9,10 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { 
-  submitTeacherAttendance, getAttendanceByGrade 
+  submitTeacherAttendance 
 } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
-import subjectService from '../../services/subjectService';
 import { fetchStudentsForTeacher } from '../../services/api';
 
 const AttendanceRegisterPage = () => {
@@ -20,46 +19,32 @@ const AttendanceRegisterPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState([]);
-  //const [teacherClasses, setTeacherClasses] = useState([]);
+  const [teacherGrades, setTeacherGrades] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(new Date());
-  const [attendanceType, setAttendanceType] = useState('full');
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Fetch teacher's classes on component mount
+  // Fetch teacher's grades on component mount
   useEffect(() => {
     const fetchTeacherData = async () => {
       try {
         setLoading(true);
         const teacher = JSON.parse(localStorage.getItem('user'));
         const teacherId = teacher.id;
-        // Fetch teacher's assigned subjects and grades
-        const [subjects, grades] = await Promise.all([
-          subjectService.getSubjectsByTeacher(teacherId),
-          gradeService.getGradesByTeacher(teacherId)
-        ]);
         
-        // Create class combinations from subjects and grades
-        // const classCombinations = subjects.map(subject => grades.map(grade => ({
-        //   subject: subject.name,
-        //   grade: grade.name,
-        //   subjectId: subject.id,
-        //   gradeId: grade.id
-        // }))).flat();
+        // Fetch teacher's assigned grades only
+        const grades = await gradeService.getGradesByTeacher(teacherId);
+        setTeacherGrades(grades);
         
-        // setTeacherClasses(classCombinations);
-        
-        // // Auto-select first combination if available
-        // if (classCombinations.length > 0) {
-        //   setSelectedGrade(classCombinations[0].grade);
-        //   setSelectedSubject(classCombinations[0].subject);
-        // }
+        // Auto-select first grade if available
+        if (grades.length > 0) {
+          setSelectedGrade(grades[0].name || grades[0].id);
+        }
       } catch (err) {
         console.error('Failed to fetch teacher data:', err);
         setSnackbar({
           open: true,
-          message: 'Failed to load your assigned subjects and grades',
+          message: 'Failed to load your assigned grades',
           severity: 'error'
         });
       } finally {
@@ -70,10 +55,10 @@ const AttendanceRegisterPage = () => {
     fetchTeacherData();
   }, []);
 
-  // Fetch students when grade and subject are selected
+  // Fetch students when grade is selected
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!selectedGrade || !selectedSubject) {
+      if (!selectedGrade) {
         setStudents([]);
         return;
       }
@@ -81,14 +66,13 @@ const AttendanceRegisterPage = () => {
       try {
         setLoading(true);
         const studentsData = await fetchStudentsForTeacher({ 
-          grade: selectedGrade, 
-          subject: selectedSubject 
+          grade: selectedGrade
         });
         
         // Initialize students with default attendance status
         const studentsWithAttendance = (studentsData.data || []).map(student => ({
           ...student,
-          isPresent: true, // Default to present
+          status: 'present', // Default to present
           remarks: ''
         }));
         
@@ -97,7 +81,7 @@ const AttendanceRegisterPage = () => {
         console.error('Failed to fetch students:', err);
         setSnackbar({
           open: true,
-          message: 'Failed to load students for selected class',
+          message: 'Failed to load students for selected grade',
           severity: 'error'
         });
         setStudents([]);
@@ -107,13 +91,13 @@ const AttendanceRegisterPage = () => {
     };
 
     fetchStudents();
-  }, [selectedGrade, selectedSubject]);
+  }, [selectedGrade]);
 
   const handleSave = async () => {
-    if (!selectedGrade || !selectedSubject) {
+    if (!selectedGrade) {
       setSnackbar({
         open: true,
-        message: 'Please select both grade and subject',
+        message: 'Please select a grade',
         severity: 'error'
       });
       return;
@@ -122,7 +106,7 @@ const AttendanceRegisterPage = () => {
     if (students.length === 0) {
       setSnackbar({
         open: true,
-        message: 'No students found for the selected class',
+        message: 'No students found for the selected grade',
         severity: 'error'
       });
       return;
@@ -132,11 +116,10 @@ const AttendanceRegisterPage = () => {
       setSaving(true);
       await submitTeacherAttendance({
         grade: selectedGrade,
-        subject: selectedSubject,
         date: format(attendanceDate, 'yyyy-MM-dd'),
         attendance: students.map(student => ({
           studentId: student.id,
-          isPresent: student.isPresent,
+          status: student.status,
           remarks: student.remarks || ''
         }))
       });
@@ -158,13 +141,7 @@ const AttendanceRegisterPage = () => {
     }
   };
 
-  // Get unique grades and subjects from teacher's classes
-  const availableGrades = [...new Set(teacherClasses.map(cls => cls.grade))];
-  const availableSubjects = selectedGrade 
-    ? [...new Set(teacherClasses.filter(cls => cls.grade === selectedGrade).map(cls => cls.subject))]
-    : [];
-
-  if (loading && teacherClasses.length === 0) {
+  if (loading && teacherGrades.length === 0) {
     return <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>;
   }
 
@@ -177,15 +154,21 @@ const AttendanceRegisterPage = () => {
         
         <Paper sx={{ p: 2, mb: 2 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={2}>
-          <TextField
-                fullWidth
-                label="Grade"
-                type= "text"
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Grade</InputLabel>
+                <Select
+                  value={selectedGrade}
+                  label="Grade"
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                >
+                  {teacherGrades.map((grade) => (
+                    <MenuItem key={grade.id} value={grade.name || grade.id}>
+                      {grade.name || grade.id}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
@@ -197,38 +180,24 @@ const AttendanceRegisterPage = () => {
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Attendance Type</InputLabel>
-                <Select
-                  value={attendanceType}
-                  label="Attendance Type"
-                  onChange={(e) => setAttendanceType(e.target.value)}
-                >
-                  <MenuItem value="full">Full Day</MenuItem>
-                  <MenuItem value="morning">Morning Only</MenuItem>
-                  <MenuItem value="afternoon">Afternoon Only</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
           </Grid>
         </Paper>
 
         {/* Class Info Display */}
-        {selectedGrade && selectedSubject && (
+        {selectedGrade && (
           <Paper sx={{ p: 2, mb: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
             <Typography variant="h6">
-              {selectedGrade} - {selectedSubject} ({students.length} students)
+              {selectedGrade} ({students.length} students)
             </Typography>
             <Typography variant="body2">
-              Date: {format(attendanceDate, 'MMMM d, yyyy')} | Type: {attendanceType}
+              Date: {format(attendanceDate, 'MMMM d, yyyy')}
             </Typography>
           </Paper>
         )}
       </Box>
 
       {/* Student list */}
-      {selectedGrade && selectedSubject ? (
+      {selectedGrade ? (
         loading ? (
           <Box display="flex" justifyContent="center" p={3}>
             <CircularProgress />
@@ -239,8 +208,7 @@ const AttendanceRegisterPage = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Student</TableCell>
-                  <TableCell align="center">Present</TableCell>
-                  <TableCell align="center">Absent</TableCell>
+                  <TableCell align="center">Status</TableCell>
                   <TableCell>Remarks</TableCell>
                 </TableRow>
               </TableHead>
@@ -258,37 +226,59 @@ const AttendanceRegisterPage = () => {
                         </Box>
                       </Box>
                     </TableCell>
-                    <TableCell align="center">
-                      <Checkbox
-                        checked={student.isPresent}
-                        onChange={() => {
-                          setStudents(prev => prev.map(s => 
-                            s.id === student.id 
-                              ? { ...s, isPresent: true } 
-                              : s
-                          ));
-                        }}
-                        disabled={saving}
-                        color="success"
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Checkbox
-                        checked={!student.isPresent}
-                        onChange={() => {
-                          setStudents(prev => prev.map(s => 
-                            s.id === student.id 
-                              ? { ...s, isPresent: false } 
-                              : s
-                          ));
-                        }}
-                        disabled={saving}
-                        color="error"
-                      />
+                    <TableCell>
+                      <Box display="flex" gap={2} alignItems="center">
+                        <Box display="flex" alignItems="center">
+                          <Checkbox
+                            checked={student.status === 'present'}
+                            onChange={() => {
+                              setStudents(prev => prev.map(s => 
+                                s.id === student.id 
+                                  ? { ...s, status: 'present' } 
+                                  : s
+                              ));
+                            }}
+                            disabled={saving}
+                            color="success"
+                          />
+                          <Typography>Present</Typography>
+                        </Box>
+                        <Box display="flex" alignItems="center">
+                          <Checkbox
+                            checked={student.status === 'late'}
+                            onChange={() => {
+                              setStudents(prev => prev.map(s => 
+                                s.id === student.id 
+                                  ? { ...s, status: 'late' } 
+                                  : s
+                              ));
+                            }}
+                            disabled={saving}
+                            color="warning"
+                          />
+                          <Typography>Late</Typography>
+                        </Box>
+                        <Box display="flex" alignItems="center">
+                          <Checkbox
+                            checked={student.status === 'absent'}
+                            onChange={() => {
+                              setStudents(prev => prev.map(s => 
+                                s.id === student.id 
+                                  ? { ...s, status: 'absent' } 
+                                  : s
+                              ));
+                            }}
+                            disabled={saving}
+                            color="error"
+                          />
+                          <Typography>Absent</Typography>
+                        </Box>
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <TextField
                         size="small"
+                        fullWidth
                         placeholder="Add remarks..."
                         value={student.remarks || ''}
                         onChange={(e) => {
@@ -309,20 +299,20 @@ const AttendanceRegisterPage = () => {
         ) : (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary">
-              No students found for {selectedGrade} - {selectedSubject}
+              No students found for {selectedGrade}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Please check if students are enrolled in this class.
+              Please check if students are enrolled in this grade.
             </Typography>
           </Paper>
         )
       ) : (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary">
-            Please select a grade and subject to view students
+            Please select a grade to view students
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Choose from your assigned classes above.
+            Choose from your assigned grades above.
           </Typography>
         </Paper>
       )}
@@ -338,7 +328,7 @@ const AttendanceRegisterPage = () => {
             variant="contained" 
             color="primary"
             onClick={handleSave}
-            disabled={saving || !selectedGrade || !selectedSubject}
+            disabled={saving || !selectedGrade}
             startIcon={saving ? <CircularProgress size={20} /> : null}
             size="large"
           >
