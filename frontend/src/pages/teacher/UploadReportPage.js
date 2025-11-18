@@ -19,6 +19,8 @@ import {
   deleteReport
 } from '../../services/reportService';
 import { format } from 'date-fns';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 // Mock data for report types, can be fetched from a service later
 const reportTypes = [
@@ -52,6 +54,7 @@ const UploadReportPage = () => {
     }
   };
 
+  
   const fetchReports = async () => {
     try {
       setLoading(true);
@@ -98,43 +101,68 @@ const UploadReportPage = () => {
     }
   };
 
-  const handleDownload = async (reportId, fileName) => {
+  // const handleDownload = async (reportId, fileName) => {
+  //   try {
+  //     const blob = await downloadReport(reportId);
+  //     const url = window.URL.createObjectURL(blob);
+  //     const link = document.createElement('a');
+  //     link.href = url;
+  //     link.setAttribute('download', fileName || `report-${reportId}.pdf`);
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     link.remove();
+  //   } catch (error) {
+  //     console.error('Download failed:', error);
+  //     setNotification({ open: true, message: 'Failed to download report.', severity: 'error' });
+  //   }
+  // };
+
+c
+
+const handleChangePage = (event, newPage) => {
+  setPage(newPage);
+};
+
+const handleChangeRowsPerPage = (event) => {
+  setRowsPerPage(parseInt(event.target.value, 10));
+  setPage(0);
+};
+
+const handleDownload = async (reportId, fileName, reportData) => {
+  try {
+    await downloadReport(reportId, fileName, reportData);
+  } catch (error) {
+    console.error('Download failed:', error);
+    setNotification({ 
+      open: true, 
+      message: 'Failed to download report.', 
+      severity: 'error' 
+    });
+  }
+};
+
+const handleDeleteReport = async (reportId, reportData) => {
+  if (window.confirm('Are you sure you want to delete this report?')) {
     try {
-      const blob = await downloadReport(reportId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName || `report-${reportId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      await deleteReport(reportId, reportData);
+      setNotification({ 
+        open: true, 
+        message: 'Report deleted successfully.', 
+        severity: 'success' 
+      });
+      // Refresh the reports list
+      const updatedReports = await getMyReports();
+      setReports(updatedReports);
     } catch (error) {
-      console.error('Download failed:', error);
-      setNotification({ open: true, message: 'Failed to download report.', severity: 'error' });
+      console.error('Delete failed:', error);
+      setNotification({ 
+        open: true, 
+        message: 'Failed to delete report.', 
+        severity: 'error' 
+      });
     }
-  };
-
-  const handleDeleteReport = async (reportId) => {
-    if (window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-      try {
-        await deleteReport(reportId);
-        setReports(reports.filter(report => report.id !== reportId));
-        setNotification({ open: true, message: 'Report deleted successfully.', severity: 'success' });
-      } catch (error) {
-        console.error('Delete failed:', error);
-        setNotification({ open: true, message: 'Failed to delete report.', severity: 'error' });
-      }
-    }
-  };
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
+  }
+};
 
 // ... (keep existing imports and state) ...
 
@@ -288,74 +316,83 @@ const handleUpload = async () => {
           </Grid>
         </Grid>
       </Paper>
-
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>
-        {loading ? (
-          <Box display="flex" justifyContent="center" p={3}>
-            <CircularProgress />
-          </Box>
-        ) : reports.length === 0 ? (
-          <Typography variant="body1" color="text.secondary" align="center" sx={{ p: 3 }}>
-            No reports have been uploaded yet.
-          </Typography>
-        ) : (
-          <>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Student</TableCell>
-                    <TableCell>Report Type</TableCell>
-                    <TableCell>Uploaded Date</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {reports
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell>{report.studentName || 'Unknown Student'}</TableCell>
-                        <TableCell>{report.reportType || 'Report'}</TableCell>
-                        <TableCell>
-                          {report.uploadDate ? format(new Date(report.uploadDate), 'PPpp') : 'N/A'}
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconButton 
-                            size="small" 
-                            color="primary"
-                            onClick={() => handleDownload(report.id, report.fileName)}
-                            title="Download"
-                          >
-                            <DownloadIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleDeleteReport(report.id)}
-                            title="Delete"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={reports.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </>
-        )}
-      </Paper>
+<Paper sx={{ p: 3, mt: 3 }}>
+  <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>
+  {loading ? (
+    <Box display="flex" justifyContent="center" p={3}>
+      <CircularProgress />
+    </Box>
+  ) : reports.length === 0 ? (
+    <Typography variant="body1" color="text.secondary" align="center" sx={{ p: 3 }}>
+      No reports have been uploaded yet.
+    </Typography>
+  ) : (
+    <>
+      <TableContainer component={Paper}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Student</TableCell>
+              <TableCell>Report Type</TableCell>
+              <TableCell>File Name</TableCell>
+              <TableCell>Uploaded Date</TableCell>
+              <TableCell align="right">Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {reports.map((report) => (
+              <TableRow key={report.id}>
+                <TableCell>
+                  {students.find(s => s.id === report.studentId)?.name || 'Unknown Student'}
+                </TableCell>
+                <TableCell>{report.reportType}</TableCell>
+                <TableCell>
+                  <a 
+                    href={report.fileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {report.fileName}
+                  </a>
+                </TableCell>
+                <TableCell>
+                  {new Date(report.uploadDate).toLocaleDateString()}
+                </TableCell>
+                <TableCell align="right">
+                 <IconButton 
+                  size="small" 
+                  onClick={() => handleDownload(report.id, report.fileName, report)}
+                  title="Download"
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+                <IconButton 
+                  size="small" 
+                  onClick={() => handleDeleteReport(report.id, report)}
+                  title="Delete"
+                  color="error"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={reports.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+    </>
+  )}
+</Paper>
 
       <Snackbar 
         open={notification.open} 

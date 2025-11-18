@@ -81,23 +81,63 @@ export const updateReport = async (reportId, updates) => {
  * @param {string} reportId - Report ID to delete
  * @returns {Promise<Object>} Deletion status
  */
-export const deleteReport = async (reportId) => {
+import fileUploadService from './fileUploadService';
+
+export const deleteReport = async (reportId, reportData = {}) => {
+  // If it's a Firebase report (has filePath)
+  if (reportData.filePath) {
+    try {
+      // Delete from Firebase Storage
+      await fileUploadService.deleteFile(reportData.filePath);
+      // If there's a backend record, delete that too
+      if (!reportId.startsWith('firebase_')) {
+        await api.delete(`/reports/${reportId}`);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      throw error;
+    }
+  }
+  
+  // Standard API deletion for non-Firebase reports
   const response = await api.delete(`/reports/${reportId}`);
   return response.data;
 };
 
-/**
- * Download a report file
- * @param {string} reportId - Report ID to download
- * @returns {Promise<Blob>} File blob
- */
-export const downloadReport = async (reportId) => {
+export const downloadReport = async (reportId, fileName, reportData = {}) => {
+  // If it's a Firebase report (has fileUrl)
+  if (reportData.fileUrl) {
+    try {
+      // For Firebase, we can either:
+      // 1. Return the direct URL for the browser to handle
+      if (reportData.fileUrl.startsWith('http')) {
+        const link = document.createElement('a');
+        link.href = reportData.fileUrl;
+        link.target = '_blank';
+        link.download = fileName || `report-${reportId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+      // OR 2. Download via the backend if we need authentication
+      const response = await api.get(`/reports/${reportId}/download`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      throw error;
+    }
+  }
+  
+  // Standard API download for non-Firebase reports
   const response = await api.get(`/reports/${reportId}/download`, {
     responseType: 'blob',
   });
   return response.data;
 };
-
 
 
 /**
@@ -185,12 +225,74 @@ export const getReportFilters = async () => {
  */
 export const getMyReports = async () => {
   try {
-    const response = await api.get('/reports/my-reports', {
-      params: {
-        userId: getCurrentUserId(), // Pass as query param if backend needs it
+    // Get current user info
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = userInfo.id;
+    const schoolId = userInfo.schoolId;
+    
+    if (!userId || !schoolId) {
+      throw new Error('User not properly authenticated');
+    }
+
+    // Get reports from the backend API
+    const apiResponse = await api.get('/reports/my-reports', {
+      params: { userId }
+    });
+
+    // Get reports from Firebase
+    let firebaseReports = [];
+    try {
+      // Use the getFiles method with proper criteria
+      firebaseReports = await fileUploadService.getFiles({
+        schoolId,
+        fileType: 'reports',  // or 'report' depending on your storage structure
+        targetAudience: 'students,teachers,parents'  // Adjust based on your access control
+      });
+    } catch (fbError) {
+      console.warn('Could not fetch reports from Firebase:', fbError);
+      // Continue with just the API response if Firebase fails
+      return apiResponse.data || [];
+    }
+
+    // Format Firebase reports to match the API response structure
+    const formattedFirebaseReports = firebaseReports
+      .filter(report => 
+        // Filter for reports that belong to this user
+        report.uploadedBy === userId || 
+        report.metadata?.studentId === userId
+      )
+      .map(report => ({
+        id: report.name || `firebase_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        studentId: report.metadata?.studentId || userId,
+        reportType: report.metadata?.reportType || 'Report',
+        fileName: report.name,
+        fileUrl: report.downloadURL,
+        uploadDate: report.uploadDate || new Date().toISOString(),
+        metadata: {
+          ...(report.metadata || {}),
+          source: 'firebase'
+        }
+      }));
+
+    // Combine and deduplicate reports
+    const apiReports = Array.isArray(apiResponse.data) ? apiResponse.data : [];
+    const combined = [...apiReports];
+    
+    // Add Firebase reports that don't exist in the API response
+    formattedFirebaseReports.forEach(fbReport => {
+      const exists = combined.some(apiReport => 
+        apiReport.fileUrl === fbReport.fileUrl || 
+        (apiReport.fileName === fbReport.fileName && apiReport.uploadDate === fbReport.uploadDate)
+      );
+      if (!exists) {
+        combined.push(fbReport);
       }
     });
-    return response.data;
+
+    // Sort by upload date (newest first)
+    return combined.sort((a, b) => 
+      new Date(b.uploadDate) - new Date(a.uploadDate)
+    );
   } catch (error) {
     console.error('Failed to fetch student reports:', error);
     throw error;
