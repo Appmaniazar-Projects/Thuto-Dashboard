@@ -135,20 +135,19 @@ useEffect(() => {
         <Paper sx={{ p: 2, mb: 2 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Grade</InputLabel>
-                <Select
-                  value={selectedGrade}
-                  label="Grade"
-                  onChange={(e) => setSelectedGrade(e.target.value)}
-                >
-                  {teacherGrades.map((grade) => (
-                    <MenuItem key={grade.id} value={grade.name || grade.id}>
-                      {grade.name || grade.id}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField
+                fullWidth
+                label="Grade"
+                value={selectedGrade || ''}
+                InputProps={{
+                  readOnly: true
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                variant="outlined"
+                size="small"
+              />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField
@@ -158,6 +157,7 @@ useEffect(() => {
                 value={format(attendanceDate, 'yyyy-MM-dd')}
                 onChange={(e) => setAttendanceDate(parseISO(e.target.value))}
                 InputLabelProps={{ shrink: true }}
+                size="small"
               />
             </Grid>
           </Grid>
