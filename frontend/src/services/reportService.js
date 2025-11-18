@@ -185,7 +185,11 @@ export const getReportFilters = async () => {
  */
 export const getMyReports = async () => {
   try {
-    const response = await api.get('/student/reports');
+    const response = await api.get('/reports/my-reports', {
+      params: {
+        userId: getCurrentUserId(), // Pass as query param if backend needs it
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch student reports:', error);
