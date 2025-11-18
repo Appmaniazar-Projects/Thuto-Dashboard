@@ -81,7 +81,6 @@ export const updateReport = async (reportId, updates) => {
  * @param {string} reportId - Report ID to delete
  * @returns {Promise<Object>} Deletion status
  */
-import fileUploadService from './fileUploadService';
 
 export const deleteReport = async (reportId, reportData = {}) => {
   // If it's a Firebase report (has filePath)

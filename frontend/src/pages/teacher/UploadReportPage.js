@@ -16,11 +16,11 @@ import {
   uploadTeacherStudentReport, 
   getTeacherStudentReports,
   downloadReport,
-  deleteReport
+  deleteReport,
+  getMyReports
 } from '../../services/reportService';
-import { format } from 'date-fns';
-import DownloadIcon from '@mui/icons-material/Download';
-import DeleteIcon from '@mui/icons-material/Delete';
+//import { format } from 'date-fns';
+
 
 // Mock data for report types, can be fetched from a service later
 const reportTypes = [
@@ -117,7 +117,6 @@ const UploadReportPage = () => {
   //   }
   // };
 
-c
 
 const handleChangePage = (event, newPage) => {
   setPage(newPage);
@@ -163,8 +162,6 @@ const handleDeleteReport = async (reportId, reportData) => {
     }
   }
 };
-
-// ... (keep existing imports and state) ...
 
 const handleUpload = async () => {
   if (!selectedStudent || !selectedReportType || !selectedFile) {
@@ -218,7 +215,6 @@ const handleUpload = async () => {
   }
 };
 
-// ... (keep the rest of the component code) ...
 
   const handleCloseNotification = () => {
     setNotification({ ...notification, open: false });
