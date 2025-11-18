@@ -9,8 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { 
-  submitTeacherAttendance, getAttendanceByGrade
+  submitTeacherAttendance
 } from '../../services/attendanceService';
+import teacherService from '../../services/teacherService';
 import gradeService from '../../services/gradeService';
 
 const AttendanceRegisterPage = () => {
@@ -31,11 +32,11 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      // 1️⃣ Get teacher info
+      //Get teacher info
       const teacher = JSON.parse(localStorage.getItem('user'));
       const teacherId = teacher.id;
 
-      // 2️⃣ Fetch teacher's assigned grades
+      //Fetch teacher's assigned grades
       const grades = await gradeService.getGradesByTeacher(teacherId);
 
       if (!grades || grades.length === 0) {
@@ -45,8 +46,8 @@ useEffect(() => {
       const gradeId = grades[0].id; // Use first grade automatically
       setSelectedGrade(grades[0].name || gradeId); // For display only
 
-      // 3️⃣ Fetch students using getAttendanceByGrade
-      const gradeData = await getAttendanceByGrade(gradeId);
+      // Fetch students using getMyStudents
+      const gradeData = await teacherService.getMyStudents();
 
       const studentsWithDefaults = (gradeData?.students || []).map(student => ({
         ...student,
