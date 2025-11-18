@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Grid, Button, FormControl, InputLabel, Select, MenuItem, TextField, Snackbar, Alert } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { 
+  Box, Paper, Typography, Grid, Button, FormControl, InputLabel, 
+  Select, MenuItem, TextField, Snackbar, Alert, Table, TableBody, 
+  TableCell, TableContainer, TableHead, TableRow, IconButton, 
+  CircularProgress, TablePagination
+} from '@mui/material';
+import { 
+  CloudUpload as CloudUploadIcon,
+  Download as DownloadIcon,
+  Delete as DeleteIcon,
+  Refresh as RefreshIcon
+} from '@mui/icons-material';
 import { getTeacherStudents as getMyStudents } from '../../services/teacherService';
-import { uploadTeacherStudentReport } from '../../services/reportService';
+import { 
+  uploadTeacherStudentReport, 
+  getTeacherStudentReports,
+  downloadReport,
+  deleteReport
+} from '../../services/reportService';
+import { format } from 'date-fns';
 
 // Mock data for report types, can be fetched from a service later
 const reportTypes = [
@@ -18,24 +34,59 @@ const UploadReportPage = () => {
   const [selectedReportType, setSelectedReportType] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reports, setReports] = useState([]);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const studentData = await getMyStudents();
+      setStudents(studentData);
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+      setNotification({ open: true, message: 'Could not load your student list.', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const reportsData = [];
+      // Fetch reports for each student
+      for (const student of students) {
+        try {
+          const studentReports = await getTeacherStudentReports(student.id);
+          reportsData.push(...studentReports.map(report => ({
+            ...report,
+            studentName: student.name,
+            studentId: student.id
+          })));
+        } catch (err) {
+          console.error(`Error fetching reports for student ${student.id}:`, err);
+        }
+      }
+      setReports(reportsData);
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+      setNotification({ open: true, message: 'Could not load reports.', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        setLoading(true);
-        const studentData = await getMyStudents();
-        setStudents(studentData);
-      } catch (error) {
-        console.error('Failed to fetch students:', error);
-        setNotification({ open: true, message: 'Could not load your student list.', severity: 'error' });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStudents();
   }, []);
+
+  useEffect(() => {
+    if (students.length > 0) {
+      fetchReports();
+    }
+  }, [students]);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -45,6 +96,44 @@ const UploadReportPage = () => {
       setNotification({ open: true, message: 'Please select a valid PDF file.', severity: 'warning' });
       setSelectedFile(null);
     }
+  };
+
+  const handleDownload = async (reportId, fileName) => {
+    try {
+      const blob = await downloadReport(reportId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName || `report-${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Download failed:', error);
+      setNotification({ open: true, message: 'Failed to download report.', severity: 'error' });
+    }
+  };
+
+  const handleDeleteReport = async (reportId) => {
+    if (window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      try {
+        await deleteReport(reportId);
+        setReports(reports.filter(report => report.id !== reportId));
+        setNotification({ open: true, message: 'Report deleted successfully.', severity: 'success' });
+      } catch (error) {
+        console.error('Delete failed:', error);
+        setNotification({ open: true, message: 'Failed to delete report.', severity: 'error' });
+      }
+    }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
 // ... (keep existing imports and state) ...
@@ -109,14 +198,26 @@ const handleUpload = async () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          <CloudUploadIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Upload Student Report
-        </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Select one of your students, choose the report type, and upload the official PDF document.
-        </Typography>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              <CloudUploadIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Upload Student Report
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Select one of your students, choose the report type, and upload the official PDF document.
+            </Typography>
+          </Box>
+          <Button 
+            variant="outlined" 
+            startIcon={<RefreshIcon />} 
+            onClick={fetchReports}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
+        </Box>
 
         <Grid container spacing={3} sx={{ mt: 2 }}>
           <Grid item xs={12} md={6}>
@@ -186,6 +287,74 @@ const handleUpload = async () => {
             </Button>
           </Grid>
         </Grid>
+      </Paper>
+
+      <Paper sx={{ p: 3, mt: 3 }}>
+        <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>
+        {loading ? (
+          <Box display="flex" justifyContent="center" p={3}>
+            <CircularProgress />
+          </Box>
+        ) : reports.length === 0 ? (
+          <Typography variant="body1" color="text.secondary" align="center" sx={{ p: 3 }}>
+            No reports have been uploaded yet.
+          </Typography>
+        ) : (
+          <>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Student</TableCell>
+                    <TableCell>Report Type</TableCell>
+                    <TableCell>Uploaded Date</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {reports
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell>{report.studentName || 'Unknown Student'}</TableCell>
+                        <TableCell>{report.reportType || 'Report'}</TableCell>
+                        <TableCell>
+                          {report.uploadDate ? format(new Date(report.uploadDate), 'PPpp') : 'N/A'}
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => handleDownload(report.id, report.fileName)}
+                            title="Download"
+                          >
+                            <DownloadIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton 
+                            size="small" 
+                            color="error"
+                            onClick={() => handleDeleteReport(report.id)}
+                            title="Delete"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={reports.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+          </>
+        )}
       </Paper>
 
       <Snackbar 
