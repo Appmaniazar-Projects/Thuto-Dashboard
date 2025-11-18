@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { 
-  submitTeacherAttendance 
+  submitTeacherAttendance, getAttendanceByGrade 
 } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
@@ -20,7 +20,7 @@ const AttendanceRegisterPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState([]);
-  const [teacherClasses, setTeacherClasses] = useState([]);
+  //const [teacherClasses, setTeacherClasses] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(new Date());
@@ -41,20 +41,20 @@ const AttendanceRegisterPage = () => {
         ]);
         
         // Create class combinations from subjects and grades
-        const classCombinations = subjects.map(subject => grades.map(grade => ({
-          subject: subject.name,
-          grade: grade.name,
-          subjectId: subject.id,
-          gradeId: grade.id
-        }))).flat();
+        // const classCombinations = subjects.map(subject => grades.map(grade => ({
+        //   subject: subject.name,
+        //   grade: grade.name,
+        //   subjectId: subject.id,
+        //   gradeId: grade.id
+        // }))).flat();
         
-        setTeacherClasses(classCombinations);
+        // setTeacherClasses(classCombinations);
         
-        // Auto-select first combination if available
-        if (classCombinations.length > 0) {
-          setSelectedGrade(classCombinations[0].grade);
-          setSelectedSubject(classCombinations[0].subject);
-        }
+        // // Auto-select first combination if available
+        // if (classCombinations.length > 0) {
+        //   setSelectedGrade(classCombinations[0].grade);
+        //   setSelectedSubject(classCombinations[0].subject);
+        // }
       } catch (err) {
         console.error('Failed to fetch teacher data:', err);
         setSnackbar({
@@ -178,35 +178,14 @@ const AttendanceRegisterPage = () => {
         <Paper sx={{ p: 2, mb: 2 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Grade</InputLabel>
-                <Select
-                  value={selectedGrade}
-                  label="Grade"
-                  onChange={(e) => {
-                    setSelectedGrade(e.target.value);
-                    setSelectedSubject(''); // Reset subject when grade changes
-                  }}
-                >
-                  {availableGrades.map((grade) => (
-                    <MenuItem key={grade} value={grade}>{grade}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth disabled={!selectedGrade}>
-                <InputLabel>Subject</InputLabel>
-                <Select
-                  value={selectedSubject}
-                  label="Subject"
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                >
-                  {availableSubjects.map((subject) => (
-                    <MenuItem key={subject} value={subject}>{subject}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+          <TextField
+                fullWidth
+                label="Grade"
+                type= "text"
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <TextField

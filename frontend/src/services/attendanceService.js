@@ -73,6 +73,7 @@ export const getAttendanceHistory = async (gradeId) => {
   }
 };
 
+
 /**
  * Submit attendance for students
  * @param {Object} data - Attendance submission data
@@ -82,17 +83,26 @@ export const getAttendanceHistory = async (gradeId) => {
  * @param {Array} data.attendance - Array of attendance records
  * @returns {Promise<Object>} Response from the server
  */
-export const submitTeacherAttendance = async ({ grade, subject, date, attendance }) => {
+export const submitTeacherAttendance = async ({ grade, date, attendance }) => {
   try {
     const response = await api.post("/attendance/submission", { 
-      grade, 
-      subject, 
+      grade,
       date, 
       attendance 
     });
     return response.data;
   } catch (error) {
     console.error('Failed to submit attendance:', error);
+    throw error;
+  }
+};
+
+export const getAttendanceByGrade = async (gradeId) => {
+  try {
+    const response = await api.get(`/grades/teacher/grade/${gradeId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch attendance for grade ${gradeId}:`, error);
     throw error;
   }
 };
@@ -144,6 +154,8 @@ export const updateAttendanceSubmission = async (submissionId, updateData) => {
     throw error;
   }
 };
+
+
 
 /**
  * Fetches all attendance data for frontend filtering
