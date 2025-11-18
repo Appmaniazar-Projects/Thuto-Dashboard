@@ -9,10 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 import { 
-  submitTeacherAttendance 
+  submitTeacherAttendance, getAttendanceByGrade
 } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
-import { fetchStudentsForTeacher } from '../../services/api';
 
 const AttendanceRegisterPage = () => {
   const navigate = useNavigate();
@@ -25,73 +24,54 @@ const AttendanceRegisterPage = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // Fetch teacher's grades on component mount
-  useEffect(() => {
-    const fetchTeacherData = async () => {
-      try {
-        setLoading(true);
-        const teacher = JSON.parse(localStorage.getItem('user'));
-        const teacherId = teacher.id;
-        
-        // Fetch teacher's assigned grades only
-        const grades = await gradeService.getGradesByTeacher(teacherId);
-        setTeacherGrades(grades);
-        
-        // Auto-select first grade if available
-        if (grades.length > 0) {
-          setSelectedGrade(grades[0].name || grades[0].id);
-        }
-      } catch (err) {
-        console.error('Failed to fetch teacher data:', err);
-        setSnackbar({
-          open: true,
-          message: 'Failed to load your assigned grades',
-          severity: 'error'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Inside AttendanceRegisterPage component
 
-    fetchTeacherData();
-  }, []);
+useEffect(() => {
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
 
-  // Fetch students when grade is selected
-  useEffect(() => {
-    const fetchStudents = async () => {
-      if (!selectedGrade) {
-        setStudents([]);
-        return;
+      // 1️⃣ Get teacher info
+      const teacher = JSON.parse(localStorage.getItem('user'));
+      const teacherId = teacher.id;
+
+      // 2️⃣ Fetch teacher's assigned grades
+      const grades = await gradeService.getGradesByTeacher(teacherId);
+
+      if (!grades || grades.length === 0) {
+        throw new Error("No grades found for this teacher");
       }
 
-      try {
-        setLoading(true);
-        const studentsData = await fetchStudentsForTeacher({ 
-          grade: selectedGrade
-        });
-        
-        // Initialize students with default attendance status
-        const studentsWithAttendance = (studentsData.data || []).map(student => ({
-          ...student,
-          status: 'present', // Default to present
-          remarks: ''
-        }));
-        
-        setStudents(studentsWithAttendance);
-      } catch (err) {
-        console.error('Failed to fetch students:', err);
-        setSnackbar({
-          open: true,
-          message: 'Failed to load students for selected grade',
-          severity: 'error'
-        });
-        setStudents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const gradeId = grades[0].id; // Use first grade automatically
+      setSelectedGrade(grades[0].name || gradeId); // For display only
 
-    fetchStudents();
-  }, [selectedGrade]);
+      // 3️⃣ Fetch students using getAttendanceByGrade
+      const gradeData = await getAttendanceByGrade(gradeId);
+
+      const studentsWithDefaults = (gradeData?.students || []).map(student => ({
+        ...student,
+        status: 'present',
+        remarks: ''
+      }));
+
+      setStudents(studentsWithDefaults);
+
+    } catch (err) {
+      console.error('Failed to fetch students:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load students for your grade',
+        severity: 'error'
+      });
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchStudents();
+}, []);
+
 
   const handleSave = async () => {
     if (!selectedGrade) {
@@ -321,9 +301,10 @@ const AttendanceRegisterPage = () => {
       {students.length > 0 && (
         <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="body2" color="text.secondary">
-            Present: {students.filter(s => s.isPresent).length} | 
-            Absent: {students.filter(s => !s.isPresent).length}
+            Present: {students.filter(s => s.status === 'present').length} |
+            Absent: {students.filter(s => s.status === 'absent').length}
           </Typography>
+
           <Button 
             variant="contained" 
             color="primary"

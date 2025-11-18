@@ -125,13 +125,6 @@ export const fetchAllStaff = () =>
     data: response.data || []
   }));
 
-/**
- * Fetches students for a specific teacher
- * @param {string} teacherId - The ID of the teacher
- */
-export const fetchStudentsForTeacher = ({ grade, subject }) =>
-  api.get(`/teacher/students?grade=${grade}&subject=${subject}`);
-
 export const fetchCalendarEvents = () => api.get("/admin/calendar");
 
 export const fetchMessages = () => api.get("/admin/messages");
