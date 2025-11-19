@@ -35,21 +35,13 @@ const TeacherResources = () => {
       return;
     }
 
-    let filtered = allResources.filter(resource => {
+    const filtered = allResources.filter(resource => {
       const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
       const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
       return matchesSubject && matchesGrade;
     });
 
-    // Update filtered resources if needed
-    let updatedFiltered = [newResource, ...filteredResources];
-    if (selectedSubject && newResource.subjectId !== selectedSubject) {
-      updatedFiltered = updatedFiltered.filter(r => r.subjectId === selectedSubject);
-    }
-    if (selectedGrade && newResource.gradeId !== selectedGrade) {
-      updatedFiltered = updatedFiltered.filter(r => r.gradeId === selectedGrade);
-    }
-    setFilteredResources(updatedFiltered);
+    setFilteredResources(filtered);
   }, [selectedSubject, selectedGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
