@@ -346,12 +346,6 @@ const TeacherResources = () => {
           {filteredResources.map((resource) => {
             const displayName = resource.title || resource.fileName || resource.name || 'Untitled resource';
             const fileNameForType = resource.fileName || resource.name || resource.title || '';
-            const subjectName = subjects.find((subject) => subject.id == resource.subjectId)?.name
-              || resource.subject
-              || resource.subjectName;
-            const gradeName = grades.find((grade) => grade.id == resource.gradeId)?.name
-              || resource.grade
-              || resource.gradeName;
             const uploadedAt = resource.uploadDate || resource.uploadedAt;
             const fileSizeLabel = resource.fileSize ? formatFileSize(resource.fileSize) : null;
 
@@ -372,22 +366,6 @@ const TeacherResources = () => {
                   secondary={
                     <>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
-                        {subjectName && (
-                          <Chip 
-                            label={subjectName} 
-                            size="small" 
-                            sx={{ mr: 0.5 }}
-                            variant="outlined"
-                          />
-                        )}
-                        {gradeName && (
-                          <Chip 
-                            label={gradeName} 
-                            size="small" 
-                            sx={{ mr: 0.5 }}
-                            variant="outlined"
-                          />
-                        )}
                         {resource.className && (
                           <Chip 
                             label={resource.className} 
@@ -400,7 +378,7 @@ const TeacherResources = () => {
                       {(uploadedAt || fileSizeLabel) && (
                         <Box component="span" sx={{ display: 'block', color: 'text.secondary' }}>
                           {uploadedAt && new Date(uploadedAt).toLocaleString()}
-                          {uploadedAt && fileSizeLabel && ' • '}
+                          {uploadedAt && fileSizeLabel && ' \u2022 '}
                           {fileSizeLabel}
                         </Box>
                       )}
