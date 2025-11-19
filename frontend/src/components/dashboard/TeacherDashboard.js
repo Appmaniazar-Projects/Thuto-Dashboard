@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { getRecentResources } from '../../services/teacherService';
+import teacherService from '../../services/teacherService';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import StatCard from '../common/StatCard';
@@ -65,7 +65,7 @@ const TeacherDashboard = () => {
         
         // Fetch resources, subjects, grades, and students in parallel
         const [resourceData, subjectsData, gradesData, studentsData] = await Promise.all([
-          getRecentResources(), // Get all resources
+          teacherService.getRecentResources(), // Get all resources
           subjectService.getSubjectsByTeacher(teacherId), // Get teacher's subjects
           gradeService.getGradesByTeacher(teacherId), // Get teacher's grades
           teacherService.getTeacherStudents().catch(err => {
@@ -100,16 +100,6 @@ const TeacherDashboard = () => {
 
     fetchDashboardData();
   }, [user]);
-
-  // Apply filters to classes
-  // const filteredClasses = useMemo(() => {
-  //   return classes.filter(cls => {
-  //     return (
-  //       (!filters.subject || cls.subject === filters.subject) &&
-  //       (!filters.grade || cls.grade === filters.grade)
-  //     );
-  //   });
-  // }, [classes, filters]);
 
   // Apply filters to resources
 const filteredResources = useMemo(() => {

@@ -28,7 +28,11 @@ const TeacherResources = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Filter resources when subject or grade changes
+  // Keep filteredResources in sync with allResources so the list always shows all resources
+  useEffect(() => {
+    setFilteredResources(allResources || []);
+  }, [allResources]);
+
   useEffect(() => {
     if (allResources.length === 0) {
       setFilteredResources([]);
@@ -41,7 +45,15 @@ const TeacherResources = () => {
       return matchesSubject && matchesGrade;
     });
 
-    setFilteredResources(filtered);
+    // Update filtered resources if needed
+    let updatedFiltered = [newResource, ...filteredResources];
+    if (selectedSubject && newResource.subjectId !== selectedSubject) {
+      updatedFiltered = updatedFiltered.filter(r => r.subjectId === selectedSubject);
+    }
+    if (selectedGrade && newResource.gradeId !== selectedGrade) {
+      updatedFiltered = updatedFiltered.filter(r => r.gradeId === selectedGrade);
+    }
+    setFilteredResources(updatedFiltered);
   }, [selectedSubject, selectedGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -205,8 +217,6 @@ const TeacherResources = () => {
     }
   };
 
-  // Filtering is handled by the useEffect hook above
-
   const getFileType = (filename) => {
     if (!filename) return 'File';
     const ext = filename.split('.').pop().toLowerCase();
@@ -346,8 +356,14 @@ const TeacherResources = () => {
           {filteredResources.map((resource) => {
             const displayName = resource.title || resource.fileName || resource.name || 'Untitled resource';
             const fileNameForType = resource.fileName || resource.name || resource.title || '';
-            const subjectName = subjects.find((subject) => subject.id == resource.subjectId)?.name;
-            const gradeName = grades.find((grade) => grade.id == resource.gradeId)?.name;
+            const subjectName = subjects.find((subject) => subject.id == resource.subjectId)?.name
+              || resource.subject
+              || resource.subjectName
+              || resource.subjectId;
+            const gradeName = grades.find((grade) => grade.id == resource.gradeId)?.name
+              || resource.grade
+              || resource.gradeName
+              || resource.gradeId;
             const uploadedAt = resource.uploadDate || resource.uploadedAt;
             const fileSizeLabel = resource.fileSize ? formatFileSize(resource.fileSize) : null;
 
