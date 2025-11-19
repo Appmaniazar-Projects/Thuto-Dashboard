@@ -32,10 +32,11 @@ const TeacherDashboard = () => {
   const [teacherSubjects, setTeacherSubjects] = useState([]);
   const [teacherGrades, setTeacherGrades] = useState([]);
   const [resources, setResources] = useState([]);
+  const [teacherStudents, setTeacherStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Filter states
+  // Filter states (kept for potential future use, but not shown in UI)
   const [filters, setFilters] = useState({
     subject: '',
     grade: '',
@@ -62,15 +63,20 @@ const TeacherDashboard = () => {
           return;
         }
         
-        // Fetch classes and resources in parallel
-        const [resourceData, subjectsData, gradesData] = await Promise.all([
+        // Fetch resources, subjects, grades, and students in parallel
+        const [resourceData, subjectsData, gradesData, studentsData] = await Promise.all([
           getRecentResources(), // Get all resources
           subjectService.getSubjectsByTeacher(teacherId), // Get teacher's subjects
-          gradeService.getGradesByTeacher(teacherId) // Get teacher's grades
+          gradeService.getGradesByTeacher(teacherId), // Get teacher's grades
+          teacherService.getTeacherStudents().catch(err => {
+            console.error('Failed to fetch teacher students for dashboard:', err);
+            return [];
+          })
         ]);
         setResources(resourceData || []);
         setTeacherSubjects(subjectsData || []);
         setTeacherGrades(gradesData || []);
+        setTeacherStudents(studentsData || []);
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -120,10 +126,10 @@ const filteredResources = useMemo(() => {
       totalSubjects: teacherSubjects.length,
       totalGrades: teacherGrades.length,
       totalResources: filteredResources.length,
-      totalStudents: 0, // TODO: Fetch actual student count from backend
+      totalStudents: teacherStudents.length,
       subjectGradeCombinations: teacherSubjects.length * teacherGrades.length
     };
-  }, [teacherSubjects, teacherGrades, filteredResources]);
+  }, [teacherSubjects, teacherGrades, filteredResources, teacherStudents]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -167,65 +173,6 @@ const filteredResources = useMemo(() => {
             day: 'numeric' 
           })}
         </Typography>
-
-        {/* Filter Section */}
-        <Paper sx={{ p: 2, mt: 3, mb: 3 }}>
-          <Box display="flex" alignItems="center" mb={2}>
-            <FilterIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Filters</Typography>
-          </Box>
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                label="Subject"
-                name="subject"
-                value={filters.subject}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                <MenuItem value="">All Subjects</MenuItem>
-                {teacherSubjects.map(subject => (
-                  <MenuItem key={subject.id} value={subject.id}>{subject.name}</MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              fullWidth
-              select
-              label="Grade"
-              name="grade"
-              value={filters.grade}
-              onChange={handleFilterChange}
-              size="small"
-            >
-              <MenuItem value="">All Grades</MenuItem>
-              {teacherGrades.map(grade => (
-                <MenuItem key={grade.id} value={grade.id}>{grade.name}</MenuItem>
-              ))}
-            </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                sx={{ height: '40px' }}
-                onClick={() => setFilters({
-                  subject: '',
-                  grade: '',
-                  dateRange: 'thisWeek'
-                })}
-              >
-                Reset Filters
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
       </Box>
 
       {/* Stats Overview */}

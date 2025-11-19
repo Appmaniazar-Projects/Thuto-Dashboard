@@ -331,10 +331,14 @@ export const downloadStudentReport = async (reportId, filename) => {
  * Get reports for a specific student (teacher view)
  * @param {string} studentId - Student ID
  * @returns {Promise<Array>} List of student's reports
+    console.error(`Failed to fetch reports for student ${studentId}:`, error);
+ * 
  */
 export const getTeacherStudentReports = async (studentId) => {
   try {
-    const response = await api.get(`/teacher/students/${studentId}/reports`);
+    const response = await api.get('/reports/my-reports', {
+      params: { userId: studentId }
+    });
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch reports for student ${studentId}:`, error);

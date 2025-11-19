@@ -20,7 +20,8 @@ const AttendanceRegisterPage = () => {
   const [saving, setSaving] = useState(false);
   const [students, setStudents] = useState([]);
   const [teacherGrades, setTeacherGrades] = useState([]);
-  const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState(''); // display name
+  const [selectedGradeId, setSelectedGradeId] = useState(''); // actual gradeId for API
   const [attendanceDate, setAttendanceDate] = useState(new Date());
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -38,6 +39,7 @@ useEffect(() => {
 
       //Fetch teacher's assigned grades
       const grades = await gradeService.getGradesByTeacher(teacherId);
+      setTeacherGrades(grades || []);
 
       if (!grades || grades.length === 0) {
         throw new Error("No grades found for this teacher");
@@ -45,6 +47,7 @@ useEffect(() => {
 
       const gradeId = grades[0].id; // Use first grade automatically
       setSelectedGrade(grades[0].name || gradeId); // For display only
+      setSelectedGradeId(gradeId);
 
       // Fetch students using getMyStudents
       const gradeData = await teacherService.getMyStudents();
@@ -96,7 +99,7 @@ useEffect(() => {
     try {
       setSaving(true);
       await submitTeacherAttendance({
-        grade: selectedGrade,
+        grade: selectedGradeId,
         date: format(attendanceDate, 'yyyy-MM-dd'),
         attendance: students.map(student => ({
           studentId: student.id,
@@ -208,54 +211,54 @@ useEffect(() => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box display="flex" gap={2} alignItems="center">
-                        <Box display="flex" alignItems="center">
-                          <Checkbox
-                            checked={student.status === 'present'}
-                            onChange={() => {
-                              setStudents(prev => prev.map(s => 
-                                s.id === student.id 
-                                  ? { ...s, status: 'present' } 
-                                  : s
-                              ));
-                            }}
-                            disabled={saving}
-                            color="success"
-                          />
-                          <Typography>Present</Typography>
-                        </Box>
-                        <Box display="flex" alignItems="center">
-                          <Checkbox
-                            checked={student.status === 'late'}
-                            onChange={() => {
-                              setStudents(prev => prev.map(s => 
-                                s.id === student.id 
-                                  ? { ...s, status: 'late' } 
-                                  : s
-                              ));
-                            }}
-                            disabled={saving}
-                            color="warning"
-                          />
-                          <Typography>Late</Typography>
-                        </Box>
-                        <Box display="flex" alignItems="center">
-                          <Checkbox
-                            checked={student.status === 'absent'}
-                            onChange={() => {
-                              setStudents(prev => prev.map(s => 
-                                s.id === student.id 
-                                  ? { ...s, status: 'absent' } 
-                                  : s
-                              ));
-                            }}
-                            disabled={saving}
-                            color="error"
-                          />
-                          <Typography>Absent</Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
+                    <Box display="flex" gap={1} alignItems="center">
+                      <Button
+                        variant={student.status === 'present' ? 'contained' : 'outlined'}
+                        color="success"
+                        size="small"
+                        onClick={() => {
+                          setStudents(prev => prev.map(s => 
+                            s.id === student.id 
+                              ? { ...s, status: 'present' } 
+                              : s
+                          ));
+                        }}
+                        disabled={saving}
+                      >
+                        Present
+                      </Button>
+                      <Button
+                        variant={student.status === 'late' ? 'contained' : 'outlined'}
+                        color="warning"
+                        size="small"
+                        onClick={() => {
+                          setStudents(prev => prev.map(s => 
+                            s.id === student.id 
+                              ? { ...s, status: 'late' } 
+                              : s
+                          ));
+                        }}
+                        disabled={saving}
+                      >
+                        Late
+                      </Button>
+                      <Button
+                        variant={student.status === 'absent' ? 'contained' : 'outlined'}
+                        color="error"
+                        size="small"
+                        onClick={() => {
+                          setStudents(prev => prev.map(s => 
+                            s.id === student.id 
+                              ? { ...s, status: 'absent' } 
+                              : s
+                          ));
+                        }}
+                        disabled={saving}
+                      >
+                        Absent
+                      </Button>
+                    </Box>
+                  </TableCell>
                     <TableCell>
                       <TextField
                         size="small"
