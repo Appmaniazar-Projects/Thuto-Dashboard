@@ -16,8 +16,7 @@ import {
   uploadTeacherStudentReport, 
   getTeacherStudentReports,
   downloadReport,
-  deleteReport,
-  getMyReports
+  deleteReport
 } from '../../services/reportService';
 //import { format } from 'date-fns';
 
@@ -101,21 +100,6 @@ const UploadReportPage = () => {
     }
   };
 
-  // const handleDownload = async (reportId, fileName) => {
-  //   try {
-  //     const blob = await downloadReport(reportId);
-  //     const url = window.URL.createObjectURL(blob);
-  //     const link = document.createElement('a');
-  //     link.href = url;
-  //     link.setAttribute('download', fileName || `report-${reportId}.pdf`);
-  //     document.body.appendChild(link);
-  //     link.click();
-  //     link.remove();
-  //   } catch (error) {
-  //     console.error('Download failed:', error);
-  //     setNotification({ open: true, message: 'Failed to download report.', severity: 'error' });
-  //   }
-  // };
 
 
 const handleChangePage = (event, newPage) => {
@@ -149,9 +133,8 @@ const handleDeleteReport = async (reportId, reportData) => {
         message: 'Report deleted successfully.', 
         severity: 'success' 
       });
-      // Refresh the reports list
-      const updatedReports = await getMyReports();
-      setReports(updatedReports);
+      // Refresh the reports list to reflect the deletion
+      await fetchReports();
     } catch (error) {
       console.error('Delete failed:', error);
       setNotification({ 
@@ -198,6 +181,9 @@ const handleUpload = async () => {
       message: `Successfully uploaded ${result.fileName} for the selected student.`, 
       severity: 'success' 
     });
+
+    // Refresh reports so the new upload is visible in the table
+    await fetchReports();
 
     // Reset form
     setSelectedStudent('');

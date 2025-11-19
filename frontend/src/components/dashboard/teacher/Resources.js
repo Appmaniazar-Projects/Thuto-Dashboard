@@ -10,8 +10,7 @@ import { useDropzone } from 'react-dropzone';
 import { 
   getTeacherResources, 
   uploadResource,
-  deleteResource,
-  downloadResource 
+  deleteResource
 } from '../../../services/teacherService';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
@@ -36,19 +35,12 @@ const TeacherResources = () => {
       return;
     }
 
-    console.log('Filtering with:', { selectedSubject, selectedGrade });
-    console.log('All resources:', allResources);
-
     let filtered = allResources.filter(resource => {
       const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
       const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
-      
-      console.log('Resource:', resource, 'matchesSubject:', matchesSubject, 'matchesGrade:', matchesGrade);
-      
       return matchesSubject && matchesGrade;
     });
-    
-    console.log('Filtered resources:', filtered);
+
     setFilteredResources(filtered);
   }, [selectedSubject, selectedGrade, allResources]);
 
@@ -101,7 +93,6 @@ const TeacherResources = () => {
             return [];
           })
         ]);
-        setAllResources(resourcesData || []);
         setAllResources(resourcesData || []);
         setSubjects(subjectsData || []);
         setGrades(gradesData || []);
@@ -227,6 +218,14 @@ const TeacherResources = () => {
     return 'File';
   };
 
+  const formatFileSize = (bytes) => {
+    if (!bytes || isNaN(bytes)) return null;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
   if (loading && allResources.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -344,57 +343,90 @@ const TeacherResources = () => {
       
       {filteredResources.length > 0 ? (
         <List>
-          {filteredResources.map((resource) => (
-            <ListItem key={resource.id} divider>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {resource.name}
-                    <Chip 
-                      label={getFileType(resource.name)} 
-                      size="small" 
-                      variant="outlined"
-                      color="primary"
-                    />
-                  </Box>
-                }
-                secondary={
-                  <>
-                    {resource.className && (
+          {filteredResources.map((resource) => {
+            const displayName = resource.title || resource.fileName || resource.name || 'Untitled resource';
+            const fileNameForType = resource.fileName || resource.name || resource.title || '';
+            const subjectName = subjects.find((subject) => subject.id == resource.subjectId)?.name;
+            const gradeName = grades.find((grade) => grade.id == resource.gradeId)?.name;
+            const uploadedAt = resource.uploadDate || resource.uploadedAt;
+            const fileSizeLabel = resource.fileSize ? formatFileSize(resource.fileSize) : null;
+
+            return (
+              <ListItem key={resource.id} divider>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {displayName}
                       <Chip 
-                        label={resource.className} 
+                        label={getFileType(fileNameForType)} 
                         size="small" 
-                        sx={{ mr: 1 }}
                         variant="outlined"
+                        color="primary"
                       />
-                    )}
-                    {new Date(resource.uploadedAt).toLocaleDateString()}
-                    {resource.name && (
-                      <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
-                        {resource.name}
+                    </Box>
+                  }
+                  secondary={
+                    <>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                        {subjectName && (
+                          <Chip 
+                            label={subjectName} 
+                            size="small" 
+                            sx={{ mr: 0.5 }}
+                            variant="outlined"
+                          />
+                        )}
+                        {gradeName && (
+                          <Chip 
+                            label={gradeName} 
+                            size="small" 
+                            sx={{ mr: 0.5 }}
+                            variant="outlined"
+                          />
+                        )}
+                        {resource.className && (
+                          <Chip 
+                            label={resource.className} 
+                            size="small" 
+                            sx={{ mr: 0.5 }}
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
-                    )}
-                  </>
-                }
-              />
-              <ListItemSecondaryAction>
-                <IconButton 
-                  edge="end" 
-                  onClick={() => handleDownload(resource.id, resource.fileName || 'resource', resource.fileUrl)}
-                  sx={{ mr: 1 }}
-                >
-                  <DownloadIcon />
-                </IconButton>
-                <IconButton 
-                  edge="end" 
-                  onClick={() => handleDelete(resource.id)} 
-                  disabled={uploading}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </ListItemSecondaryAction>
-            </ListItem>
-          ))}
+                      {(uploadedAt || fileSizeLabel) && (
+                        <Box component="span" sx={{ display: 'block', color: 'text.secondary' }}>
+                          {uploadedAt && new Date(uploadedAt).toLocaleString()}
+                          {uploadedAt && fileSizeLabel && ' • '}
+                          {fileSizeLabel}
+                        </Box>
+                      )}
+                      {resource.fileName && (
+                        <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}>
+                          {resource.fileName}
+                        </Box>
+                      )}
+                    </>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleDownload(resource.id, resource.fileName || displayName || 'resource', resource.fileUrl)}
+                    sx={{ mr: 1 }}
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleDelete(resource.id)} 
+                    disabled={uploading}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            );
+          })}
         </List>
       ) : (
         <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>

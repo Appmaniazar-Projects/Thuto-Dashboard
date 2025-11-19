@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Checkbox, Button, Avatar, TextField, 
-  FormControl, InputLabel, Select, MenuItem, CircularProgress, Alert,
+  CircularProgress, Alert,
   Grid, Snackbar
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -49,7 +49,7 @@ useEffect(() => {
       // Fetch students using getMyStudents
       const gradeData = await teacherService.getMyStudents();
 
-      const studentsWithDefaults = (gradeData?.students || []).map(student => ({
+      const studentsWithDefaults = (gradeData || []).map(student => ({
         ...student,
         status: 'present',
         remarks: ''

@@ -88,7 +88,17 @@ const parentService = {
   getChildAttendance: async (studentId) => {
     try {
       const response = await api.get(`/attendance/student/${studentId}`);
-      return response.data || [];
+      const data = response.data;
+
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      if (data && Array.isArray(data.details)) {
+        return data.details;
+      }
+
+      return [];
     } catch (error) {
       console.error(`Failed to fetch attendance for student ${studentId}:`, error);
       return []; // Return empty array instead of throwing to prevent UI breakage

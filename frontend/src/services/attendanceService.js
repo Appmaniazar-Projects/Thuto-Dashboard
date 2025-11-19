@@ -49,7 +49,58 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
         endDate: endDate.toISOString().split('T')[0]
       }
     });
-    return response.data;
+
+    const rawData = response.data;
+
+    let details;
+    let summary;
+
+    // Support both array responses and { summary, details } objects from backend
+    if (Array.isArray(rawData)) {
+      details = rawData;
+    } else if (rawData && Array.isArray(rawData.details)) {
+      details = rawData.details;
+      if (rawData.summary) {
+        summary = {
+          presentDays: rawData.summary.presentDays ?? 0,
+          absentDays: rawData.summary.absentDays ?? 0,
+          lateDays: rawData.summary.lateDays ?? rawData.summary.late ?? 0,
+          attendanceRate: rawData.summary.attendanceRate ?? 0
+        };
+      }
+    } else {
+      details = [];
+    }
+
+    // If no summary provided by backend, build one from the records
+    if (!summary) {
+      let presentDays = 0;
+      let absentDays = 0;
+      let lateDays = 0;
+
+      details.forEach(record => {
+        const status = (record.status || '').toLowerCase();
+        if (status === 'present') {
+          presentDays++;
+        } else if (status === 'absent') {
+          absentDays++;
+        } else if (status === 'late') {
+          lateDays++;
+        }
+      });
+
+      const total = details.length;
+      const attendanceRate = total > 0 ? Math.round((presentDays / total) * 100) : 0;
+
+      summary = {
+        presentDays,
+        absentDays,
+        lateDays,
+        attendanceRate
+      };
+    }
+
+    return { summary, details };
   } catch (error) {
     console.error('Error fetching attendance records:', error);
     throw error;
@@ -221,42 +272,23 @@ export const getAttendanceStats = async () => {
       throw new Error('Student ID not found in user data');
     }
     
-    // Fetch attendance records for the calculated date range
-    const attendanceRecords = await getStudentAttendance(studentId, startDate, endDate);
+    // Fetch normalized attendance data for the calculated date range
+    const { summary, details } = await getStudentAttendance(studentId, startDate, endDate);
     
-    // Initialize statistics counters
+    const total = Array.isArray(details) ? details.length : 0;
+
     const stats = {
-      present: 0,
-      absent: 0,
-      late: 0,
-      total: 0
+      present: summary?.presentDays ?? 0,
+      absent: summary?.absentDays ?? 0,
+      late: summary?.lateDays ?? 0,
+      total
     };
     
-    // Process attendance records and count different statuses
-    if (Array.isArray(attendanceRecords)) {
-      attendanceRecords.forEach(record => {
-        stats.total++;
-        
-        // Categorize each record by status
-        switch (record.status?.toLowerCase()) {
-          case 'present':
-            stats.present++;
-            break;
-          case 'absent':
-            stats.absent++;
-            break;
-          case 'late':
-            stats.late++;
-            break;
-          default:
-            // Handle unknown status types gracefully
-            console.warn(`Unknown attendance status: ${record.status}`);
-        }
-      });
-    }
-    
-    // Calculate attendance percentage (present days / total days * 100)
-    const percentage = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
+    // Prefer the precomputed rate, but fall back to local calculation if needed
+    const percentage =
+      typeof summary?.attendanceRate === 'number'
+        ? summary.attendanceRate
+        : (stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0);
     
     return {
       percentage,
