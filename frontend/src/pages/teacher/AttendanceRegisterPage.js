@@ -98,8 +98,11 @@ useEffect(() => {
 
     try {
       setSaving(true);
+      const teacher = JSON.parse(localStorage.getItem('user'));
+
       await submitTeacherAttendance({
         grade: selectedGradeId,
+        teacherId: teacher.id,
         date: format(attendanceDate, 'yyyy-MM-dd'),
         attendance: students.map(student => ({
           studentId: student.id,
