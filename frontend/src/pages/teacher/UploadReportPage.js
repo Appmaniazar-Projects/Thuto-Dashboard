@@ -151,8 +151,14 @@ const formatUploadDate = (uploadDate) => {
 
   let value = uploadDate;
 
+  // Handle "2025-11-20 10:16:0" -> "2025-11-20T10:16:0"
   if (typeof value === 'string' && value.includes(' ') && !value.includes('T')) {
     value = value.replace(' ', 'T');
+  }
+
+  // Handle "2025-11-19T10:48:07.545595" -> "2025-11-19T10:48:07.545"
+  if (typeof value === 'string') {
+    value = value.replace(/(\.\d{3})\d+/, '$1');
   }
 
   const date = new Date(value);
@@ -160,8 +166,8 @@ const formatUploadDate = (uploadDate) => {
   if (Number.isNaN(date.getTime())) {
     return '-';
   }
-
-  return date.toLocaleDateString();
+  
+  return date.toLocaleDateString();           
 };
 
 const handleUpload = async () => {
@@ -225,7 +231,7 @@ const handleUpload = async () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxHeight: '100vh', overflowY: 'auto' }}>
+    <Box sx={{ p: 3 }}>
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Box>
@@ -358,7 +364,7 @@ const handleUpload = async () => {
                   </a>
                 </TableCell>
                 <TableCell>
-                  {formatUploadDate(report.uploadDate)}
+                  {formatUploadDate(report.uploadDate || report.uploadedAt)}
                 </TableCell>
                 <TableCell align="right">
                  <IconButton 
