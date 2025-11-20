@@ -18,9 +18,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import attendanceService from '../../services/attendanceService';
-import studentService from '../../services/studentService';
-import resourceService from '../../services/resourceService';
+import { getAttendanceStats } from '../../services/attendanceService';
+import { getMyProfile } from '../../services/studentService';
+import { getMyResources } from '../../services/resourceService';
 import StatCard from '../common/StatCard';
 
 const StudentDashboard = () => {
@@ -30,6 +30,7 @@ const StudentDashboard = () => {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [studentProfile, setStudentProfile] = useState(null);
   const [stats, setStats] = useState({
     attendance: 0,
     resources: 0,
@@ -39,21 +40,31 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!user || !user.phoneNumber) {
+        setError('User data is not available. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         
-        // Fetch attendance stats
-        const attendanceStats = await attendanceService.getAttendanceStats();
+        // Fetch all data in parallel
+        const [profileData, attendanceData, resourcesData] = await Promise.all([
+          getMyProfile(user.phoneNumber).catch(e => { console.error('Profile fetch failed:', e); return null; }),
+          getAttendanceStats().catch(e => { console.error('Attendance fetch failed:', e); return { percentage: 0 }; }),
+          getMyResources().catch(e => { console.error('Resources fetch failed:', e); return []; })
+        ]);
+
+        if (profileData) {
+          setStudentProfile(profileData);
+        }
         
-        // Fetch resources count
-        const resources = await resourceService.getMyResources();
-        
-        // Update stats
         setStats({
-          attendance: attendanceStats.percentage || 0,
-          resources: resources.length || 0,
-          upcomingEvents: 0, // Coming soon
-          unreadMessages: 0  // Coming soon
+          attendance: attendanceData.percentage || 0,
+          resources: resourcesData.length || 0,
+          upcomingEvents: 0, // Placeholder
+          unreadMessages: 0  // Placeholder
         });
         
       } catch (err) {
@@ -65,7 +76,7 @@ const StudentDashboard = () => {
     };
     
     fetchDashboardData();
-  }, []);
+  }, [user]);
 
   const quickLinks = [
     { text: 'My Courses', path: '/student/subjects', icon: <BookIcon /> },
@@ -95,7 +106,7 @@ const StudentDashboard = () => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Welcome back, {user?.name || 'Student'}!
+          Welcome back, {studentProfile?.name || user?.name || 'Student'}!
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           {today}
