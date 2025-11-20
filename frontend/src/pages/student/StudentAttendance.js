@@ -71,6 +71,12 @@ const StudentAttendance = () => {
   // Error state for handling API failures
   const [error, setError] = useState(null);
 
+  // Derived summary values for safe rendering
+  const summary = attendanceData?.summary || {};
+  const presentDays = summary.presentDays ?? 0;
+  const absentDays = summary.absentDays ?? 0;
+  const attendanceRate = summary.attendanceRate ?? 0;
+
   /**
    * Effect hook to fetch attendance data when component mounts or dependencies change
    * Dependencies: selectedMonth, user
@@ -143,6 +149,26 @@ const StudentAttendance = () => {
     return months;
   };
 
+  const getTeacherLabel = (teacher) => {
+    if (!teacher) return 'N/A';
+    if (typeof teacher === 'string') return teacher;
+    if (typeof teacher === 'object') {
+      const parts = [teacher.name, teacher.lastName].filter(Boolean);
+      if (parts.length) return parts.join(' ');
+      if (teacher.email) return teacher.email;
+    }
+    return 'N/A';
+  };
+
+  const getSubjectLabel = (subject) => {
+    if (!subject) return 'N/A';
+    if (typeof subject === 'string') return subject;
+    if (typeof subject === 'object') {
+      return subject.name || subject.subjectName || subject.title || 'N/A';
+    }
+    return 'N/A';
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header with Title and Month Filter */}
@@ -179,12 +205,12 @@ const StudentAttendance = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold">
-                {attendanceData?.summary.presentDays || 0}
+                {presentDays}
                 <Typography component="span" color="textSecondary"> days</Typography>
               </Typography>
               <LinearProgress 
                 variant="determinate" 
-                value={attendanceData?.summary.attendanceRate || 0}
+                value={attendanceRate}
                 color="success"
                 sx={{ mt: 2, height: 8, borderRadius: 4 }}
               />
@@ -202,12 +228,12 @@ const StudentAttendance = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold">
-                {attendanceData?.summary.absentDays || 0}
+                {absentDays}
                 <Typography component="span" color="textSecondary"> days</Typography>
               </Typography>
               <LinearProgress 
                 variant="determinate" 
-                value={(attendanceData?.summary.absentDays / (attendanceData?.summary.presentDays + attendanceData?.summary.absentDays || 1)) * 100}
+                value={((absentDays / (presentDays + absentDays || 1)) * 100)}
                 color="error"
                 sx={{ mt: 2, height: 8, borderRadius: 4 }}
               />
@@ -225,11 +251,11 @@ const StudentAttendance = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight="bold">
-                {`${attendanceData?.summary.attendanceRate || 0}%`}
+                {`${attendanceRate}%`}
               </Typography>
               <LinearProgress 
                 variant="determinate" 
-                value={attendanceData?.summary.attendanceRate || 0}
+                value={attendanceRate}
                 color="primary"
                 sx={{ mt: 2, height: 8, borderRadius: 4 }}
               />
@@ -272,8 +298,8 @@ const StudentAttendance = () => {
                         size="small"
                       />
                     </TableCell>
-                    <TableCell>{record.subject}</TableCell>
-                    <TableCell>{record.teacher}</TableCell>
+                    <TableCell>{getSubjectLabel(record.subject)}</TableCell>
+                    <TableCell>{getTeacherLabel(record.teacher)}</TableCell>
                     <TableCell>{record.remarks || 'N/A'}</TableCell>
                   </TableRow>
                 ))

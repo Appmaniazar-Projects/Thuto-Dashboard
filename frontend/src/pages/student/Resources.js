@@ -77,9 +77,9 @@ const Resources = () => {
     setFilteredResources(result);
   }, [searchTerm, selectedSubject, resources]);
 
-  const handleDownload = async (resourceId, fileName) => {
+  const handleDownload = async (fileUrl, fileName) => {
     try {
-      await downloadResource(resourceId, fileName);
+      await downloadResource(fileUrl, fileName);
     } catch (err) {
       console.error('Download failed:', err);
       setError('Failed to download the resource.');
@@ -92,6 +92,15 @@ const Resources = () => {
   };
 
   const availableSubjects = ['all', ...new Set(resources.map(r => r.subject))];
+
+  const getUploadDateLabel = (resource) => {
+    if (!resource) return null;
+    const rawDate = resource.uploadDate || resource.uploadedAt || resource.createdAt;
+    if (!rawDate) return null;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return format(date, 'MMM d, yyyy');
+  };
 
   if (isLoading) {
     return (
@@ -169,36 +178,41 @@ const Resources = () => {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {filteredResources.map((resource) => (
-            <Grid item xs={12} sm={6} md={4} key={resource.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box display="flex" alignItems="center" mb={1}>
-                    <BookIcon color="primary" sx={{ mr: 1 }} />
-                    <Typography variant="h6" component="div">
-                      {resource.title}
+          {filteredResources.map((resource) => {
+            const uploadLabel = getUploadDateLabel(resource);
+            return (
+              <Grid item xs={12} sm={6} md={4} key={resource.id}>
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <BookIcon color="primary" sx={{ mr: 1 }} />
+                      <Typography variant="h6" component="div">
+                        {resource.title}
+                      </Typography>
+                    </Box>
+                    <Chip label={resource.subject} size="small" variant="outlined" sx={{ mb: 2 }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      {resource.description}
                     </Typography>
-                  </Box>
-                  <Chip label={resource.subject} size="small" variant="outlined" sx={{ mb: 2 }} />
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {resource.description}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Uploaded: {format(new Date(resource.uploadDate), 'MMM d, yyyy')}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end' }}>
-                  <Button
-                    size="small"
-                    startIcon={<DownloadIcon />}
-                    onClick={() => handleDownload(resource.id, resource.fileName)}
-                  >
-                    Download
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
+                    {uploadLabel && (
+                      <Typography variant="caption" color="text.secondary">
+                        Uploaded: {uploadLabel}
+                      </Typography>
+                    )}
+                  </CardContent>
+                  <CardActions sx={{ justifyContent: 'flex-end' }}>
+                    <Button
+                      size="small"
+                      startIcon={<DownloadIcon />}
+                      onClick={() => handleDownload(resource.fileUrl, resource.fileName || resource.title)}
+                    >
+                      Download
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
     </Box>

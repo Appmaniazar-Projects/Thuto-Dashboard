@@ -127,9 +127,10 @@ const TeacherResources = () => {
       setError('');
       setSuccess('');
       
+      const selectedSubjectObj = subjects.find((s) => String(s.id) === String(selectedSubject));
       const resourceMetadata = {
         title: file.name.split('.')[0], // Use filename as title
-        description: `Resource for ${subjects.find(s => s.id === selectedSubject)?.name || 'subject'}`,
+        description: `Resource for ${selectedSubjectObj?.name || 'subject'}`,
         category: 'teaching-material',
         subjectId: selectedSubject,
         gradeId: selectedGrade

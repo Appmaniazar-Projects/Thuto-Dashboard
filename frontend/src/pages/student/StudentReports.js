@@ -26,7 +26,7 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { getMyReports } from '../../services/reportService';
+import { getMyReports, downloadStudentReport } from '../../services/reportService';
 import { format } from 'date-fns';
 
 const StudentReports = () => {
@@ -99,6 +99,15 @@ const StudentReports = () => {
     applyFilters();
   }, [filters, reports]);
 
+  const getReportDate = (report) => {
+    if (!report) return null;
+    const rawDate = report.issueDate || report.uploadDate || report.date || report.createdAt;
+    if (!rawDate) return null;
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  };
+
   const applyFilters = () => {
     let result = [...reports];
     
@@ -107,15 +116,19 @@ const StudentReports = () => {
     }
     
     if (filters.month !== 'all') {
-      result = result.filter(report => 
-        new Date(report.issueDate).getMonth() === parseInt(filters.month)
-      );
+      result = result.filter(report => {
+        const date = getReportDate(report);
+        if (!date) return false;
+        return date.getMonth() === parseInt(filters.month);
+      });
     }
     
     if (filters.year !== 'all') {
-      result = result.filter(report => 
-        new Date(report.issueDate).getFullYear().toString() === filters.year
-      );
+      result = result.filter(report => {
+        const date = getReportDate(report);
+        if (!date) return false;
+        return date.getFullYear().toString() === filters.year;
+      });
     }
     
     setFilteredReports(result);
@@ -143,15 +156,7 @@ const StudentReports = () => {
 
   const handleDownload = async (reportId, fileName) => {
     try {
-      const response = await studentService.getReportById(reportId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', fileName || `report-${reportId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
+      await downloadStudentReport(reportId, fileName);
       setNotification({
         open: true,
         message: 'Report downloaded successfully',
@@ -173,7 +178,10 @@ const StudentReports = () => {
 
   // Extract unique years from reports
   const availableYears = ['all', ...new Set(
-    reports.map(report => new Date(report.issueDate).getFullYear())
+    reports
+      .map((report) => getReportDate(report))
+      .filter((date) => date !== null)
+      .map((date) => date.getFullYear())
   )].sort((a, b) => b - a);
 
   if (loading && reports.length === 0) {
@@ -305,7 +313,15 @@ const StudentReports = () => {
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Issued:</strong> {format(new Date(report.issueDate), 'MMM d, yyyy')}
+                      {(() => {
+                        const date = getReportDate(report);
+                        return (
+                          <>
+                            <strong>Issued:</strong>{' '}
+                            {date ? format(date, 'MMM d, yyyy') : 'Date not available'}
+                          </>
+                        );
+                      })()}
                     </Typography>
                     {report.teacher && (
                       <Typography variant="body2" color="text.secondary">
