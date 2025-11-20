@@ -334,14 +334,14 @@ export const downloadStudentReport = async (reportId, filename) => {
     console.error(`Failed to fetch reports for student ${studentId}:`, error);
  * 
  */
-export const getTeacherStudentReports = async (studentId) => {
+export const getTeacherStudentReports = async (userId) => {
   try {
     const response = await api.get('/reports/my-reports', {
-      params: { userId: studentId }
+      params: { userId }
     });
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch reports for student ${studentId}:`, error);
+    console.error(`Failed to fetch reports for student ${userId}:`, error);
     throw error;
   }
 };

@@ -55,7 +55,7 @@ const TeacherResources = () => {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif']
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 5 * 1024 * 1024, // 5MB
     onDrop: acceptedFiles => {
       if (acceptedFiles && acceptedFiles.length > 0) {
         setFile(acceptedFiles[0]);
@@ -152,6 +152,8 @@ const TeacherResources = () => {
       setFilteredResources(filtered);
       setFile(null);
       setSuccess('Resource uploaded successfully!');
+      setSelectedSubject('');
+      setSelectedGrade('');
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
@@ -371,6 +373,23 @@ const TeacherResources = () => {
                             label={resource.className} 
                             size="small" 
                             sx={{ mr: 0.5 }}
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 0.5 }}>
+                        {resource.subjectId && (
+                          <Chip 
+                            label={subjects.find(s => s.id == resource.subjectId)?.name || `Subject ${resource.subjectId}`} 
+                            size="small" 
+                            sx={{ mr: 0.5 }}
+                            variant="outlined"
+                          />
+                        )}
+                        {resource.gradeId && (
+                          <Chip 
+                            label={grades.find(g => g.id == resource.gradeId)?.name || `Grade ${resource.gradeId}`} 
+                            size="small" 
                             variant="outlined"
                           />
                         )}
