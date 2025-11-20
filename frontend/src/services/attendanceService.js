@@ -129,15 +129,16 @@ export const getAttendanceHistory = async (gradeId) => {
  * Submit attendance for students
  * @param {Object} data - Attendance submission data
  * @param {string} data.grade - Grade level
- * @param {string} data.subject - Subject name
+ * @param {string} data.teacherId - Teacher ID
  * @param {string} data.date - Date in YYYY-MM-DD format
  * @param {Array} data.attendance - Array of attendance records
  * @returns {Promise<Object>} Response from the server
  */
-export const submitTeacherAttendance = async ({ grade, date, attendance }) => {
+export const submitTeacherAttendance = async ({ grade, teacherId, date, attendance }) => {
   try {
     const response = await api.post("/attendance/submission", { 
       grade,
+      teacherId,
       date, 
       attendance 
     });
