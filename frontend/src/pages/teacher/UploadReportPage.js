@@ -146,6 +146,23 @@ const handleDeleteReport = async (reportId, reportData) => {
   }
 };
 
+const formatUploadDate = (uploadDate) => {
+  if (!uploadDate) return '-';
+
+  let value = uploadDate;
+
+  if (typeof value === 'string' && value.includes(' ') && !value.includes('T')) {
+    value = value.replace(' ', 'T');
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleDateString();
+};
 
 const handleUpload = async () => {
   if (!selectedStudent || !selectedReportType || !selectedFile) {
@@ -208,7 +225,7 @@ const handleUpload = async () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, maxHeight: '100vh', overflowY: 'auto' }}>
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Box>
@@ -341,7 +358,7 @@ const handleUpload = async () => {
                   </a>
                 </TableCell>
                 <TableCell>
-                  {new Date(report.uploadDate).toLocaleDateString()}
+                  {formatUploadDate(report.uploadDate)}
                 </TableCell>
                 <TableCell align="right">
                  <IconButton 
