@@ -46,7 +46,8 @@ api.interceptors.request.use(
       '/teacher/',
       '/admin/',
       '/parent/',
-      '/users/'
+      '/users/',
+      '/subjects/'
 
     ];
 
