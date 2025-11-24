@@ -653,7 +653,7 @@ const SuperAdminDashboard = () => {
                       <TableCell>{admin.email}</TableCell>
                       <TableCell>{admin.phoneNumber}</TableCell>
                       <TableCell>
-                        {admin.school.name || 'Unknown School'}
+                        {admin.school?.name || admin.schoolName || 'Unknown School'}
                       </TableCell>
                       <TableCell>
                         <Chip label={admin.status || 'Active'} color={admin.status === 'Active' ? 'success' : 'default'} size="small" />

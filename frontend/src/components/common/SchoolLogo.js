@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Avatar, Typography } from '@mui/material';
 import { School as SchoolIcon } from '@mui/icons-material';
 import { useSchoolBranding } from '../../context/SchoolBrandingContext';
+import LogoImage from '../../assets/Logo.png';
 
 /**
  * SchoolLogo component that displays the school's logo or fallback
@@ -54,9 +55,11 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
 
     // Fallback to school icon with school colors
     return (
-      <Avatar sx={getLogoStyles()}>
-        <SchoolIcon />
-      </Avatar>
+      <Avatar
+        src={LogoImage}
+        alt={branding.schoolName || 'Thuto Dashboard'}
+        sx={getLogoStyles()}
+      />
     );
   };
 
