@@ -16,6 +16,7 @@ export const getAllAdmins = async (role = 'admin', createdBy) => {
     throw error;
   }
 };
+
 /**
  * Fetches all schools in the system
  * @param {string} createdBy - Email of the superadmin making the request
@@ -205,6 +206,7 @@ export const createAdmin = async (adminData) => {
  * @param {string} adminId - The ID of the administrator to update
  * @param {object} adminData - Updated administrator information
  */
+// 
 export const updateAdmin = async (adminId, adminData) => {
   try {
     console.log('Updating admin with data:', {
@@ -220,14 +222,31 @@ export const updateAdmin = async (adminId, adminData) => {
       delete adminPayload.password;
     }
 
+    // If the current superadmin is provincial, ensure province is included
+    try {
+      const superAdminRaw = localStorage.getItem('superAdmin');
+      if (superAdminRaw) {
+        const superAdmin = JSON.parse(superAdminRaw);
+        const isProvincial =
+          superAdmin?.role === 'SUPERADMIN_PROVINCIAL' ||
+          superAdmin?.level === 'PROVINCIAL';
+
+        if (isProvincial && superAdmin?.province && !adminPayload.province) {
+          adminPayload.province = superAdmin.province;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not determine superadmin province from localStorage:', e);
+    }
+
     console.log('Sending update request with:', {
       url: `/superadmins/admins/user/updateUser/${adminId}`,
-      data: adminPayload  // updatedBy is now part of adminPayload
+      data: adminPayload
     });
 
     const response = await api.put(
-      `/superadmins/admins/user/updateUser/${adminId}`, 
-      adminPayload  // Send updatedBy in the request body
+      `/superadmins/admins/user/updateUser/${adminId}`,
+      adminPayload
     );
     
     console.log('Admin updated successfully:', response.data);
