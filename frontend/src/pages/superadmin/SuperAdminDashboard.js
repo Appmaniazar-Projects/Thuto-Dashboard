@@ -76,7 +76,7 @@ const SuperAdminDashboard = () => {
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
   const [editingAdmin, setEditingAdmin] = useState(null);
-  
+
   // Form states
   const [schoolForm, setSchoolForm] = useState({
     name: '',
@@ -646,14 +646,24 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {admins.map((admin, index) => (
+                  {admins.map((admin, index) => {
+                  const school =
+                  schools.find(s => s.id === (admin.schoolId || admin.school?.id));
+
+                  const schoolName =
+                    school?.name ||
+                    admin.school?.name ||
+                    admin.schoolName ||
+                    'Unknown School';
+                    
+                    return (
                     <TableRow key={admin.id || `admin-${index}`}>
                       <TableCell>{admin.name}</TableCell>
                       <TableCell>{admin.lastName || 'N/A'}</TableCell>
                       <TableCell>{admin.email}</TableCell>
                       <TableCell>{admin.phoneNumber}</TableCell>
                       <TableCell>
-                        {admin.school?.name || admin.schoolName || 'Unknown School'}
+                        {schoolName}
                       </TableCell>
                       <TableCell>
                         <Chip label={admin.status || 'Active'} color={admin.status === 'Active' ? 'success' : 'default'} size="small" />
@@ -667,7 +677,8 @@ const SuperAdminDashboard = () => {
                       </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                  })}
                   {admins.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} align="center">
