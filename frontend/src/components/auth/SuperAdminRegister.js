@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
-  Container, 
   Paper, 
   Typography, 
   TextField, 
@@ -174,8 +173,27 @@ const SuperAdminRegister = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Paper elevation={3} sx={{ p: 4, mt: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        width: '100%',
+        px: 2
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+          maxWidth: 600
+        }}
+      >
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
           <img 
             src={Logo} 
@@ -323,7 +341,7 @@ const SuperAdminRegister = () => {
           </Box>
         </Box>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

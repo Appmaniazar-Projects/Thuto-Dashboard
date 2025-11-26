@@ -99,183 +99,76 @@ export const getSchoolDetails = async (schoolId) => {
   }
 };
 
+
 // ========== ADMINISTRATOR MANAGEMENT ==========
-
-// /**
-//  * Creates a new administrator
-//  * @param {object} adminData - Administrator information
-//  */
-// export const createAdmin = async (adminData) => {
-//   try {
-//     const { createdBy, ...adminPayload } = adminData;
-//     const response = await api.post('/superadmins/admins/create', adminPayload, {
-//       params: { createdBy }  // Send createdBy as query parameter
-//     });
-//     return response.data;
-//   } catch (error) {
-//     console.error('Failed to create administrator:', error);
-//     throw error;
-//   }
-// };
-
-// /**
-//  * Updates an existing administrator
-//  * @param {string} adminId - The ID of the administrator to update
-//  * @param {object} adminData - Updated administrator information
-//  */
-// export const updateAdmin = async (adminId, adminData) => {
-//   try {
-//     const { createdBy, ...adminPayload } = adminData;
-//     const response = await api.put(`/superadmins/admins/update/${adminId}`, adminPayload, {
-//       params: createdBy ? { createdBy } : {}
-//     });
-//     return response.data;
-//   } catch (error) {
-//     console.error(`Failed to update admin ${adminId}:`, error);
-//     throw error;
-//   }
-// };
 
 /**
  * Creates a new administrator
  * @param {object} adminData - Administrator information
+ *  - includes: name, lastName, email, phoneNumber, schoolId, password, province
+ *  - also includes: createdBy (superadmin email)
  */
-// export const createAdmin = async (adminData) => {
-//   try {
-//     console.log('Creating admin with data:', {
-//       ...adminData,
-//       password: '***HIDDEN***'
-//     });
-
-//     const { createdBy, ...adminPayload } = adminData;
-    
-//     const response = await api.post('/superadmins/admins/create', adminPayload, {
-//       params: { createdBy }
-//     });
-  
-//     console.log('Admin created successfully:', response.data);
-//     return response.data;
-//   } catch (error) {
-//     console.error('Failed to create administrator:', error);
-//     console.error('Error response:', error.response?.data);
-//     console.error('Error status:', error.response?.status);
-//     throw error;
-//   }
-// };
-
 export const createAdmin = async (adminData) => {
   try {
-    console.log('=== ADMIN CREATION DEBUG ===');
-    console.log('Full adminData received:', adminData);
-    console.log('adminData type:', typeof adminData);
-
     const { createdBy, ...adminPayload } = adminData;
-    
-    console.log('Extracted createdBy:', createdBy);
-    console.log('createdBy type:', typeof createdBy);
-    console.log('Admin payload (without createdBy):', adminPayload);
-    console.log('Payload keys:', Object.keys(adminPayload));
-    
+
     if (!createdBy) {
-      throw new Error('createdBy parameter is required but was not provided');
+      throw new Error('createdBy parameter is required');
     }
 
-    console.log('Making API call to: /superadmins/admins/create');
-    console.log('Query params:', { createdBy });
-    console.log('Request body:', adminPayload);
-    
     const response = await api.post('/superadmins/admins/create', adminPayload, {
       params: { createdBy }
     });
-  
-    console.log('Admin created successfully:', response.data);
+
     return response.data;
   } catch (error) {
-    console.error('=== ADMIN CREATION ERROR ===');
-    console.error('Error message:', error.message);
-    console.error('Error response data:', error.response?.data);
-    console.error('Error status:', error.response?.status);
-    console.error('Error headers:', error.response?.headers);
-    console.error('Full error object:', error);
+    console.error('Failed to create administrator:', error);
     throw error;
   }
 };
 
 /**
  * Updates an existing administrator
- * @param {string} adminId - The ID of the administrator to update
+ * @param {string|number} adminId - The ID (or identifier) of the administrator to update
  * @param {object} adminData - Updated administrator information
+ *  - includes: name, lastName, email, phoneNumber, schoolId, province
+ *  - may include: password (optional), updatedBy (superadmin email)
  */
-// 
 export const updateAdmin = async (adminId, adminData) => {
   try {
-    console.log('Updating admin with data:', {
-      ...adminData,
-      password: adminData.password ? '***HIDDEN***' : 'NOT_CHANGED'
-    });
+    const { createdBy, ...adminPayload } = adminData; // discard createdBy, keep updatedBy & province
 
-    // Keep updatedBy in the payload, only extract createdBy
-    const { createdBy, ...adminPayload } = adminData;
-    
-    // Make sure we're not sending an empty password
+    // Do not send an empty password
     if (adminPayload.password === '') {
       delete adminPayload.password;
     }
-
-    // If the current superadmin is provincial, ensure province is included
-    try {
-      const superAdminRaw = localStorage.getItem('superAdmin');
-      if (superAdminRaw) {
-        const superAdmin = JSON.parse(superAdminRaw);
-        const isProvincial =
-          superAdmin?.role === 'SUPERADMIN_PROVINCIAL' ||
-          superAdmin?.level === 'PROVINCIAL';
-
-        if (isProvincial && superAdmin?.province && !adminPayload.province) {
-          adminPayload.province = superAdmin.province;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not determine superadmin province from localStorage:', e);
-    }
-
-    console.log('Sending update request with:', {
-      url: `/superadmins/admins/user/updateUser/${adminId}`,
-      data: adminPayload
-    });
 
     const response = await api.put(
       `/superadmins/admins/user/updateUser/${adminId}`,
       adminPayload
     );
-    
-    console.log('Admin updated successfully:', response.data);
+
     return response.data;
   } catch (error) {
     console.error(`Failed to update admin ${adminId}:`, error);
-    console.error('Error response:', error.response?.data);
-    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
 
 /**
  * Deletes an administrator
- * @param {string} adminId - The ID of the administrator to delete
+ * @param {string|number} adminId - The ID of the administrator to delete
  */
 export const deleteAdmin = async (adminId) => {
   try {
-    console.log('Deleting admin with ID:', adminId);
     const response = await api.delete(`/superadmins/admins/removeAdmin/${adminId}`);
-    console.log('Admin deleted successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error(`Failed to delete admin ${adminId}:`, error);
-    console.error('Error response:', error.response?.data);
-    console.error('Error status:', error.response?.status);
     throw error;
   }
 };
+
 
 /**
  * Gets administrators for a specific school
@@ -291,15 +184,3 @@ export const getAdminsBySchool = async (schoolId) => {
   }
 };
 
-/**
- * Fetches platform usage analytics
- */
-export const getPlatformAnalytics = async () => {
-  try {
-    const response = await api.get('/superadmin/analytics');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch platform analytics:', error);
-    throw error;
-  }
-};

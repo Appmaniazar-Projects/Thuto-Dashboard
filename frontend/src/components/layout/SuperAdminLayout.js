@@ -3,6 +3,7 @@ import { Box, Container, useTheme } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
 import TopBar from './TopBar';
 import Footer from './Footer';
+import LogoImage from '../../assets/Logo.png'
 
 const SuperAdminLayout = () => {
   const theme = useTheme();
@@ -15,7 +16,7 @@ const SuperAdminLayout = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
       <TopBar 
-        title="Thuto" 
+        src={LogoImage}
         isSuperAdmin={true} 
         onTitleClick={handleTitleClick}
       />

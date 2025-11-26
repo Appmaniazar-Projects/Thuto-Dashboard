@@ -134,7 +134,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
             flexShrink: 0,
           }}
         >
-          <SchoolLogo showName={true} variant="sidebar" size={32} />
+          <SchoolLogo showName={false} variant="sidebar" size={32} />
           {isMobile && (
             <IconButton onClick={handleDrawerToggle} sx={{ color: '#fff' }}>
               <MenuIcon />

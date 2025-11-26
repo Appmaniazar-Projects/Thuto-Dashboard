@@ -57,7 +57,7 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
     return (
       <Avatar
         src={LogoImage}
-        alt={branding.schoolName || 'Thuto Dashboard'}
+        alt={branding.schoolName || 'Thuto'}
         sx={getLogoStyles()}
       />
     );
