@@ -32,6 +32,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
+import SchoolLogo from '../common/SchoolLogo';
 
 const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick }) => {
   const theme = useTheme();
@@ -165,24 +166,26 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
             <MenuIcon />
           </IconButton>
         )}
-        <Typography 
-          variant="h6" 
-          noWrap 
-          component="div" 
-          onClick={onTitleClick}
-          sx={{ 
-            flexGrow: 1,
-            fontWeight: 600,
-            letterSpacing: '0.5px',
-            marginLeft:'10px',
-            cursor: onTitleClick ? 'pointer' : 'default',
-            '&:hover': onTitleClick ? {
-              opacity: 0.8
-            } : {}
-          }}
-        >
-          {title}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          <SchoolLogo size={32} showName={false} variant="header" />
+          <Typography 
+            variant="h6" 
+            noWrap 
+            component="div" 
+            onClick={onTitleClick}
+            sx={{ 
+              ml: 1.5,
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+              cursor: onTitleClick ? 'pointer' : 'default',
+              '&:hover': onTitleClick ? {
+                opacity: 0.8
+              } : {}
+            }}
+          >
+            {title}
+          </Typography>
+        </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           

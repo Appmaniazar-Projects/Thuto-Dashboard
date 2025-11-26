@@ -160,10 +160,10 @@ const SuperAdminDashboard = () => {
         const subjectsData = await subjectService.getAllSubjects();
         setSubjects(subjectsData);
       } catch (allSubjectsError) {
-        // If getAllSubjects fails, try getSchoolSubjects as fallback
-        console.warn('getAllSubjects failed, trying getSchoolSubjects:', allSubjectsError);
-        const subjectsData = await subjectService.getSchoolSubjects();
-        setSubjects(subjectsData);
+        // If getAllSubjects fails, it's a critical error for superadmins
+        console.error('Failed to load all subjects for superadmin:', allSubjectsError);
+        setError('Could not load subjects. Please try again.');
+        setSubjects([]); // Set to empty to avoid further errors
       }
     } catch (error) {
       console.error('Error loading subjects:', error);
@@ -389,6 +389,7 @@ const SuperAdminDashboard = () => {
       }
 
       if (editingAdmin) {
+        console.log('Submitting for update:', formDataToSubmit);
         // For updates, we need to include the admin ID in the payload
         await updateAdmin(editingAdmin.id, {
           ...formDataToSubmit,
