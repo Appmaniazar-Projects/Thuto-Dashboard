@@ -355,13 +355,20 @@ const SuperAdminDashboard = () => {
         return;
       }
 
+      const province =
+        selectedSchool?.province ||
+        (isProvincialSuperAdmin() ? currentUser?.province : null) ||
+        editingAdmin?.province ||
+        adminForm.province ||
+        '';
+
       const formDataToSubmit = {
         ...adminForm,
         name: adminForm.name.trim(),
         lastName: adminForm.lastName.trim(),
         email: adminForm.email.trim(),
         phoneNumber: adminForm.phoneNumber.trim(),
-        //province: selectedSchool?.province || currentUser?.province || '',
+        province,
         createdBy: currentUser?.email,
         updatedBy: currentUser?.email 
       };
