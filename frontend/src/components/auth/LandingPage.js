@@ -26,31 +26,41 @@ import Logo from '../../assets/Logo.png';
 const LandingPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const userTypes = [
     {
-      title: 'Students, Parents & Teachers',
+      title: isMobile ? 'Students, Parents & Teachers' : 'Students, Parents & Teachers',
       description: 'Access your personalized educational dashboard',
       features: ['View Attendance', 'Track Progress', 'Access Resources', 'View Reports'],
-      icon: <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', alignItems: 'center' }}>
-        <StudentIcon sx={{ fontSize: 40, color: '#667eea' }} />
-        <ParentIcon sx={{ fontSize: 40, color: '#f093fb' }} />
-        <TeacherIcon sx={{ fontSize: 40, color: '#4facfe' }} />
-      </Box>,
+      icon: (
+        <Box sx={{ 
+          display: 'flex', 
+          gap: { xs: 1, sm: 1.5 }, 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <StudentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#667eea' }} />
+          <ParentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#f093fb' }} />
+          <TeacherIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#4facfe' }} />
+        </Box>
+      ),
       path: '/login',
       gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      buttonText: 'Continue to Login',
+      buttonText: isMobile ? 'Login' : 'Continue to Login',
       color: '#667eea'
     },
     {
-      title: 'School Administrators',
+      title: isMobile ? 'Administrators' : 'School Administrators',
       description: 'Complete control over school operations',
       features: ['Manage Users', 'System Settings', 'Reports & Analytics', 'School Operations'],
-      icon: <AdminIcon sx={{ fontSize: 56, color: '#f093fb' }} />,
+      icon: <AdminIcon sx={{ fontSize: { xs: 40, sm: 48, md: 56 }, color: '#f093fb' }} />,
       path: '/admin/login',
       gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      buttonText: 'Admin Access',
+      buttonText: isMobile ? 'Admin Login' : 'Admin Access',
       color: '#f093fb'
     }
   ];
@@ -71,10 +81,13 @@ const LandingPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
+        overflow: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        p: 0,
+        m: 0,
         '&::before': {
           content: '""',
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
@@ -85,17 +98,19 @@ const LandingPage = () => {
             radial-gradient(circle at 50% 50%, rgba(79, 172, 254, 0.1), transparent 50%)
           `,
           animation: 'pulse 20s ease-in-out infinite',
+          zIndex: 0,
         },
         '&::after': {
           content: '""',
-          position: 'absolute',
+          position: 'fixed',
           top: '-50%',
           left: '-50%',
           width: '200%',
           height: '200%',
           background: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
+          backgroundSize: { xs: '30px 30px', sm: '40px 40px', md: '50px 50px' },
           animation: 'moveBackground 60s linear infinite',
+          zIndex: 0,
         },
         '@keyframes pulse': {
           '0%, 100%': { opacity: 1 },
@@ -105,29 +120,54 @@ const LandingPage = () => {
           '0%': { transform: 'translate(0, 0)' },
           '100%': { transform: 'translate(50px, 50px)' },
         },
+        '@media (max-width: 600px)': {
+          '&::before, &::after': {
+            animation: 'none',
+          },
+        },
       }}
     >
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 3, md: 4 }, height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          position: 'relative', 
+          zIndex: 1, 
+          px: { xs: 2, sm: 3, md: 4 }, 
+          py: { xs: 3, sm: 4, md: 0 },
+          minHeight: '100vh',
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center',
+          overflow: 'visible',
+          '&.MuiContainer-root': {
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          }
+        }}
+      >
         <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 3 }, maxWidth: 'none', width: '100%' }}>
           {/* Logo */}
           <Box 
             sx={{ 
-              mb: 2,
+              mb: { xs: 1, sm: 2 },
               animation: 'fadeInDown 1s ease-out',
               display: 'inline-block',
-              p: 1.5,
-              borderRadius: '20px',
+              p: { xs: 1, sm: 1.5 },
+              borderRadius: '16px',
               background: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <img
               src={Logo}
               alt="Thuto"
               style={{
-                height: isMobile ? '50px' : '60px',
+                height: isMobile ? '40px' : (isTablet ? '50px' : '60px'),
                 width: 'auto',
+                maxWidth: '100%',
                 filter: 'brightness(0) invert(1) drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
               }}
             />
@@ -135,28 +175,45 @@ const LandingPage = () => {
           
           {/* Welcome Text */}
           <Typography
-            variant={isMobile ? 'h4' : 'h3'}
+            variant={isMobile ? 'h5' : (isTablet ? 'h4' : 'h3')}
             component="h1"
             sx={{
               color: 'white',
               fontWeight: 800,
-              mb: 1.5,
+              mb: { xs: 1, sm: 1.5 },
               textShadow: '0 4px 12px rgba(0,0,0,0.5)',
               animation: 'fadeInUp 1s ease-out 0.2s both',
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              px: { xs: 1, sm: 0 },
+              textAlign: 'center',
+              wordBreak: 'break-word',
+              fontSize: {
+                xs: '1.75rem',
+                sm: '2.125rem',
+                md: '3rem'
+              }
             }}
           >
             Welcome to Thuto
           </Typography>
           
           <Typography
-            variant={isMobile ? 'body1' : 'h6'}
+            variant={isMobile ? 'body2' : (isTablet ? 'body1' : 'h6')}
             sx={{
               color: 'rgba(255,255,255,0.9)',
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
               fontWeight: 400,
               textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-              animation: 'fadeInUp 1s ease-out 0.4s both'
+              animation: 'fadeInUp 1s ease-out 0.4s both',
+              textAlign: 'center',
+              px: { xs: 1, sm: 0 },
+              fontSize: {
+                xs: '0.875rem',
+                sm: '1rem',
+                md: '1.25rem'
+              },
+              lineHeight: 1.4
             }}
           >
             Educational Management Platform
@@ -165,22 +222,30 @@ const LandingPage = () => {
           <Box
             sx={{
               display: 'inline-block',
-              px: 3,
-              py: 1,
+              px: { xs: 2, sm: 3 },
+              py: { xs: 0.75, sm: 1 },
               borderRadius: '50px',
               background: 'rgba(255, 255, 255, 0.1)',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               animation: 'fadeIn 1s ease-out 0.6s both',
-              mb: 1.5
+              mb: { xs: 1, sm: 1.5 },
+              maxWidth: '90%',
+              mx: 'auto',
+              textAlign: 'center'
             }}
           >
             <Typography
               variant="body2"
               sx={{
                 color: 'rgba(255,255,255,0.95)',
-                fontSize: isMobile ? '0.85rem' : '0.95rem',
+                fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.95rem' },
                 fontWeight: 500,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
+                display: 'inline-block'
               }}
             >
               Choose your access type to get started
@@ -189,7 +254,20 @@ const LandingPage = () => {
         </Box>
 
         {/* Role Selection Cards */}
-        <Grid container spacing={2} justifyContent="center" sx={{ mb: 2 }}>
+        <Grid 
+          container 
+          spacing={{ xs: 1.5, sm: 2, md: 3 }} 
+          justifyContent="center" 
+          alignItems="stretch"
+          sx={{ 
+            mb: { xs: 1, sm: 2 },
+            px: { xs: 0, sm: 2 },
+            '& .MuiGrid-item': {
+              display: 'flex',
+              flexDirection: 'column'
+            }
+          }}
+        >
           {userTypes.map((userType, index) => (
             <Grid 
               item 
@@ -198,6 +276,8 @@ const LandingPage = () => {
               md={6} 
               key={index}
               sx={{
+                display: 'flex',
+                flexDirection: 'column',
                 animation: `fadeInUp 1s ease-out ${1 + index * 0.2}s both`
               }}
             >
@@ -207,123 +287,106 @@ const LandingPage = () => {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '16px',
+                  transition: 'all 0.3s ease',
                   cursor: 'pointer',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  position: 'relative',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '5px',
-                    background: userType.gradient,
-                  },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: userType.gradient,
-                    opacity: 0,
-                    transition: 'opacity 0.5s ease',
-                  },
+                  WebkitTapHighlightColor: 'transparent',
                   '&:hover': {
-                    transform: 'translateY(-12px)',
-                    boxShadow: `0 25px 50px -12px ${userType.color}40`,
-                    border: `1px solid ${userType.color}60`,
-                    '&::after': {
-                      opacity: 0.05,
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 24px ${userType.color}40`,
+                    borderColor: `${userType.color}80`,
+                  },
+                  '@media (hover: none)': {
+                    '&:hover': {
+                      transform: 'none',
+                      boxShadow: 'none',
                     },
-                    '& .role-icon': {
-                      transform: 'scale(1.1) translateY(-5px)'
-                    },
-                    '& .access-button': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 8px 25px ${userType.color}50`,
+                    '&:active': {
+                      transform: 'scale(0.98)',
+                      boxShadow: `0 8px 16px ${userType.color}30`,
                     }
                   },
+                  animation: `fadeIn 0.6s ease-out ${index * 0.2 + 0.4}s both`,
                 }}
                 onClick={() => handleRoleSelect(userType.path)}
               >
                 <CardContent
                   sx={{
-                    flexGrow: 1,
-                    display: 'flex',
+                    flex: 1, 
+                    display: 'flex', 
                     flexDirection: 'column',
                     alignItems: 'center',
                     textAlign: 'center',
-                    p: { xs: 2, md: 3 },
-                    position: 'relative',
-                    zIndex: 1,
+                    p: { xs: 2, sm: 3 },
+                    '&:last-child': {
+                      pb: { xs: 2, sm: 3 }
+                    }
                   }}
                 >
                   <Box
                     className="role-icon"
                     sx={{
-                      mb: 2,
-                      transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                      minHeight: '70px',
+                      mb: { xs: 1.5, sm: 2 },
+                      p: { xs: 1.5, sm: 2 },
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      p: 2,
-                      borderRadius: '20px',
-                      background: `linear-gradient(135deg, ${userType.color}15, ${userType.color}05)`,
-                      border: `2px solid ${userType.color}30`,
-                      position: 'relative',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        inset: -2,
-                        borderRadius: '20px',
-                        padding: '2px',
-                        background: userType.gradient,
-                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                        WebkitMaskComposite: 'xor',
-                        maskComposite: 'exclude',
-                        opacity: 0.5,
-                      }
+                      width: 'fit-content',
+                      mx: 'auto',
+                      '& svg': {
+                        transition: 'transform 0.3s ease',
+                      },
+                      '&:hover svg': {
+                        transform: 'scale(1.1)',
+                      },
                     }}
                   >
                     {userType.icon}
                   </Box>
-                  
-                  <Typography
-                    variant="h6"
+                  <Typography 
+                    variant="h6" 
                     component="h2"
                     sx={{
+                      mb: { xs: 0.75, sm: 1 },
                       fontWeight: 700,
-                      mb: 1,
-                      color: 'white',
-                      fontSize: isMobile ? '1.1rem' : '1.25rem',
-                      textShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                      background: userType.gradient,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      textFillColor: 'transparent',
+                      fontSize: { 
+                        xs: '1rem', 
+                        sm: '1.1rem', 
+                        md: '1.25rem' 
+                      },
+                      lineHeight: 1.3,
+                      wordBreak: 'break-word',
+                      width: '100%'
                     }}
                   >
                     {userType.title}
                   </Typography>
-                  
                   <Typography
                     variant="body2"
                     sx={{
                       color: 'rgba(255,255,255,0.75)',
-                      fontSize: isMobile ? '0.85rem' : '0.9rem',
+                      fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' },
                       lineHeight: 1.5,
-                      mb: 2
+                      mb: { xs: 1.5, sm: 2 },
+                      textAlign: 'center',
+                      px: { xs: 1, sm: 0 },
+                      wordBreak: 'break-word',
+                      width: '100%'
                     }}
                   >
                     {userType.description}
                   </Typography>
-                  
-                  {/* Features List */}
-                  <Stack spacing={0.75} sx={{ mb: 2, width: '100%' }}>
+                  <Stack spacing={0.75} sx={{ mb: { xs: 1.5, sm: 2 }, width: '100%' }}>
                     {userType.features.map((feature, idx) => (
                       <Box
                         key={idx}
@@ -332,53 +395,47 @@ const LandingPage = () => {
                           alignItems: 'center',
                           gap: 0.75,
                           color: 'rgba(255,255,255,0.8)',
-                          fontSize: '0.85rem'
+                          fontSize: { xs: '0.75rem', sm: '0.85rem' }
                         }}
                       >
                         <CheckIcon sx={{ fontSize: 16, color: userType.color }} />
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem' }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
                           {feature}
                         </Typography>
                       </Box>
                     ))}
                   </Stack>
-                  
                   <Button
-                    className="access-button"
                     variant="contained"
                     fullWidth
-                    size="large"
                     endIcon={<ArrowForwardIcon />}
                     sx={{
+                      mt: 'auto',
                       background: userType.gradient,
                       color: 'white',
-                      py: { xs: 1.25, md: 1.5 },
-                      fontWeight: 700,
+                      fontWeight: 600,
                       textTransform: 'none',
-                      fontSize: isMobile ? '0.9rem' : '1rem',
-                      borderRadius: 2.5,
-                      boxShadow: `0 8px 20px ${userType.color}40`,
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: '-100%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                        transition: 'left 0.5s ease',
-                      },
+                      borderRadius: '12px',
+                      py: { xs: 1, sm: 1.25 },
+                      fontSize: { xs: '0.8rem', sm: '0.875rem' },
                       '&:hover': {
-                        boxShadow: `0 12px 30px ${userType.color}60`,
-                        transform: 'translateY(-2px)',
-                        '&::before': {
-                          left: '100%',
+                        boxShadow: `0 4px 20px ${userType.color}80`,
+                        transform: 'translateY(-1px)',
+                      },
+                      '&:active': {
+                        transform: 'translateY(0)',
+                      },
+                      transition: 'all 0.2s ease',
+                      '@media (hover: none)': {
+                        '&:hover': {
+                          transform: 'none',
+                          boxShadow: 'none',
+                        },
+                        '&:active': {
+                          transform: 'scale(0.98)',
+                          boxShadow: `0 2px 10px ${userType.color}60`,
                         }
-                      }
+                      },
                     }}
                   >
                     {userType.buttonText}
