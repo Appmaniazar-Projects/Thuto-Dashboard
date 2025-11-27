@@ -72,17 +72,11 @@ const LandingPage = () => {
   return (
     <Box
       sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        minHeight: '100vh',
+        width: '100%',
         background: 'linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #667eea 100%)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'auto',
-        WebkitOverflowScrolling: 'touch',
+        flexDirection: 'column',
         p: 0,
         m: 0,
         '&::before': {
@@ -97,33 +91,7 @@ const LandingPage = () => {
             radial-gradient(circle at 85% 80%, rgba(240, 147, 251, 0.15), transparent 40%),
             radial-gradient(circle at 50% 50%, rgba(79, 172, 254, 0.1), transparent 50%)
           `,
-          animation: 'pulse 20s ease-in-out infinite',
-          zIndex: 0,
-        },
-        '&::after': {
-          content: '""',
-          position: 'fixed',
-          top: '-50%',
-          left: '-50%',
-          width: '200%',
-          height: '200%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)',
-          backgroundSize: { xs: '30px 30px', sm: '40px 40px', md: '50px 50px' },
-          animation: 'moveBackground 60s linear infinite',
-          zIndex: 0,
-        },
-        '@keyframes pulse': {
-          '0%, 100%': { opacity: 1 },
-          '50%': { opacity: 0.6 },
-        },
-        '@keyframes moveBackground': {
-          '0%': { transform: 'translate(0, 0)' },
-          '100%': { transform: 'translate(50px, 50px)' },
-        },
-        '@media (max-width: 600px)': {
-          '&::before, &::after': {
-            animation: 'none',
-          },
+          animation: 'none',
         },
       }}
     >
@@ -133,15 +101,14 @@ const LandingPage = () => {
           position: 'relative', 
           zIndex: 1, 
           px: { xs: 2, sm: 3, md: 4 }, 
-          py: { xs: 3, sm: 4, md: 0 },
-          minHeight: '100vh',
+          py: { xs: 3, sm: 4, md: 4 },
+          flex: 1,
           display: 'flex', 
           flexDirection: 'column', 
-          justifyContent: 'center',
-          overflow: 'visible',
           '&.MuiContainer-root': {
             marginLeft: 'auto',
             marginRight: 'auto',
+            minHeight: 'auto',
           }
         }}
       >
@@ -159,6 +126,7 @@ const LandingPage = () => {
               border: '1px solid rgba(255, 255, 255, 0.1)',
               maxWidth: '100%',
               boxSizing: 'border-box',
+              mt: { xs: 2, sm: 3 }
             }}
           >
             <img
@@ -260,12 +228,14 @@ const LandingPage = () => {
           justifyContent="center" 
           alignItems="stretch"
           sx={{ 
-            mb: { xs: 1, sm: 2 },
+            mb: { xs: 3, sm: 4 },
             px: { xs: 0, sm: 2 },
             '& .MuiGrid-item': {
               display: 'flex',
-              flexDirection: 'column'
-            }
+              flexDirection: 'column',
+              mb: { xs: 2, sm: 0 }
+            },
+            flex: '1 0 auto'
           }}
         >
           {userTypes.map((userType, index) => (
@@ -450,8 +420,10 @@ const LandingPage = () => {
         <Box 
           sx={{ 
             textAlign: 'center', 
-            mt: { xs: 2, md: 3 },
-            animation: 'fadeIn 1s ease-out 1.5s both'
+            mb: { xs: 2, md: 3 }, 
+            maxWidth: 'none', 
+            width: '100%',
+            pt: { xs: 2, sm: 3, md: 4 }
           }}
         >
           <Box
