@@ -18,6 +18,7 @@ const SuperAdminLayout = () => {
       <TopBar 
         src={LogoImage}
         isSuperAdmin={true} 
+        logoAsImage={true}
         onTitleClick={handleTitleClick}
       />
 

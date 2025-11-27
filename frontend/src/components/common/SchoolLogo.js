@@ -11,7 +11,7 @@ import LogoImage from '../../assets/Logo.png';
  * @param {boolean} props.showName - Whether to show school name (default: false)
  * @param {string} props.variant - Display variant: 'sidebar', 'header', 'login' (default: 'sidebar')
  */
-const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
+const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage = false }) => {
   const { branding } = useSchoolBranding();
 
   const getLogoStyles = () => {
@@ -44,6 +44,17 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
 
   const renderLogo = () => {
     if (branding.logo) {
+      if (asImage) {
+        return (
+          <Box
+            component="img"
+            src={branding.logo}
+            alt={branding.schoolName || 'School Logo'}
+            sx={{ height: size, width: 'auto' }}
+          />
+        );
+      }
+
       return (
         <Avatar
           src={branding.logo}
@@ -53,7 +64,18 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar' }) => {
       );
     }
 
-    // Fallback to school icon with school colors
+    // Fallback to default Thuto logo
+    if (asImage) {
+      return (
+        <Box
+          component="img"
+          src={LogoImage}
+          alt={branding.schoolName || 'Thuto'}
+          sx={{ height: size, width: 'auto' }}
+        />
+      );
+    }
+
     return (
       <Avatar
         src={LogoImage}

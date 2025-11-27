@@ -34,7 +34,7 @@ import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import SchoolLogo from '../common/SchoolLogo';
 
-const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick }) => {
+const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick, logoAsImage = false }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTabletOrMobile = useMediaQuery(theme.breakpoints.down('md')); // Add tablet detection
@@ -167,7 +167,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           </IconButton>
         )}
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-          <SchoolLogo size={32} showName={false} variant="header" />
+          <SchoolLogo size={32} showName={false} variant="header" asImage={logoAsImage} />
           <Typography 
             variant="h6" 
             noWrap 
