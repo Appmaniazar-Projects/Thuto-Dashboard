@@ -79,6 +79,7 @@ const LandingPage = () => {
         flexDirection: 'column',
         p: 0,
         m: 0,
+        overflow: 'hidden',
         '&::before': {
           content: '""',
           position: 'fixed',
@@ -97,22 +98,32 @@ const LandingPage = () => {
     >
       <Container
         maxWidth="lg"
+        disableGutters
         sx={{
           position: 'relative',
           zIndex: 1,
-          px: { xs: 2, sm: 3, md: 4 },
-          py: { xs: 3, sm: 4, md: 4 },
+          p: 0,
+          m: 0,
+          width: '100%',
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
           '&.MuiContainer-root': {
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            minHeight: 'auto',
+            margin: 0,
+            maxWidth: '100%',
+            minHeight: '100vh',
           }
         }}
       >
-        <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 3 }, maxWidth: 'none', width: '100%' }}>
+        <Box sx={{ 
+          textAlign: 'center', 
+          mb: { xs: 2, md: 3 }, 
+          maxWidth: 'none', 
+          width: '100%',
+          px: { xs: 2, sm: 3, md: 4 },
+          pt: { xs: 3, sm: 4 },
+          boxSizing: 'border-box'
+        }}>
           {/* Logo */}
           <Box
             sx={{
@@ -228,12 +239,16 @@ const LandingPage = () => {
           justifyContent="center" 
           alignItems="stretch"
           sx={{ 
-            mb: { xs: 3, sm: 4 },
-            px: { xs: 0, sm: 2 },
+            p: { xs: 2, sm: 3, md: 4 },
+            pt: 0,
+            m: 0,
+            width: '100%',
+            boxSizing: 'border-box',
             '& .MuiGrid-item': {
               display: 'flex',
               flexDirection: 'column',
-              mb: { xs: 2, sm: 0 }
+              mb: { xs: 2, sm: 0 },
+              p: 0
             },
             flex: '1 0 auto'
           }}
