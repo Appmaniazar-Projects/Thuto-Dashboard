@@ -36,10 +36,10 @@ const LandingPage = () => {
       description: 'Access your personalized educational dashboard',
       features: ['View Attendance', 'Track Progress', 'Access Resources', 'View Reports'],
       icon: (
-        <Box sx={{ 
-          display: 'flex', 
-          gap: { xs: 1, sm: 1.5 }, 
-          justifyContent: 'center', 
+        <Box sx={{
+          display: 'flex',
+          gap: { xs: 1, sm: 1.5 },
+          justifyContent: 'center',
           alignItems: 'center',
           flexWrap: 'wrap'
         }}>
@@ -95,16 +95,16 @@ const LandingPage = () => {
         },
       }}
     >
-      <Container 
-        maxWidth="lg" 
-        sx={{ 
-          position: 'relative', 
-          zIndex: 1, 
-          px: { xs: 2, sm: 3, md: 4 }, 
+      <Container
+        maxWidth="lg"
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          px: { xs: 2, sm: 3, md: 4 },
           py: { xs: 3, sm: 4, md: 4 },
           flex: 1,
-          display: 'flex', 
-          flexDirection: 'column', 
+          display: 'flex',
+          flexDirection: 'column',
           '&.MuiContainer-root': {
             marginLeft: 'auto',
             marginRight: 'auto',
@@ -114,8 +114,8 @@ const LandingPage = () => {
       >
         <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 3 }, maxWidth: 'none', width: '100%' }}>
           {/* Logo */}
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               mb: { xs: 1, sm: 2 },
               animation: 'fadeInDown 1s ease-out',
               display: 'inline-block',
