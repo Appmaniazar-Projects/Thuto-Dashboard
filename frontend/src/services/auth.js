@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
  * @param {string} phoneNumber - User's phone number (digits only, no formatting)
  * @returns {Promise<Object>} User data and auth token
  */
-const login = async (phoneNumber) => {
+const login = async (phoneNumber, role, username) => {
   const firebaseUser = auth.currentUser;
   if (!firebaseUser) throw new Error('No Firebase user found');
   
@@ -18,7 +18,9 @@ const login = async (phoneNumber) => {
   try {
     const requestData = {
       phoneNumber: phoneNumber.replace(/\s+/g, ''),
-      firebaseToken 
+      firebaseToken,
+      role,
+      username: username || null,
     };
     
     
@@ -31,14 +33,7 @@ const login = async (phoneNumber) => {
     }
     return response.data;
   } catch (error) {
-    console.error('❌ Login failed:', {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      url: error.config?.url,
-      fullError: error
-    });
+    console.error('❌ Login failed');
     throw error;
   }
 };

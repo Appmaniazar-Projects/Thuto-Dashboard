@@ -107,7 +107,7 @@ export const createUser = async (userData) => {
       lastName: userData.lastName?.trim() || '',
       email: userData.email?.trim() || '',
       phoneNumber: userData.phoneNumber?.trim() || '',
-      grade: userData.grade
+      grade: userData.grade,
     };
     
     // Prepare payload with admin context

@@ -27,7 +27,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
+import { Paper, Typography, TextField, Button, Box, Alert, MenuItem } from '@mui/material';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
@@ -49,6 +49,9 @@ const Login = () => {
   
   // Current step in authentication flow ('phone' or 'otp')
   const [step, setStep] = useState('phone');
+
+  const [role, setRole] = useState('student');   // 'student' | 'parent' | 'teacher'
+  const [username, setUsername] = useState('');  // only used for students
   
   // Loading state for API calls and Firebase operations
   const [loading, setLoading] = useState(false);
@@ -151,7 +154,8 @@ const Login = () => {
       
       // Step 2: Login with backend
       const cleanPhone = phoneNumber.replace(/\s+/g, '');
-      const { user, token } = await authService.login(cleanPhone);
+      const usernameToSend = role === 'student' ? username.trim() : undefined;
+      const { user, token } = await authService.login(cleanPhone, role, usernameToSend);
       
       setAuthData(user, token);
       
@@ -204,7 +208,34 @@ const Login = () => {
         {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
 
         {step === 'phone' ? (
-          <Box component="form" onSubmit={handlePhoneSubmit} sx={{ width: '100%' }}>
+            <Box component="form" onSubmit={handlePhoneSubmit} sx={{ width: '100%' }}>
+            <TextField
+              select
+              fullWidth
+              label="Role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              margin="normal"
+              disabled={loading}
+            >
+              <MenuItem value="student">Student</MenuItem>
+              <MenuItem value="parent">Parent</MenuItem>
+              <MenuItem value="teacher">Teacher</MenuItem>
+            </TextField>
+
+            {/* NEW: Username for students only */}
+            {role === 'student' && (
+              <TextField
+                fullWidth
+                label="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                margin="normal"
+                disabled={loading}
+                helperText="Enter the student's username (e.g. name and surname)."
+              />
+            )}
+
             <TextField
               fullWidth
               label="Phone Number"
@@ -220,7 +251,11 @@ const Login = () => {
               fullWidth
               variant="contained"
               sx={{ mt: 2 }}
-              disabled={loading || phoneNumber.replace(/\s+/g, '').length < 10}
+              disabled={
+                loading ||
+                phoneNumber.replace(/\s+/g, '').length < 10 ||
+                (role === 'student' && !username.trim())
+              }
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </Button>

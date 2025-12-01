@@ -20,14 +20,12 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
         return {
           width: size,
           height: size,
-          bgcolor: 'primary.main',
           color: 'white'
         };
       case 'login':
         return {
           width: size,
           height: size,
-          bgcolor: 'primary.main',
           color: 'white',
           mb: 2
         };
@@ -36,7 +34,6 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
         return {
           width: size,
           height: size,
-          bgcolor: 'primary.main',
           color: 'white'
         };
     }
@@ -56,7 +53,7 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
       }
 
       return (
-        <Avatar
+        <Image
           src={branding.logo}
           alt={branding.schoolName || 'School Logo'}
           sx={getLogoStyles()}
@@ -77,7 +74,7 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
     }
 
     return (
-      <Avatar
+      <Image
         src={LogoImage}
         alt={branding.schoolName || 'Thuto'}
         sx={getLogoStyles()}

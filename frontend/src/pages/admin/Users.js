@@ -68,6 +68,9 @@ const Users = () => {
         subjects: [],
         grade: '',
         schoolId: '',
+        parentName: '',
+        parentLastName: '',
+        parentPhoneNumber: '',
     });
 
     const roles = [
@@ -157,15 +160,43 @@ const Users = () => {
             }
         }
         
-        if (!userForm.phoneNumber.trim()) {
-            errors.phoneNumber = true;
-        } else {
-            // Phone number validation (basic)
-            const phoneRegex = /^[\d\s\+\-\(\)]+$/;
-            if (!phoneRegex.test(userForm.phoneNumber)) {
+
+            if (userForm.role !== 'student') {
+            // existing phone validation
+            if (!userForm.phoneNumber.trim()) {
                 errors.phoneNumber = true;
+            } else {
+                const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+                if (!phoneRegex.test(userForm.phoneNumber)) {
+                errors.phoneNumber = true;
+                }
             }
-        }
+            } else {
+            // role === 'student'
+            const studentPhone = userForm.phoneNumber.trim();
+            const parentPhone = userForm.parentPhoneNumber?.trim() || '';
+
+            // Parent phone is required (when creating a new student)
+            if (!editingUser && !parentPhone) {
+                errors.parentPhoneNumber = true;
+            } else if (parentPhone) {
+                const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+                if (!phoneRegex.test(parentPhone)) {
+                errors.parentPhoneNumber = true;
+                }
+            }
+
+            // If student phone is provided, validate format
+            if (studentPhone) {
+                const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+                if (!phoneRegex.test(studentPhone)) {
+                errors.phoneNumber = true;
+                }
+            }
+            }
+
+
+
         
         if (!userForm.role) {
             errors.role = true;
@@ -243,7 +274,10 @@ const Users = () => {
             phoneNumber: '',
             role: '',
             subjects: [],
-            grade: ''
+            grade: '',
+            parentName: '',
+            parentLastName: '',
+            parentPhoneNumber: '',
         });
         setFormErrors({});
     };
@@ -559,7 +593,7 @@ const Users = () => {
                     }}
                     error={formErrors.phoneNumber}
                     helperText={formErrors.phoneNumber ? 'Phone number is required' : ''}
-                    required
+                    required={userForm.role !== 'student'}
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -628,6 +662,43 @@ const Users = () => {
                             </TextField>
                         </>
                     )}
+
+                    {userForm.role === 'student' && (
+                        <>
+                            <TextField
+                            margin="dense"
+                            label="Parent/Guardian First Name"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.parentName}
+                            onChange={(e) => setUserForm({ ...userForm, parentName: e.target.value })}
+                            sx={{ mb: 2 }}
+                            />
+                            <TextField
+                            margin="dense"
+                            label="Parent/Guardian Last Name"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.parentLastName}
+                            onChange={(e) => setUserForm({ ...userForm, parentLastName: e.target.value })}
+                            sx={{ mb: 2 }}
+                            />
+                            <TextField
+                            margin="dense"
+                            label="Parent/Guardian Phone Number"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.parentPhoneNumber}
+                            onChange={(e) => {
+                                setUserForm({ ...userForm, parentPhoneNumber: e.target.value });
+                                setFormErrors({ ...formErrors, parentPhoneNumber: false });
+                            }}
+                            error={formErrors.parentPhoneNumber}
+                            helperText={formErrors.parentPhoneNumber ? 'Parent/guardian phone number is required for students' : ''}
+                            sx={{ mb: 2 }}
+                            />
+                        </>
+                        )}
                     
                     
                     {/* Password removed - users authenticate with OTP */}
