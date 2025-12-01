@@ -102,8 +102,6 @@ const LandingPage = () => {
         sx={{
           position: 'relative',
           zIndex: 1,
-          px: 0,
-          py: 0,
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -111,16 +109,18 @@ const LandingPage = () => {
             margin: 0,
             maxWidth: '100%',
             minHeight: '100vh',
-            padding: 0,
-            paddingLeft: '0 !important',
-            paddingRight: '0 !important',
+            padding: '0 !important',
+            width: '100%',
           },
           '@media (min-width: 600px)': {
             '&.MuiContainer-root': {
-              paddingLeft: '0 !important',
-              paddingRight: '0 !important',
+              padding: '0 !important',
+              '& > *': {
+                padding: '0 !important',
+              }
             }
           },
+          overflowX: 'hidden',
         }}
       >
         <Box sx={{ 
