@@ -248,26 +248,26 @@ const LandingPage = () => {
         </Box>
 
         {/* Role Selection Cards */}
-        <Grid 
-          container 
-          spacing={{ xs: 1.5, sm: 2, md: 3 }} 
-          justifyContent="center" 
-          alignItems="stretch"
-          sx={{ 
-            p: { xs: 2, sm: 3, md: 4 },
-            pt: 0,
-            m: 0,
-            width: '100%',
-            boxSizing: 'border-box',
-            '& .MuiGrid-item': {
-              display: 'flex',
-              flexDirection: 'column',
-              mb: { xs: 2, sm: 0 },
-              p: 0
-            },
-            flex: '1 0 auto'
-          }}
-        >
+       <Grid 
+            container 
+            spacing={{ xs: 1.5, sm: 2, md: 3 }} 
+            justifyContent="center" 
+            alignItems="stretch"
+            sx={{ 
+              p: 0,  // Remove all padding
+              m: 0,  // Remove all margins
+              width: '100%',
+              boxSizing: 'border-box',
+              '& .MuiGrid-item': {
+                display: 'flex',
+                flexDirection: 'column',
+                mb: { xs: 2, sm: 0 },
+                p: 0
+              },
+              flex: '1 0 auto'
+            }}
+          >
+        
           {userTypes.map((userType, index) => (
             <Grid 
               item 
