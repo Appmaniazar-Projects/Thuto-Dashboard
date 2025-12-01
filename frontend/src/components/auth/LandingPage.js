@@ -112,11 +112,13 @@ const LandingPage = () => {
             maxWidth: '100%',
             minHeight: '100vh',
             padding: 0,
+            paddingLeft: '0 !important',
+            paddingRight: '0 !important',
           },
           '@media (min-width: 600px)': {
             '&.MuiContainer-root': {
-              paddingLeft: 0,
-              paddingRight: 0,
+              paddingLeft: '0 !important',
+              paddingRight: '0 !important',
             }
           },
         }}
