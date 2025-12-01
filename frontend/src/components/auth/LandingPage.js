@@ -97,7 +97,7 @@ const LandingPage = () => {
       }}
     >
       <Container
-        maxWidth="lg"
+        maxWidth={false}
         disableGutters
         sx={{
           position: 'relative',
@@ -105,18 +105,25 @@ const LandingPage = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
+          width: '100%',
+          maxWidth: '100% !important',
+          margin: 0,
+          padding: '0 !important',
           '&.MuiContainer-root': {
             margin: 0,
-            maxWidth: '100%',
-            minHeight: '100vh',
             padding: '0 !important',
+            maxWidth: '100% !important',
+            minHeight: '100vh',
             width: '100%',
           },
-          '@media (min-width: 600px)': {
+          // Force override any padding on all screen sizes
+          '@media (min-width: 0px)': {
             '&.MuiContainer-root': {
               padding: '0 !important',
+              margin: 0,
               '& > *': {
                 padding: '0 !important',
+                margin: 0,
               }
             }
           },
