@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Avatar, Typography } from '@mui/material';
 import { School as SchoolIcon } from '@mui/icons-material';
 import { useSchoolBranding } from '../../context/SchoolBrandingContext';
-import LogoImage from '../../assets/Logo.png';
+import LogoImage from '../../assets/Logo_Dashboard.png';
 
 /**
  * SchoolLogo component that displays the school's logo or fallback

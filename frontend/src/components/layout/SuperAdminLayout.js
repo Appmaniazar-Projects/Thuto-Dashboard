@@ -3,7 +3,7 @@ import { Box, Container, useTheme } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
 import TopBar from './TopBar';
 import Footer from './Footer';
-import LogoImage from '../../assets/Logo.png'
+import LogoImage from '../../assets/Logo_Dashboard.png'
 
 const SuperAdminLayout = () => {
   const theme = useTheme();
