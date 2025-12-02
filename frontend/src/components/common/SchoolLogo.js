@@ -53,7 +53,8 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
       }
 
       return (
-        <Image
+        <Box
+          component="img"
           src={branding.logo}
           alt={branding.schoolName || 'School Logo'}
           sx={getLogoStyles()}
@@ -74,7 +75,8 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
     }
 
     return (
-      <Image
+      <Box
+        component="img"
         src={LogoImage}
         alt={branding.schoolName || 'Thuto'}
         sx={getLogoStyles()}

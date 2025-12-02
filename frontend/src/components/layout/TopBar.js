@@ -167,6 +167,11 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           </IconButton>
         )}
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+          {logoAsImage && (
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 1.5 }}>
+              <SchoolLogo showName={false} variant="header" size={32} asImage={true} />
+            </Box>
+          )}
           <Typography 
             variant="h6" 
             noWrap 
