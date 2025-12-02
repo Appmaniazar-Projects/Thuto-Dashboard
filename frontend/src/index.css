@@ -1,41 +1,34 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-/* Global CSS override to fix layout spacing issues */
-.css-avik8r {
-  margin-left: 0 !important;
-}
-
-/* Additional layout fixes for consistent spacing */
-.MuiBox-root.css-avik8r {
-  margin-left: 0 !important;
-}
-
-/* Ensure main content area has proper spacing without extra margins */
-[role="main"], main {
-  margin-left: 0 !important;
-}
-
-/* Fix any Material-UI generated classes that might add unwanted margins */
-.css-* {
-  margin-left: 0 !important;
-}
-
-/* Remove max-width constraint from landing page header */
-.css-d3ww3e {
-  max-width: none !important;
+/* Remove padding from the main container */
+.css-x6mf4g-MuiContainer-root {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
   width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* Remove margin from the top of the box */
+/* Remove all margins from the box */
+.css-1nrdc3u {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+}
+/* Ensure the container's immediate children take full width */
+.css-x6mf4g-MuiContainer-root > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove any remaining padding at the 600px breakpoint */
+@media (min-width: 600px) {
+  .css-x6mf4g-MuiContainer-root {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
 }
 
 .css-1c1kq07 {
