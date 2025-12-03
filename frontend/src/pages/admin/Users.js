@@ -62,6 +62,7 @@ const Users = () => {
     const [userForm, setUserForm] = useState({
         name: '',
         lastName: '',
+        username: '',
         email: '',
         phoneNumber: '',
         role: '',
@@ -71,6 +72,7 @@ const Users = () => {
         parentName: '',
         parentLastName: '',
         parentPhoneNumber: '',
+        parentEmail: '',
     });
 
     const roles = [
@@ -78,6 +80,17 @@ const Users = () => {
         { value: 'parent', label: 'Parent' },
         { value: 'teacher', label: 'Teacher' },
     ];
+
+    const normalizePhoneNumber = (phone) => {
+        if (!phone) return '';
+        return phone.replace(/\D/g, '');
+    };
+
+    const findParentByPhoneNumber = (phone) => {
+        const normalized = normalizePhoneNumber(phone);
+        if (!normalized) return null;
+        return parents.find((parent) => normalizePhoneNumber(parent.phoneNumber) === normalized) || null;
+    };
 
     useEffect(() => {
         fetchUsers();
@@ -250,12 +263,17 @@ const Users = () => {
             setUserForm({
                 name: user.name || '',
                 lastName: user.lastName || '',
+                username: user.username || '',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
                 role: normalizeRole(user.role) || '',
                 subjects: user.subjects || [],
                 grade: user.grade || '',
-                schoolId: user.schoolId || ''
+                schoolId: user.schoolId || '',
+                parentName: user.parentName || '',
+                parentLastName: user.parentLastName || '',
+                parentPhoneNumber: user.parentPhoneNumber || '',
+                parentEmail: user.parentEmail || '',
             });
         } else {
             setEditingUser(null);
@@ -270,6 +288,7 @@ const Users = () => {
         setUserForm({
             name: '',
             lastName: '',
+            username: '',
             email: '',
             phoneNumber: '',
             role: '',
@@ -278,6 +297,7 @@ const Users = () => {
             parentName: '',
             parentLastName: '',
             parentPhoneNumber: '',
+            parentEmail: '',
         });
         setFormErrors({});
     };
@@ -667,6 +687,15 @@ const Users = () => {
                         <>
                             <TextField
                             margin="dense"
+                            label="Username"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.username}
+                            onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                            sx={{ mb: 2 }}
+                            />
+                            <TextField
+                            margin="dense"
                             label="Parent/Guardian First Name"
                             fullWidth
                             variant="outlined"
@@ -685,12 +714,31 @@ const Users = () => {
                             />
                             <TextField
                             margin="dense"
+                            label="Parent/Guardian Email"
+                            fullWidth
+                            variant="outlined"
+                            value={userForm.parentEmail}
+                            onChange={(e) => setUserForm({ ...userForm, parentEmail: e.target.value })}
+                            sx={{ mb: 2 }}
+                            />
+                            <TextField
+                            margin="dense"
                             label="Parent/Guardian Phone Number"
                             fullWidth
                             variant="outlined"
                             value={userForm.parentPhoneNumber}
                             onChange={(e) => {
-                                setUserForm({ ...userForm, parentPhoneNumber: e.target.value });
+                                const newPhone = e.target.value;
+                                setUserForm((prev) => {
+                                    const updatedForm = { ...prev, parentPhoneNumber: newPhone };
+                                    const matchedParent = findParentByPhoneNumber(newPhone);
+                                    if (matchedParent) {
+                                        updatedForm.parentName = matchedParent.name || updatedForm.parentName;
+                                        updatedForm.parentLastName = matchedParent.lastName || updatedForm.parentLastName;
+                                        updatedForm.parentEmail = matchedParent.email || updatedForm.parentEmail;
+                                    }
+                                    return updatedForm;
+                                });
                                 setFormErrors({ ...formErrors, parentPhoneNumber: false });
                             }}
                             error={formErrors.parentPhoneNumber}
