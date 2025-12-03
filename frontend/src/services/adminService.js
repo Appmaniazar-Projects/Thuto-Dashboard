@@ -102,11 +102,16 @@ export const createUser = async (userData) => {
       ...userData,
       // Ensure subjects is an array
       subjects: Array.isArray(userData.subjects) ? userData.subjects : [],
-      // Remove empty fields
+      // Remove/trim string fields
       name: userData.name?.trim() || '',
       lastName: userData.lastName?.trim() || '',
       email: userData.email?.trim() || '',
       phoneNumber: userData.phoneNumber?.trim() || '',
+      username: userData.username?.trim() || '',
+      parentName: userData.parentName?.trim() || '',
+      parentLastName: userData.parentLastName?.trim() || '',
+      parentPhoneNumber: userData.parentPhoneNumber?.trim() || '',
+      parentEmail: userData.parentEmail?.trim() || '',
       grade: userData.grade,
     };
     
@@ -153,6 +158,13 @@ export const updateUser = async (userId, userData) => {
       phoneNumber: userData.phoneNumber,
       role: userData.role?.toUpperCase() || 'STUDENT' // Backend might expect uppercase
     };
+
+    // Include optional fields when provided (e.g. student username and parent info)
+    if (userData.username) essentialFields.username = userData.username;
+    if (userData.parentName) essentialFields.parentName = userData.parentName;
+    if (userData.parentLastName) essentialFields.parentLastName = userData.parentLastName;
+    if (userData.parentPhoneNumber) essentialFields.parentPhoneNumber = userData.parentPhoneNumber;
+    if (userData.parentEmail) essentialFields.parentEmail = userData.parentEmail;
     
     // Only include non-empty optional fields
     if (userData.schoolId) essentialFields.schoolId = userData.schoolId;
