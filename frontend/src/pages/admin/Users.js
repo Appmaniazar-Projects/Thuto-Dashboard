@@ -407,6 +407,7 @@ const Users = () => {
                                 <TableCell>Role</TableCell>
                                 {title === 'Teachers' && <TableCell>Subjects</TableCell>}
                                 {title === 'Teachers' && <TableCell>Grade</TableCell>}
+                                {title === 'Students' && <TableCell>Grade</TableCell>}
                                 <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
@@ -420,37 +421,71 @@ const Users = () => {
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                safeUserData.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell>{user.name}</TableCell>
-                                    <TableCell>{user.lastName || 'N/A'}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>{user.phoneNumber}</TableCell>
-                                    <TableCell>
-                                        <Chip 
-                                            label={user.role} 
-                                            color={getRoleColor(user.role)}
-                                            size="small"
-                                        />
-                                    </TableCell>
-                                    {title === 'Teachers' && (
-                                        <TableCell>
-                                            {user.subjects?.join(', ') || 'Not assigned'}
-                                        </TableCell>
-                                    )}
-                                    {title === 'Teachers' && (
-                                        <TableCell>{user.grade || 'Not assigned'}</TableCell>
-                                    )}
-                                    <TableCell align="right">
-                                        <IconButton onClick={() => openDialog(user)}>
-                                            <EditIcon />
-                                        </IconButton>
-                                        <IconButton onClick={() => handleDelete(user.id)} color="error">
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    </TableCell>
-                                </TableRow>
-                                ))
+                                safeUserData.map((user) => {
+                                    // For teachers: resolve subject and grade IDs to names
+                                    let subjectNames = [];
+                                    let gradeName = 'Not assigned';
+                                    
+                                    if (title === 'Teachers') {
+                                        // Convert subject IDs to names
+                                        if (Array.isArray(user.subjects) && user.subjects.length > 0) {
+                                            subjectNames = user.subjects
+                                                .map(subjectId => {
+                                                    const subject = subjects.find(s => String(s.id) === String(subjectId));
+                                                    return subject ? subject.name : null;
+                                                })
+                                                .filter(Boolean); // Remove null values
+                                        }
+                                        
+                                        // Convert grade ID to name
+                                        if (user.grade) {
+                                            const grade = grades.find(g => String(g.id) === String(user.grade));
+                                            gradeName = grade ? grade.name : 'Not assigned';
+                                        }
+                                    }
+                                    
+                                    // For students: resolve grade ID to name
+                                    let studentGradeName = 'Not assigned';
+                                    if (title === 'Students' && user.grade) {
+                                        const grade = grades.find(g => String(g.id) === String(user.grade));
+                                        studentGradeName = grade ? grade.name : 'Not assigned';
+                                    }
+                                    
+                                    return (
+                                        <TableRow key={user.id}>
+                                            <TableCell>{user.name}</TableCell>
+                                            <TableCell>{user.lastName || 'N/A'}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>{user.phoneNumber}</TableCell>
+                                            <TableCell>
+                                                <Chip 
+                                                    label={user.role} 
+                                                    color={getRoleColor(user.role)}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            {title === 'Teachers' && (
+                                                <TableCell>
+                                                    {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
+                                                </TableCell>
+                                            )}
+                                            {title === 'Teachers' && (
+                                                <TableCell>{gradeName}</TableCell>
+                                            )}
+                                            {title === 'Students' && (
+                                                <TableCell>{studentGradeName}</TableCell>
+                                            )}
+                                            <TableCell align="right">
+                                                <IconButton onClick={() => openDialog(user)}>
+                                                    <EditIcon />
+                                                </IconButton>
+                                                <IconButton onClick={() => handleDelete(user.id)} color="error">
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>

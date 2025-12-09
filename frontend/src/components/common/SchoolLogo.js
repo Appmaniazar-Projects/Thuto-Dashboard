@@ -18,8 +18,8 @@ const SchoolLogo = ({ size = 40, showName = false, variant = 'sidebar', asImage 
     switch (variant) {
       case 'header':
         return {
-          width: size,
-          height: size,
+          width: 'auto',
+          height: 45,
           color: 'white'
         };
       case 'login':
