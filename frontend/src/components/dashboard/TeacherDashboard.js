@@ -25,6 +25,7 @@ import teacherService from '../../services/teacherService';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import StatCard from '../common/StatCard';
+import { getUserDisplayName } from '../../utils/appText';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
@@ -153,7 +154,7 @@ const filteredResources = useMemo(() => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Welcome, {user?.name || 'Teacher'}!
+          Welcome, {getUserDisplayName(user)}!
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
           {new Date().toLocaleDateString('en-US', { 

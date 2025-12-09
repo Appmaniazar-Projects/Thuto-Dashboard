@@ -112,9 +112,17 @@ const StudentAttendance = () => {
         if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
           setError('Unable to connect to the server. Please check your connection and try again.');
         } else if (err.response?.status === 404) {
-          // 404 might mean no attendance records exist, which is not an error
-          setAttendanceData([]);
-          setError('');
+          // 404 usually means no attendance records exist yet - treat as empty state
+          setAttendanceData({
+            summary: {
+              presentDays: 0,
+              absentDays: 0,
+              lateDays: 0,
+              attendanceRate: 0,
+            },
+            details: [],
+          });
+          setError(null);
         } else {
           setError('Failed to load attendance data. Please try again.');
         }
@@ -287,7 +295,7 @@ const StudentAttendance = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {attendanceData && attendanceData.details.length > 0 ? (
+              {Array.isArray(attendanceData?.details) && attendanceData.details.length > 0 ? (
                 attendanceData.details.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell>{format(parseISO(record.date), 'MMMM d, yyyy')}</TableCell>

@@ -564,8 +564,8 @@ const SuperAdminDashboard = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <PeopleIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
                 <Box>
-                  <Typography variant="h4">{schools.reduce((sum, s) => sum + (s.userCount || 0), 0)}</Typography>
-                  <Typography color="text.secondary">Total Users</Typography>
+                  <Typography variant="h4">{grades.length}</Typography>
+                  <Typography color="text.secondary">Total Grades</Typography>
                 </Box>
               </Box>
             </CardContent>

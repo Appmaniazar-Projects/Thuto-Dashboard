@@ -71,13 +71,15 @@ const GradeManagement = () => {
         getUsersByRole('student'),
         getUsersByRole('teacher')
       ]);
-      
-      // Ensure all data is properly formatted as arrays
-      const processedGrades = Array.isArray(gradesData) ? gradesData.map(grade => ({ 
-        id: grade.id, 
-        name: grade.name 
-      })) : [];
-      
+
+      const processedGrades = Array.isArray(gradesData)
+        ? gradesData.map((grade) => ({
+            ...grade,
+            id: grade.id ?? grade.gradeId ?? grade.idGrade,
+            name: grade.name ?? grade.gradeName ?? grade.displayName ?? 'Unnamed Grade',
+          }))
+        : [];
+
       const processedStudents = Array.isArray(studentsData) ? studentsData : [];
       const processedTeachers = Array.isArray(teachersData) ? teachersData : [];
       

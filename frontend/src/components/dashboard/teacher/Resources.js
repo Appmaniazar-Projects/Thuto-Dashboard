@@ -30,7 +30,7 @@ const TeacherResources = () => {
 
   // Filter resources when subject or grade changes
   useEffect(() => {
-    if (allResources.length === 0) {
+    if (!Array.isArray(allResources) || allResources.length === 0) {
       setFilteredResources([]);
       return;
     }
@@ -93,11 +93,19 @@ const TeacherResources = () => {
             return [];
           })
         ]);
-        setAllResources(resourcesData || []);
-        setSubjects(subjectsData || []);
-        setGrades(gradesData || []);
+        const normalizedResources = Array.isArray(resourcesData)
+          ? resourcesData
+          : Array.isArray(resourcesData?.data)
+            ? resourcesData.data
+            : Array.isArray(resourcesData?.resources)
+              ? resourcesData.resources
+              : [];
+
+        setAllResources(normalizedResources);
+        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+        setGrades(Array.isArray(gradesData) ? gradesData : []);
         
-        if (!resourcesData) {
+        if (normalizedResources.length === 0) {
           setError('No resources found. Upload your first resource to get started!');
         }
       } catch (err) {

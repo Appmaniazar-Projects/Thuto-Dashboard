@@ -188,6 +188,9 @@ export const getAttendanceSubmissions = async () => {
     return response.data || [];
   } catch (error) {
     console.error('Error fetching attendance submissions:', error);
+    if (error.response?.status === 404) {
+      return [];
+    }
     throw error;
   }
 };
