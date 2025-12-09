@@ -13,6 +13,7 @@ import {
 } from '../../services/attendanceService';
 import teacherService from '../../services/teacherService';
 import gradeService from '../../services/gradeService';
+import subjectService from '../../services/subjectService';
 
 const AttendanceRegisterPage = () => {
   const navigate = useNavigate();
@@ -33,24 +34,89 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      //Get teacher info
-      const teacher = JSON.parse(localStorage.getItem('user'));
-      const teacherId = teacher.id;
+      // Get teacher info
+      const teacher = JSON.parse(localStorage.getItem('user') || '{}');
+      const teacherId = teacher.id || teacher.phoneNumber;
 
-      //Fetch teacher's assigned grades
-      const grades = await gradeService.getGradesByTeacher(teacherId);
-      setTeacherGrades(grades || []);
-
-      if (!grades || grades.length === 0) {
-        throw new Error("No grades found for this teacher");
+      if (!teacherId) {
+        throw new Error('Teacher information not found');
       }
 
-      const gradeId = grades[0].id; // Use first grade automatically
-      setSelectedGrade(grades[0].name || gradeId); // For display only
+      const schoolId =
+        localStorage.getItem('schoolId') ||
+        teacher.schoolId ||
+        teacher.school?.id ||
+        null;
+
+      // Fetch teacher's subjects and all school grades
+      const [subjectsRaw, allGradesRaw] = await Promise.all([
+        subjectService.getSubjectsByTeacher(teacherId).catch(err => {
+          console.error('Failed to fetch teacher subjects for attendance:', err);
+          return [];
+        }),
+        gradeService.getSchoolGrades(schoolId).catch(err => {
+          console.error('Failed to fetch school grades for attendance:', err);
+          return [];
+        }),
+      ]);
+
+      const subjectsData = Array.isArray(subjectsRaw) ? subjectsRaw : [];
+      const allGrades = Array.isArray(allGradesRaw) ? allGradesRaw : [];
+
+      const gradeMap = new Map(
+        allGrades.map((grade) => {
+          const id = grade.id ?? grade.gradeId ?? grade.idGrade;
+          return [
+            String(id),
+            {
+              ...grade,
+              id,
+              name: grade.name ?? grade.gradeName ?? grade.displayName ?? `Grade ${id}`,
+            },
+          ];
+        })
+      );
+
+      const teacherGradeIds = new Set();
+      const derivedTeacherGrades = [];
+
+      subjectsData.forEach((subject) => {
+        const subjectGradeIds = Array.isArray(subject.gradeIds)
+          ? subject.gradeIds
+          : subject.gradeId
+          ? [subject.gradeId]
+          : [];
+
+        subjectGradeIds.forEach((gid) => {
+          const key = String(gid);
+          if (!teacherGradeIds.has(key)) {
+            teacherGradeIds.add(key);
+            const gradeFromMap = gradeMap.get(key);
+            if (gradeFromMap) {
+              derivedTeacherGrades.push(gradeFromMap);
+            } else {
+              derivedTeacherGrades.push({ id: gid, name: `Grade ${gid}` });
+            }
+          }
+        });
+      });
+
+      setTeacherGrades(derivedTeacherGrades);
+
+      if (!derivedTeacherGrades || derivedTeacherGrades.length === 0) {
+        throw new Error('No grades found for this teacher');
+      }
+
+      const firstGrade = derivedTeacherGrades[0];
+      const gradeId = firstGrade.id; // Use first grade automatically
+      setSelectedGrade(firstGrade.name || `Grade ${gradeId}`); // For display only
       setSelectedGradeId(gradeId);
 
-      // Fetch students using getMyStudents
-      const gradeData = await teacherService.getMyStudents();
+      // Fetch students for the selected grade
+      const gradeData = await gradeService.getStudentsByGrade(gradeId).catch(err => {
+        console.error(`Failed to fetch students for grade ${gradeId}:`, err);
+        return [];
+      });
 
       const studentsWithDefaults = (gradeData || []).map(student => ({
         ...student,

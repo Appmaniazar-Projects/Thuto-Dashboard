@@ -63,21 +63,70 @@ const TeacherDashboard = () => {
           setError('Teacher ID not found. Please log in again.');
           return;
         }
+
+        const schoolId = user.schoolId || user.school?.id || localStorage.getItem('schoolId') || null;
         
         // Fetch resources, subjects, grades, and students in parallel
-        const [resourceData, subjectsData, gradesData, studentsData] = await Promise.all([
+        const [resourceData, subjectsRaw, allGradesRaw, studentsData] = await Promise.all([
           teacherService.getRecentResources(), // Get all resources
-          subjectService.getSubjectsByTeacher(teacherId), // Get teacher's subjects
-          gradeService.getGradesByTeacher(teacherId), // Get teacher's grades
+          subjectService.getSubjectsByTeacher(teacherId).catch(err => {
+            console.error('Failed to fetch teacher subjects for dashboard:', err);
+            return [];
+          }), // Get teacher's subjects
+          gradeService.getSchoolGrades(schoolId).catch(err => {
+            console.error('Failed to fetch school grades for teacher dashboard:', err);
+            return [];
+          }),
           teacherService.getTeacherStudents().catch(err => {
             console.error('Failed to fetch teacher students for dashboard:', err);
             return [];
           })
         ]);
+
+        const subjectsData = Array.isArray(subjectsRaw) ? subjectsRaw : [];
+        const allGrades = Array.isArray(allGradesRaw) ? allGradesRaw : [];
+
+        const gradeMap = new Map(
+          allGrades.map((grade) => {
+            const id = grade.id ?? grade.gradeId ?? grade.idGrade;
+            return [
+              String(id),
+              {
+                ...grade,
+                id,
+                name: grade.name ?? grade.gradeName ?? grade.displayName ?? `Grade ${id}`,
+              },
+            ];
+          })
+        );
+
+        const teacherGradeIds = new Set();
+        const derivedTeacherGrades = [];
+
+        subjectsData.forEach((subject) => {
+          const subjectGradeIds = Array.isArray(subject.gradeIds)
+            ? subject.gradeIds
+            : subject.gradeId
+            ? [subject.gradeId]
+            : [];
+          subjectGradeIds.forEach((gid) => {
+            const key = String(gid);
+            if (!teacherGradeIds.has(key)) {
+              teacherGradeIds.add(key);
+              const gradeFromMap = gradeMap.get(key);
+              if (gradeFromMap) {
+                derivedTeacherGrades.push(gradeFromMap);
+              } else {
+                derivedTeacherGrades.push({ id: gid, name: `Grade ${gid}` });
+              }
+            }
+          });
+        });
+
         setResources(resourceData || []);
         setTeacherSubjects(subjectsData || []);
-        setTeacherGrades(gradesData || []);
-        setTeacherStudents(studentsData || []);
+        setTeacherGrades(derivedTeacherGrades);
+        setTeacherStudents(Array.isArray(studentsData) ? studentsData : []);
         
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
