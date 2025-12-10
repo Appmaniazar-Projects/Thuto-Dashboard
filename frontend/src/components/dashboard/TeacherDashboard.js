@@ -68,7 +68,10 @@ const TeacherDashboard = () => {
         
         // Fetch resources, subjects, grades, and students in parallel
         const [resourceData, subjectsRaw, allGradesRaw, studentsData] = await Promise.all([
-          teacherService.getRecentResources(), // Get all resources
+          teacherService.getRecentResources().catch(err => {
+            console.error('Failed to fetch recent resources for dashboard:', err);
+            return [];
+          }),
           subjectService.getSubjectsByTeacher(teacherId).catch(err => {
             console.error('Failed to fetch teacher subjects for dashboard:', err);
             return [];
@@ -82,6 +85,14 @@ const TeacherDashboard = () => {
             return [];
           })
         ]);
+
+        const normalizedResources = Array.isArray(resourceData)
+          ? resourceData
+          : Array.isArray(resourceData?.data)
+            ? resourceData.data
+            : Array.isArray(resourceData?.resources)
+              ? resourceData.resources
+              : [];
 
         const subjectsData = Array.isArray(subjectsRaw) ? subjectsRaw : [];
         const allGrades = Array.isArray(allGradesRaw) ? allGradesRaw : [];
@@ -123,7 +134,7 @@ const TeacherDashboard = () => {
           });
         });
 
-        setResources(resourceData || []);
+        setResources(normalizedResources);
         setTeacherSubjects(subjectsData || []);
         setTeacherGrades(derivedTeacherGrades);
         setTeacherStudents(Array.isArray(studentsData) ? studentsData : []);
@@ -153,6 +164,9 @@ const TeacherDashboard = () => {
 
   // Apply filters to resources
 const filteredResources = useMemo(() => {
+  if (!Array.isArray(resources)) {
+    return [];
+  }
   return resources.filter(resource => {
     if (filters.subject && resource.subjectId !== filters.subject) return false;
     if (filters.grade && resource.gradeId !== filters.grade) return false;
