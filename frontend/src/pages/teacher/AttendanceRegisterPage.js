@@ -113,12 +113,21 @@ useEffect(() => {
       setSelectedGradeId(gradeId);
 
       // Fetch students for the selected grade
-      const gradeData = await gradeService.getStudentsByGrade(gradeId).catch(err => {
+      const gradeDataRaw = await gradeService.getStudentsByGrade(gradeId).catch(err => {
         console.error(`Failed to fetch students for grade ${gradeId}:`, err);
         return [];
       });
 
-      const studentsWithDefaults = (gradeData || []).map(student => ({
+      // Normalize response so we always work with an array
+      const gradeData = Array.isArray(gradeDataRaw)
+        ? gradeDataRaw
+        : Array.isArray(gradeDataRaw?.data)
+          ? gradeDataRaw.data
+          : Array.isArray(gradeDataRaw?.students)
+            ? gradeDataRaw.students
+            : [];
+
+      const studentsWithDefaults = gradeData.map(student => ({
         ...student,
         status: 'present',
         remarks: ''
