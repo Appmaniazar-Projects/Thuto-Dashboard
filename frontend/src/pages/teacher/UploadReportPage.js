@@ -12,7 +12,7 @@ import {
   getTeacherResources, 
   uploadResource,
   deleteResource
-} from '../../../services/teacherService';
+} from '../../services/teacherService';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
 
