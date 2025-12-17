@@ -13,8 +13,8 @@ import {
   uploadResource,
   deleteResource
 } from '../../services/teacherService';
-import subjectService from '../../../services/subjectService';
-import gradeService from '../../../services/gradeService';
+import subjectService from '../../services/subjectService';
+import gradeService from '../../services/gradeService';
 
 const TeacherResources = () => {
   const [allResources, setAllResources] = useState([]);
