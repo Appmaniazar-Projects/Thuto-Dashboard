@@ -13,6 +13,7 @@ import {
 } from '@mui/icons-material';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
+import { getMyStudents } from '../../services/teacherService';
 import { 
   uploadTeacherStudentReport, 
   getTeacherStudentReports,
@@ -44,95 +45,18 @@ const UploadReportPage = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      // Get teacher info
-      const teacher = JSON.parse(localStorage.getItem('user') || '{}');
-      const teacherId = teacher.id || teacher.phoneNumber;
+      // Fetch students assigned to the logged-in teacher via /teacher/${phoneNumber}/students
+      const rawStudents = await getMyStudents();
 
-      if (!teacherId) {
-        throw new Error('Teacher information not found');
-      }
-
-      const schoolId =
-        localStorage.getItem('schoolId') ||
-        teacher.schoolId ||
-        teacher.school?.id ||
-        null;
-
-      // Fetch teacher's subjects and all school grades
-      const [subjectsRaw, allGradesRaw] = await Promise.all([
-        subjectService.getSubjectsByTeacher(teacherId).catch(err => {
-          console.error('Failed to fetch teacher subjects for reports:', err);
-          return [];
-        }),
-        gradeService.getSchoolGrades(schoolId).catch(err => {
-          console.error('Failed to fetch school grades for reports:', err);
-          return [];
-        }),
-      ]);
-
-      const subjectsData = Array.isArray(subjectsRaw) ? subjectsRaw : [];
-      const allGrades = Array.isArray(allGradesRaw) ? allGradesRaw : [];
-
-      const gradeMap = new Map(
-        allGrades.map((grade) => {
-          const id = grade.id ?? grade.gradeId ?? grade.idGrade;
-          return [
-            String(id),
-            {
-              ...grade,
-              id,
-              name: grade.name ?? grade.gradeName ?? grade.displayName ?? `Grade ${id}`,
-            },
-          ];
-        })
-      );
-
-      const teacherGradeIds = new Set();
-      const derivedTeacherGrades = [];
-
-      subjectsData.forEach((subject) => {
-        const subjectGradeIds = Array.isArray(subject.gradeIds)
-          ? subject.gradeIds
-          : subject.gradeId
-          ? [subject.gradeId]
-          : [];
-
-        subjectGradeIds.forEach((gid) => {
-          const key = String(gid);
-          if (!teacherGradeIds.has(key)) {
-            teacherGradeIds.add(key);
-            const gradeFromMap = gradeMap.get(key);
-            if (gradeFromMap) {
-              derivedTeacherGrades.push(gradeFromMap);
-            } else {
-              derivedTeacherGrades.push({ id: gid, name: `Grade ${gid}` });
-            }
-          }
-        });
-      });
-
-      if (!derivedTeacherGrades || derivedTeacherGrades.length === 0) {
-        throw new Error('No grades found for this teacher');
-      }
-
-      // For now, use the first derived grade to fetch students
-      const firstGrade = derivedTeacherGrades[0];
-      const gradeId = firstGrade.id;
-
-      const gradeDataRaw = await gradeService.getStudentsByGrade(gradeId).catch(err => {
-        console.error(`Failed to fetch students for grade ${gradeId}:`, err);
-        return [];
-      });
-
-      const gradeData = Array.isArray(gradeDataRaw)
-        ? gradeDataRaw
-        : Array.isArray(gradeDataRaw?.data)
-          ? gradeDataRaw.data
-          : Array.isArray(gradeDataRaw?.students)
-            ? gradeDataRaw.students
+      const normalizedStudents = Array.isArray(rawStudents)
+        ? rawStudents
+        : Array.isArray(rawStudents?.data)
+          ? rawStudents.data
+          : Array.isArray(rawStudents?.students)
+            ? rawStudents.students
             : [];
 
-      setStudents(gradeData);
+      setStudents(normalizedStudents);
     } catch (error) {
       console.error('Failed to fetch students:', error);
       setNotification({ open: true, message: 'Could not load your student list.', severity: 'error' });
