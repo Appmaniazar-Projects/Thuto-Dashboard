@@ -1,5 +1,6 @@
 import api from './api';
 import fileUploadService from './fileUploadService';
+import { getMyResources } from './resourceService';
 
 /**
  * Fetches the students assigned to the logged-in teacher.
@@ -21,18 +22,8 @@ export const getMyStudents = async () => {
  */
 export const getTeacherResources = async () => {
   try {
-       // Get admin info and handle different data structures
-    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    // Extract schoolId from various possible locations
-    const finalTeacherId = localStorage.getItem('teacherId') || 
-                          userInfo.id;
-    const response = await api.get('/teacher/resources', {
-      params: {
-        teacherId: finalTeacherId
-      }
-    });
-    return response.data;
+    // Reuse generic resource service so all roles hit the same endpoint
+    return await getMyResources();
   } catch (error) {
     console.error('Failed to fetch teacher resources:', error);
     throw error;

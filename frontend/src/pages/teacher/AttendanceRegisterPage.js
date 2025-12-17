@@ -10,6 +10,7 @@ import { format, parseISO } from 'date-fns';
 import { submitTeacherAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
+import { getMyStudents } from '../../services/teacherService';
 
 const AttendanceRegisterPage = () => {
   const navigate = useNavigate();
@@ -133,8 +134,8 @@ const AttendanceRegisterPage = () => {
     try {
       setLoading(true);
       
-      // Fetch students for the selected grade
-      const gradeDataRaw = await gradeService.getStudentsByGrade(gradeId);
+      // Fetch students assigned to the logged-in teacher
+      const gradeDataRaw = await getMyStudents();
 
       // Normalize response - handle different response structures
       const gradeData = Array.isArray(gradeDataRaw)

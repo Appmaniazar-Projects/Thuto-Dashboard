@@ -1,507 +1,571 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Paper, Typography, Grid, Button, FormControl, InputLabel, 
-  Select, MenuItem, TextField, Snackbar, Alert, Table, TableBody, 
-  TableCell, TableContainer, TableHead, TableRow, IconButton, 
-  CircularProgress, TablePagination
+import {
+  Box, Typography, Button, List, ListItem, ListItemText, ListItemSecondaryAction,
+  IconButton, Paper, TextField, MenuItem, CircularProgress, Alert, Chip, Divider
 } from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { useDropzone } from 'react-dropzone';
 import { 
-  CloudUpload as CloudUploadIcon,
-  Download as DownloadIcon,
-  Delete as DeleteIcon,
-  Refresh as RefreshIcon
-} from '@mui/icons-material';
-import gradeService from '../../services/gradeService';
-import subjectService from '../../services/subjectService';
-import { 
-  uploadTeacherStudentReport, 
-  getTeacherStudentReports,
-  downloadReport,
-  deleteReport
-} from '../../services/reportService';
-//import { format } from 'date-fns';
+  getTeacherResources, 
+  uploadResource,
+  deleteResource
+} from '../../../services/teacherService';
+import subjectService from '../../../services/subjectService';
+import gradeService from '../../../services/gradeService';
 
-
-// Mock data for report types, can be fetched from a service later
-const reportTypes = [
-  { id: 'term1', name: 'First Term Report Card' },
-  { id: 'term2', name: 'Second Term Progress Report' },
-  { id: 'midyear', name: 'Midyear Assessment' },
-  { id: 'final', name: 'Final Year-End Report' },
-];
-
-const UploadReportPage = () => {
-  const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState('');
-  const [selectedReportType, setSelectedReportType] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
+const TeacherResources = () => {
+  const [allResources, setAllResources] = useState([]);
+  const [filteredResources, setFilteredResources] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('');
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reports, setReports] = useState([]);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const fetchStudents = async () => {
+  // Filter resources when subject or grade changes
+  useEffect(() => {
+    if (!Array.isArray(allResources) || allResources.length === 0) {
+      setFilteredResources([]);
+      return;
+    }
+
+    const filtered = allResources.filter(resource => {
+      const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
+      const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
+      return matchesSubject && matchesGrade;
+    });
+
+    setFilteredResources(filtered);
+  }, [selectedSubject, selectedGrade, allResources]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
+      'text/plain': ['.txt'],
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif']
+    },
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    onDrop: acceptedFiles => {
+      if (acceptedFiles && acceptedFiles.length > 0) {
+        setFile(acceptedFiles[0]);
+        setError('');
+      }
+    },
+    onDropRejected: (fileRejections) => {
+      const error = fileRejections[0].errors[0];
+      if (error.code === 'file-too-large') {
+        setError('File is too large. Maximum size is 10MB.');
+      } else if (error.code === 'file-invalid-type') {
+        setError('Invalid file type. Please upload a valid document, image, or text file.');
+      } else {
+        setError('Error uploading file. Please try again.');
+      }
+    }
+  });
+
+  const fetchAllData = async () => {
     try {
       setLoading(true);
-      // Get teacher info
-      const teacher = JSON.parse(localStorage.getItem('user') || '{}');
-      const teacherId = teacher.id || teacher.phoneNumber;
-
-      if (!teacherId) {
-        throw new Error('Teacher information not found');
-      }
-
-      const schoolId =
-        localStorage.getItem('schoolId') ||
-        teacher.schoolId ||
-        teacher.school?.id ||
-        null;
-
-      // Fetch teacher's subjects and all school grades
-      const [subjectsRaw, allGradesRaw] = await Promise.all([
-        subjectService.getSubjectsByTeacher(teacherId).catch(err => {
-          console.error('Failed to fetch teacher subjects for reports:', err);
+      setError('');
+      
+      const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+      const schoolId = localStorage.getItem('schoolId') || userInfo.schoolId;
+      
+      console.log('Fetching data with schoolId:', schoolId);
+      
+      const [resourcesData, subjectsData, gradesData] = await Promise.all([
+        getTeacherResources().catch(err => {
+          console.error('Error fetching resources:', err);
+          // Log the actual error response
+          if (err.response) {
+            console.error('Response error:', err.response.data);
+            console.error('Response status:', err.response.status);
+          }
+          return [];
+        }),
+        subjectService.getSchoolSubjects().catch(err => {
+          console.error('Error fetching subjects:', err);
           return [];
         }),
         gradeService.getSchoolGrades(schoolId).catch(err => {
-          console.error('Failed to fetch school grades for reports:', err);
+          console.error('Error fetching grades:', err);
           return [];
-        }),
+        })
       ]);
 
-      const subjectsData = Array.isArray(subjectsRaw) ? subjectsRaw : [];
-      const allGrades = Array.isArray(allGradesRaw) ? allGradesRaw : [];
+      console.log('Raw resources data:', resourcesData);
+      console.log('Raw subjects data:', subjectsData);
+      console.log('Raw grades data:', gradesData);
 
-      const gradeMap = new Map(
-        allGrades.map((grade) => {
-          const id = grade.id ?? grade.gradeId ?? grade.idGrade;
-          return [
-            String(id),
-            {
-              ...grade,
-              id,
-              name: grade.name ?? grade.gradeName ?? grade.displayName ?? `Grade ${id}`,
-            },
-          ];
-        })
-      );
+      // Normalize resources response
+      const normalizedResources = Array.isArray(resourcesData)
+        ? resourcesData
+        : Array.isArray(resourcesData?.data)
+          ? resourcesData.data
+          : Array.isArray(resourcesData?.resources)
+            ? resourcesData.resources
+            : resourcesData?.resource // Handle single resource
+              ? [resourcesData.resource]
+              : [];
 
-      const teacherGradeIds = new Set();
-      const derivedTeacherGrades = [];
+      console.log('Normalized resources:', normalizedResources);
 
-      subjectsData.forEach((subject) => {
-        const subjectGradeIds = Array.isArray(subject.gradeIds)
-          ? subject.gradeIds
-          : subject.gradeId
-          ? [subject.gradeId]
-          : [];
-
-        subjectGradeIds.forEach((gid) => {
-          const key = String(gid);
-          if (!teacherGradeIds.has(key)) {
-            teacherGradeIds.add(key);
-            const gradeFromMap = gradeMap.get(key);
-            if (gradeFromMap) {
-              derivedTeacherGrades.push(gradeFromMap);
-            } else {
-              derivedTeacherGrades.push({ id: gid, name: `Grade ${gid}` });
-            }
-          }
-        });
-      });
-
-      if (!derivedTeacherGrades || derivedTeacherGrades.length === 0) {
-        throw new Error('No grades found for this teacher');
-      }
-
-      // For now, use the first derived grade to fetch students
-      const firstGrade = derivedTeacherGrades[0];
-      const gradeId = firstGrade.id;
-
-      const gradeDataRaw = await gradeService.getStudentsByGrade(gradeId).catch(err => {
-        console.error(`Failed to fetch students for grade ${gradeId}:`, err);
-        return [];
-      });
-
-      const gradeData = Array.isArray(gradeDataRaw)
-        ? gradeDataRaw
-        : Array.isArray(gradeDataRaw?.data)
-          ? gradeDataRaw.data
-          : Array.isArray(gradeDataRaw?.students)
-            ? gradeDataRaw.students
-            : [];
-
-      setStudents(gradeData);
-    } catch (error) {
-      console.error('Failed to fetch students:', error);
-      setNotification({ open: true, message: 'Could not load your student list.', severity: 'error' });
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  //Comment added to load latest 
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      const reportsData = [];
-      // Fetch reports for each student
-      for (const student of students) {
-        try {
-          const studentReports = await getTeacherStudentReports(student.id);
-          reportsData.push(...studentReports.map(report => ({
-            ...report,
-            studentName: student.name,
-            studentId: student.id
-          })));
-        } catch (err) {
-          console.error(`Error fetching reports for student ${student.id}:`, err);
-        }
-      }
-      setReports(reportsData);
-    } catch (error) {
-      console.error('Failed to fetch reports:', error);
-      setNotification({ open: true, message: 'Could not load reports.', severity: 'error' });
+      setAllResources(normalizedResources);
+      setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+      setGrades(Array.isArray(gradesData) ? gradesData : []);
+      
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+      setError('Failed to load resources. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStudents();
+    fetchAllData();
   }, []);
 
-  useEffect(() => {
-    if (students.length > 0) {
-      fetchReports();
+  const handleUpload = async () => {
+    if (!file) {
+      setError('Please select a file to upload');
+      return;
     }
-  }, [students]);
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      setSelectedFile(file);
-    } else {
-      setNotification({ open: true, message: 'Please select a valid PDF file.', severity: 'warning' });
-      setSelectedFile(null);
-    }
-  };
-
-
-
-const handleChangePage = (event, newPage) => {
-  setPage(newPage);
-};
-
-const handleChangeRowsPerPage = (event) => {
-  setRowsPerPage(parseInt(event.target.value, 10));
-  setPage(0);
-};
-
-const handleDownload = async (reportId, fileName, reportData) => {
-  try {
-    await downloadReport(reportId, fileName, reportData);
-  } catch (error) {
-    console.error('Download failed:', error);
-    setNotification({ 
-      open: true, 
-      message: 'Failed to download report.', 
-      severity: 'error' 
-    });
-  }
-};
-
-const handleDeleteReport = async (reportId, reportData) => {
-  if (window.confirm('Are you sure you want to delete this report?')) {
-    try {
-      await deleteReport(reportId, reportData);
-      setNotification({ 
-        open: true, 
-        message: 'Report deleted successfully.', 
-        severity: 'success' 
-      });
-      // Refresh the reports list to reflect the deletion
-      await fetchReports();
-    } catch (error) {
-      console.error('Delete failed:', error);
-      setNotification({ 
-        open: true, 
-        message: 'Failed to delete report.', 
-        severity: 'error' 
-      });
-    }
-  }
-};
-
-const formatUploadDate = (uploadDate) => {
-  if (!uploadDate) return '-';
-
-  let value = uploadDate;
-
-  // Handle "2025-11-20 10:16:0" -> "2025-11-20T10:16:0"
-  if (typeof value === 'string' && value.includes(' ') && !value.includes('T')) {
-    value = value.replace(' ', 'T');
-  }
-
-  // Handle "2025-11-19T10:48:07.545595" -> "2025-11-19T10:48:07.545"
-  if (typeof value === 'string') {
-    value = value.replace(/(\.\d{3})\d+/, '$1');
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-  
-  return date.toLocaleDateString();           
-};
-
-const handleUpload = async () => {
-  if (!selectedStudent || !selectedReportType || !selectedFile) {
-    setNotification({ 
-      open: true, 
-      message: 'Please fill all fields and select a file.', 
-      severity: 'warning' 
-    });
-    return;
-  }
-
-  try {
-    setLoading(true);
     
-    // Show upload progress
-    setNotification({ 
-      open: true, 
-      message: 'Uploading report...', 
-      severity: 'info',
-      autoHideDuration: null // Don't auto-hide while uploading
-    });
-
-    // Upload the report
-    const result = await uploadTeacherStudentReport(
-      selectedStudent, 
-      selectedFile, 
-      selectedReportType
-    );
-
-    // Show success message
-    setNotification({ 
-      open: true, 
-      message: `Successfully uploaded ${result.fileName} for the selected student.`, 
-      severity: 'success' 
-    });
-
-    // Refresh reports so the new upload is visible in the table
-    await fetchReports();
-
-    // Reset form
-    setSelectedStudent('');
-    setSelectedReportType('');
-    setSelectedFile(null);
-    document.getElementById('file-upload-input').value = '';
-  } catch (error) {
-    console.error('Failed to upload report:', error);
-    setNotification({ 
-      open: true, 
-      message: error.message || 'Failed to upload report. Please try again.', 
-      severity: 'error' 
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  const handleCloseNotification = () => {
-    setNotification({ ...notification, open: false });
+    if (!selectedSubject || !selectedGrade) {
+      setError('Please select both subject and grade');
+      return;
+    }
+    
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+      setError('');
+      setSuccess('');
+      
+      const selectedSubjectObj = subjects.find((s) => String(s.id) === String(selectedSubject));
+      const selectedGradeObj = grades.find((g) => String(g.id) === String(selectedGrade));
+      
+      const resourceMetadata = {
+        title: file.name.split('.')[0],
+        description: `${selectedSubjectObj?.name || 'Resource'} for ${selectedGradeObj?.name || 'grade'}`,
+        category: 'teaching-material',
+        subjectId: selectedSubject,
+        gradeId: selectedGrade,
+        targetAudience: 'students'
+      };
+      
+      console.log('Uploading resource with metadata:', resourceMetadata);
+      
+      // Upload with progress tracking
+      const newResource = await uploadResource(
+        file, 
+        resourceMetadata,
+        (progress) => {
+          setUploadProgress(Math.round(progress));
+          console.log('Upload progress:', progress + '%');
+        }
+      );
+      
+      console.log('Upload response:', newResource);
+      
+      // Verify the resource was saved
+      if (!newResource || !newResource.id) {
+        throw new Error('Resource was not saved properly. No ID returned.');
+      }
+      
+      setSuccess(`Resource "${file.name}" uploaded successfully!`);
+      
+      // Clear form
+      setFile(null);
+      setUploadProgress(0);
+      
+      // Refresh the entire resource list from backend to ensure sync
+      await fetchAllData();
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(''), 5000);
+      
+    } catch (err) {
+      console.error('Upload failed:', err);
+      setError(
+        err.response?.data?.message || 
+        err.message || 
+        'Failed to upload resource. Please check your connection and try again.'
+      );
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
   };
+
+  const handleDownload = async (resourceId, fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        throw new Error('File URL not found');
+      }
+
+      setSuccess(`Downloading ${fileName}...`);
+      
+      // Create a temporary anchor element to trigger the download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.setAttribute('download', fileName);
+      link.setAttribute('target', '_blank');
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      setError('Failed to download resource. Please try again.');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setError('');
+      console.log('Deleting resource:', id);
+      
+      await deleteResource(id);
+      
+      // Remove from local state immediately for better UX
+      const updatedResources = allResources.filter(r => r.id !== id);
+      setAllResources(updatedResources);
+      setFilteredResources(filteredResources.filter(r => r.id !== id));
+      
+      setSuccess('Resource deleted successfully!');
+      
+      // Refresh from backend to ensure sync
+      setTimeout(() => {
+        fetchAllData();
+      }, 1000);
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setError(err.response?.data?.message || 'Failed to delete resource. Please try again.');
+      
+      // Refresh to get accurate state
+      fetchAllData();
+    }
+  };
+
+  const getFileType = (filename) => {
+    if (!filename) return 'File';
+    const ext = filename.split('.').pop().toLowerCase();
+    if (['pdf'].includes(ext)) return 'PDF';
+    if (['doc', 'docx'].includes(ext)) return 'Word';
+    if (['ppt', 'pptx'].includes(ext)) return 'PowerPoint';
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'Image';
+    if (['txt'].includes(ext)) return 'Text';
+    return 'File';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes || isNaN(bytes)) return null;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  if (loading && allResources.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Box>
-            <Typography variant="h5" gutterBottom>
-              <CloudUploadIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-              Upload Student Report
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Select one of your students, choose the report type, and upload the official PDF document.
-            </Typography>
-          </Box>
-          <Button 
-            variant="outlined" 
-            startIcon={<RefreshIcon />} 
-            onClick={fetchReports}
-            disabled={loading}
-          >
-            Refresh
-          </Button>
-        </Box>
+    <Paper sx={{ p: 3, borderRadius: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6">Resources</Typography>
+        <Button
+          startIcon={<RefreshIcon />}
+          onClick={fetchAllData}
+          disabled={loading}
+          size="small"
+        >
+          Refresh
+        </Button>
+      </Box>
 
-        <Grid container spacing={3} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth disabled={loading}>
-              <InputLabel id="student-select-label">Select Student</InputLabel>
-              <Select
-                labelId="student-select-label"
-                value={selectedStudent}
-                label="Select Student"
-                onChange={(e) => setSelectedStudent(e.target.value)}
-              >
-                {students.map((student) => (
-                  <MenuItem key={student.id} value={student.id}>
-                    {student.name} (ID: {student.id})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+      {/* Subject and Grade Selection */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <TextField
+          select
+          label="Select Subject *"
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          sx={{ minWidth: 200, flex: 1 }}
+          disabled={uploading || subjects.length === 0}
+          error={!selectedSubject && file !== null}
+        >
+          {subjects.length === 0 ? (
+            <MenuItem disabled>No subjects available</MenuItem>
+          ) : (
+            subjects.map((subject) => (
+              <MenuItem key={subject.id} value={subject.id}>
+                {subject.name}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
+        
+        <TextField
+          select
+          label="Select Grade *"
+          value={selectedGrade}
+          onChange={(e) => setSelectedGrade(e.target.value)}
+          sx={{ minWidth: 200, flex: 1 }}
+          disabled={uploading || grades.length === 0}
+          error={!selectedGrade && file !== null}
+        >
+          {grades.length === 0 ? (
+            <MenuItem disabled>No grades available</MenuItem>
+          ) : (
+            grades.map((grade) => (
+              <MenuItem key={grade.id} value={grade.id}>
+                {grade.name}
+              </MenuItem>
+            ))
+          )}
+        </TextField>
+      </Box>
 
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel id="report-type-label">Report Type</InputLabel>
-              <Select
-                labelId="report-type-label"
-                value={selectedReportType}
-                label="Report Type"
-                onChange={(e) => setSelectedReportType(e.target.value)}
-              >
-                {reportTypes.map((type) => (
-                  <MenuItem key={type.id} value={type.id}>
-                    {type.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-
-          <Grid item xs={12}>
-            <Button
-              variant="outlined"
-              component="label"
-              fullWidth
-              sx={{ py: 1.5 }}
-            >
-              {selectedFile ? `File Selected: ${selectedFile.name}` : 'Choose Report PDF'}
-              <input
-                id="file-upload-input"
-                type="file"
-                hidden
-                accept="application/pdf"
-                onChange={handleFileChange}
-              />
-            </Button>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              disabled={loading || !selectedStudent || !selectedReportType || !selectedFile}
-              onClick={handleUpload}
-              sx={{ py: 1.5 }}
-            >
-              {loading ? 'Uploading...' : 'Upload Report'}
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
-<Paper sx={{ p: 3, mt: 3 }}>
-  <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>
-  {loading ? (
-    <Box display="flex" justifyContent="center" p={3}>
-      <CircularProgress />
-    </Box>
-  ) : reports.length === 0 ? (
-    <Typography variant="body1" color="text.secondary" align="center" sx={{ p: 3 }}>
-      No reports have been uploaded yet.
-    </Typography>
-  ) : (
-    <>
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Student</TableCell>
-              <TableCell>Report Type</TableCell>
-              <TableCell>File Name</TableCell>
-              <TableCell>Uploaded Date</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {reports.map((report) => (
-              <TableRow key={report.id}>
-                <TableCell>
-                  {students.find(s => s.id === report.studentId)?.name || 'Unknown Student'}
-                </TableCell>
-                <TableCell>{report.reportType}</TableCell>
-                <TableCell>
-                  <a 
-                    href={report.fileUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    {report.fileName}
-                  </a>
-                </TableCell>
-                <TableCell>
-                  {formatUploadDate(report.uploadDate || report.uploadedAt)}
-                </TableCell>
-                <TableCell align="right">
-                 <IconButton 
-                  size="small" 
-                  onClick={() => handleDownload(report.id, report.fileName, report)}
-                  title="Download"
-                >
-                  <DownloadIcon fontSize="small" />
-                </IconButton>
-                <IconButton 
-                  size="small" 
-                  onClick={() => handleDeleteReport(report.id, report)}
-                  title="Delete"
-                  color="error"
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={reports.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </>
-  )}
-</Paper>
-
-      <Snackbar 
-        open={notification.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      {/* File Upload Area */}
+      <Box 
+        {...getRootProps()} 
+        sx={{
+          border: '2px dashed',
+          borderColor: isDragActive ? 'primary.main' : 'divider',
+          p: 3,
+          textAlign: 'center',
+          mb: 2,
+          cursor: 'pointer',
+          backgroundColor: isDragActive ? 'action.hover' : 'background.paper',
+          borderRadius: 1,
+          '&:hover': {
+            borderColor: 'primary.main',
+            backgroundColor: 'action.hover',
+          }
+        }}
       >
-        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
-          {notification.message}
+        <input {...getInputProps()} disabled={uploading} />
+        <CloudUploadIcon sx={{ fontSize: 48, mb: 1, color: 'text.secondary' }} />
+        <Typography variant="body1" gutterBottom>
+          {file 
+            ? `Selected: ${file.name}` 
+            : isDragActive 
+              ? 'Drop the file here' 
+              : 'Drag & drop a file here, or click to select'}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          Supported: PDF, DOC, DOCX, PPT, PPTX, TXT, Images (Max: 10MB)
+        </Typography>
+      </Box>
+
+      {/* Upload Progress */}
+      {uploading && uploadProgress > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption">Uploading...</Typography>
+            <Typography variant="caption">{uploadProgress}%</Typography>
+          </Box>
+          <Box sx={{ width: '100%', height: 4, bgcolor: 'grey.300', borderRadius: 1 }}>
+            <Box 
+              sx={{ 
+                width: `${uploadProgress}%`, 
+                height: '100%', 
+                bgcolor: 'primary.main',
+                borderRadius: 1,
+                transition: 'width 0.3s ease'
+              }} 
+            />
+          </Box>
+        </Box>
+      )}
+
+      {/* Upload Button */}
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="contained"
+          onClick={handleUpload}
+          disabled={!file || uploading || !selectedGrade || !selectedSubject}
+          startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
+          size="large"
+        >
+          {uploading ? `Uploading... ${uploadProgress}%` : 'Upload Resource'}
+        </Button>
+      </Box>
+
+      {/* Error and Success Messages */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
         </Alert>
-      </Snackbar>
-    </Box>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
+      <Divider sx={{ my: 3 }} />
+
+      {/* Resources List Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="subtitle1">
+          {filteredResources.length} {filteredResources.length === 1 ? 'Resource' : 'Resources'}
+          {(selectedSubject || selectedGrade) && ' (filtered)'}
+        </Typography>
+        {(selectedSubject || selectedGrade) && (
+          <Button 
+            size="small" 
+            onClick={() => {
+              setSelectedSubject('');
+              setSelectedGrade('');
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
+      </Box>
+      
+      {/* Resources List */}
+      {filteredResources.length > 0 ? (
+        <List>
+          {filteredResources.map((resource) => {
+            const displayName = resource.title || resource.fileName || resource.name || 'Untitled resource';
+            const fileNameForType = resource.fileName || resource.name || resource.title || '';
+            const uploadedAt = resource.uploadDate || resource.uploadedAt || resource.createdAt;
+            const fileSizeLabel = resource.fileSize ? formatFileSize(resource.fileSize) : null;
+
+            return (
+              <ListItem key={resource.id} divider sx={{ py: 2 }}>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="body1" component="span">
+                        {displayName}
+                      </Typography>
+                      <Chip 
+                        label={getFileType(fileNameForType)} 
+                        size="small" 
+                        variant="outlined"
+                        color="primary"
+                      />
+                    </Box>
+                  }
+                  secondary={
+                    <Box sx={{ mt: 1 }}>
+                      {/* Subject and Grade Chips */}
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                        {resource.subjectId && (
+                          <Chip 
+                            label={subjects.find(s => s.id == resource.subjectId)?.name || `Subject ${resource.subjectId}`} 
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                          />
+                        )}
+                        {resource.gradeId && (
+                          <Chip 
+                            label={grades.find(g => g.id == resource.gradeId)?.name || `Grade ${resource.gradeId}`} 
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                          />
+                        )}
+                      </Box>
+                      
+                      {/* File Info */}
+                      <Box sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                        {uploadedAt && (
+                          <Typography variant="caption" display="block">
+                            Uploaded: {new Date(uploadedAt).toLocaleString()}
+                          </Typography>
+                        )}
+                        {fileSizeLabel && (
+                          <Typography variant="caption" display="block">
+                            Size: {fileSizeLabel}
+                          </Typography>
+                        )}
+                        {resource.description && (
+                          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                            {resource.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleDownload(
+                      resource.id, 
+                      resource.fileName || displayName || 'resource', 
+                      resource.fileUrl
+                    )}
+                    sx={{ mr: 1 }}
+                    disabled={!resource.fileUrl}
+                    title="Download"
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleDelete(resource.id)} 
+                    disabled={uploading}
+                    title="Delete"
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            );
+          })}
+        </List>
+      ) : (
+        <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
+          <CloudUploadIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No resources found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {(selectedSubject || selectedGrade) 
+              ? 'Try adjusting your filters or upload a new resource.'
+              : 'Upload your first resource to get started!'}
+          </Typography>
+        </Paper>
+      )}
+    </Paper>
   );
 };
 
-export default UploadReportPage;
+export default TeacherResources;
