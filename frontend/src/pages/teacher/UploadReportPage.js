@@ -45,16 +45,45 @@ const UploadReportPage = () => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      // Fetch students assigned to the logged-in teacher via /teacher/${phoneNumber}/students
       const rawStudents = await getMyStudents();
+      let baseStudents = [];
 
-      const normalizedStudents = Array.isArray(rawStudents)
-        ? rawStudents
-        : Array.isArray(rawStudents?.data)
-          ? rawStudents.data
-          : Array.isArray(rawStudents?.students)
-            ? rawStudents.students
-            : [];
+      if (Array.isArray(rawStudents)) {
+        baseStudents = rawStudents;
+      } else if (rawStudents && typeof rawStudents === 'object') {
+        const arrayValue = Object.values(rawStudents).find((val) => Array.isArray(val));
+        if (Array.isArray(arrayValue)) {
+          baseStudents = arrayValue;
+        }
+      }
+
+      const normalizedStudents = baseStudents
+        .map((student) => {
+          const id =
+            student.id ??
+            student.studentId ??
+            student.userId ??
+            student.uuid ??
+            null;
+
+          const name =
+            student.name ||
+            [student.firstName, student.lastName].filter(Boolean).join(' ') ||
+            student.fullName ||
+            student.displayName ||
+            'Unknown Student';
+
+          if (!id) {
+            return null;
+          }
+
+          return {
+            ...student,
+            id,
+            name,
+          };
+        })
+        .filter(Boolean);
 
       setStudents(normalizedStudents);
     } catch (error) {
