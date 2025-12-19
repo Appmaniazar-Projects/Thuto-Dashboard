@@ -29,6 +29,8 @@ import {
   FindInPage as FindInPageIcon,
 } from '@mui/icons-material';
 import { getMyResources, downloadResource } from '../../services/resourceService';
+import subjectService from '../../services/subjectService';
+import gradeService from '../../services/gradeService';
 import { format } from 'date-fns';
 
 const Resources = () => {
@@ -36,15 +38,33 @@ const Resources = () => {
   const [filteredResources, setFilteredResources] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedGrade, setSelectedGrade] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [grades, setGrades] = useState([]);
 
   useEffect(() => {
     const fetchResources = async () => {
       try {
         setIsLoading(true);
-        const data = await getMyResources();
-        setResources(data);
+        const [resourcesData, subjectsData, gradesData] = await Promise.all([
+          getMyResources().catch(() => []),
+          subjectService.getSchoolSubjects().catch(() => []),
+          gradeService.getSchoolGrades().catch(() => [])
+        ]);
+
+        const normalizedResources = Array.isArray(resourcesData)
+          ? resourcesData
+          : Array.isArray(resourcesData?.data)
+            ? resourcesData.data
+            : Array.isArray(resourcesData?.resources)
+              ? resourcesData.resources
+              : [];
+
+        setResources(normalizedResources);
+        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+        setGrades(Array.isArray(gradesData) ? gradesData : []);
       } catch (err) {
         console.error('Failed to fetch resources:', err);
         
@@ -69,13 +89,21 @@ const Resources = () => {
   useEffect(() => {
     let result = [...resources];
     if (searchTerm) {
-      result = result.filter(r => r.title.toLowerCase().includes(searchTerm.toLowerCase()));
+      const q = searchTerm.toLowerCase();
+      result = result.filter((r) => {
+        const title = (r.title || r.fileName || r.name || '').toLowerCase();
+        const description = (r.description || '').toLowerCase();
+        return title.includes(q) || description.includes(q);
+      });
     }
     if (selectedSubject !== 'all') {
-      result = result.filter(r => r.subject === selectedSubject);
+      result = result.filter((r) => String(r.subjectId) === String(selectedSubject));
+    }
+    if (selectedGrade !== 'all') {
+      result = result.filter((r) => String(r.gradeId) === String(selectedGrade));
     }
     setFilteredResources(result);
-  }, [searchTerm, selectedSubject, resources]);
+  }, [searchTerm, selectedSubject, selectedGrade, resources]);
 
   const handleDownload = async (fileUrl, fileName) => {
     try {
@@ -89,9 +117,47 @@ const Resources = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedSubject('all');
+    setSelectedGrade('all');
   };
 
-  const availableSubjects = ['all', ...new Set(resources.map(r => r.subject))];
+  const getSubjectLabel = (subjectId) => {
+    if (!subjectId) return null;
+    return subjects.find((s) => String(s.id) === String(subjectId))?.name || `Subject ${subjectId}`;
+  };
+
+  const getGradeLabel = (gradeId) => {
+    if (!gradeId) return null;
+    return grades.find((g) => String(g.id) === String(gradeId))?.name || `Grade ${gradeId}`;
+  };
+
+  const availableSubjects = [
+    { id: 'all', name: 'All Subjects' },
+    ...subjects.map((s) => ({ id: String(s.id), name: s.name }))
+  ];
+
+  const availableGrades = [
+    { id: 'all', name: 'All Grades' },
+    ...grades.map((g) => ({ id: String(g.id), name: g.name }))
+  ];
+
+  const getFileTypeLabel = (resource) => {
+    const fileName = resource?.fileName || resource?.name || '';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['pdf'].includes(ext)) return 'PDF';
+    if (['doc', 'docx'].includes(ext)) return 'Word';
+    if (['ppt', 'pptx'].includes(ext)) return 'PowerPoint';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'Image';
+    if (['txt'].includes(ext)) return 'Text';
+    return 'File';
+  };
+
+  const isImageResource = (resource) => {
+    const type = resource?.fileType || '';
+    if (typeof type === 'string' && type.startsWith('image/')) return true;
+    const fileName = resource?.fileName || resource?.name || '';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+  };
 
   const getUploadDateLabel = (resource) => {
     if (!resource) return null;
@@ -148,14 +214,30 @@ const Resources = () => {
               label="Subject"
             >
               {availableSubjects.map((subject) => (
-                <MenuItem key={subject} value={subject}>
-                  {subject === 'all' ? 'All Subjects' : subject}
+                <MenuItem key={subject.id} value={subject.id}>
+                  {subject.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl sx={{ minWidth: 160 }} size="small">
+            <InputLabel>Grade</InputLabel>
+            <Select
+              name="grade"
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              label="Grade"
+            >
+              {availableGrades.map((grade) => (
+                <MenuItem key={grade.id} value={grade.id}>
+                  {grade.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
           <Tooltip title="Clear Filters">
-            <IconButton onClick={clearFilters} disabled={!searchTerm && selectedSubject === 'all'}>
+            <IconButton onClick={clearFilters} disabled={!searchTerm && selectedSubject === 'all' && selectedGrade === 'all'}>
               <ClearIcon />
             </IconButton>
           </Tooltip>
@@ -180,6 +262,10 @@ const Resources = () => {
         <Grid container spacing={3}>
           {filteredResources.map((resource) => {
             const uploadLabel = getUploadDateLabel(resource);
+            const displayTitle = resource.title || resource.fileName || resource.name || 'Untitled resource';
+            const subjectLabel = getSubjectLabel(resource.subjectId);
+            const gradeLabel = getGradeLabel(resource.gradeId);
+            const fileUrl = resource.fileUrl || resource.downloadURL || resource.downloadUrl;
             return (
               <Grid item xs={12} sm={6} md={4} key={resource.id}>
                 <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -187,13 +273,41 @@ const Resources = () => {
                     <Box display="flex" alignItems="center" mb={1}>
                       <BookIcon color="primary" sx={{ mr: 1 }} />
                       <Typography variant="h6" component="div">
-                        {resource.title}
+                        {displayTitle}
                       </Typography>
                     </Box>
-                    <Chip label={resource.subject} size="small" variant="outlined" sx={{ mb: 2 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {resource.description}
-                    </Typography>
+
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                      <Chip label={getFileTypeLabel(resource)} size="small" variant="outlined" color="primary" />
+                      {subjectLabel && <Chip label={subjectLabel} size="small" variant="outlined" />}
+                      {gradeLabel && <Chip label={gradeLabel} size="small" variant="outlined" />}
+                    </Box>
+
+                    {isImageResource(resource) && fileUrl && (
+                      <Box
+                        sx={{
+                          width: '100%',
+                          height: 160,
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          backgroundColor: 'action.hover',
+                          mb: 2
+                        }}
+                      >
+                        <img
+                          src={fileUrl}
+                          alt={displayTitle}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          loading="lazy"
+                        />
+                      </Box>
+                    )}
+
+                    {resource.description && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {resource.description}
+                      </Typography>
+                    )}
                     {uploadLabel && (
                       <Typography variant="caption" color="text.secondary">
                         Uploaded: {uploadLabel}
@@ -204,7 +318,8 @@ const Resources = () => {
                     <Button
                       size="small"
                       startIcon={<DownloadIcon />}
-                      onClick={() => handleDownload(resource.fileUrl, resource.fileName || resource.title)}
+                      onClick={() => handleDownload(fileUrl, resource.fileName || displayTitle)}
+                      disabled={!fileUrl}
                     >
                       Download
                     </Button>

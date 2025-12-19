@@ -306,9 +306,17 @@ export const getMyReports = async () => {
  */
 export const downloadStudentReport = async (reportId, filename) => {
   try {
-    const response = await api.get(`/student/reports/${reportId}/download`, {
-      responseType: 'blob',
-    });
+    let response;
+    try {
+      response = await api.get(`/student/reports/${reportId}/download`, {
+        responseType: 'blob',
+      });
+    } catch (primaryError) {
+      // Fallback for backends that expose report downloads under /reports/{id}/download
+      response = await api.get(`/reports/${reportId}/download`, {
+        responseType: 'blob',
+      });
+    }
     
     // Create a temporary URL for the blob
     const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -347,7 +355,7 @@ export const getTeacherStudentReports = async (userId) => {
 };
 
 // Update the uploadTeacherStudentReport function
-export const uploadTeacherStudentReport = async (studentId, file, reportType) => {
+export const uploadTeacherStudentReport = async (studentId, file, reportType, options = {}) => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
     const schoolId = userInfo.schoolId;
@@ -356,6 +364,11 @@ export const uploadTeacherStudentReport = async (studentId, file, reportType) =>
     if (!schoolId) {
       throw new Error('School ID not found');
     }
+
+    const studentName = options?.studentName || options?.student || '';
+    const title = options?.title || `${studentName ? `${studentName} - ` : ''}${reportType || 'Report'}`;
+    const description = options?.description || '';
+    const gradeId = options?.gradeId ?? null;
 
     // Upload file to Firebase Storage
     const uploadMetadata = {
@@ -374,9 +387,14 @@ export const uploadTeacherStudentReport = async (studentId, file, reportType) =>
     // Send report data to backend
     const reportData = {
       studentId,
+      userId: studentId,
+      student: { id: studentId },
+      title,
+      description,
       reportType,
       teacherId, 
       schoolId,
+      gradeId,
       fileName: uploadResult.fileName,
       fileUrl: uploadResult.downloadURL,
       filePath: uploadResult.filePath,

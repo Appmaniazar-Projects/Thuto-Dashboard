@@ -234,10 +234,14 @@ const handleUpload = async () => {
     });
 
     // Upload the report
+    const studentObj = students.find((s) => String(s.id) === String(selectedStudent));
     const result = await uploadTeacherStudentReport(
       selectedStudent, 
       selectedFile, 
-      selectedReportType
+      selectedReportType,
+      {
+        studentName: studentObj?.name
+      }
     );
 
     // Show success message

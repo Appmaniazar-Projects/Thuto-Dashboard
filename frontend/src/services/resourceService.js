@@ -196,17 +196,29 @@ export const getAllAvailableResources = async (filters = {}) => {
  */
 export const downloadResource = async (fileUrl, filename) => {
   try {
+    if (fileUrl && typeof fileUrl === 'string' && fileUrl.startsWith('http')) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.setAttribute('download', filename || 'resource');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+
     const response = await fetch(fileUrl);
     const blob = await response.blob();
-    
+
     // Create download link
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', filename);
+    link.setAttribute('download', filename || 'resource');
     document.body.appendChild(link);
     link.click();
-    
+
     // Cleanup
     link.remove();
     window.URL.revokeObjectURL(url);

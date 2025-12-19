@@ -53,6 +53,24 @@ const StudentReports = () => {
     { id: 'final', name: 'Final Report' },
   ];
 
+  const getCurrentStudentName = () => {
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const name = [userInfo.name, userInfo.lastName].filter(Boolean).join(' ').trim();
+    return name || userInfo.fullName || userInfo.displayName || 'Student';
+  };
+
+  const getReportTypeLabel = (reportType) => {
+    if (!reportType) return 'Report';
+    const found = reportTypes.find((t) => t.id === reportType);
+    return found?.name || reportType;
+  };
+
+  const getReportDisplayTitle = (report) => {
+    const studentName = report?.studentName || getCurrentStudentName();
+    const reportType = report?.reportType || report?.type;
+    return `${studentName} - ${getReportTypeLabel(reportType)}`;
+  };
+
   const fetchReports = async () => {
     try {
       setLoading(true);
@@ -101,7 +119,7 @@ const StudentReports = () => {
 
   const getReportDate = (report) => {
     if (!report) return null;
-    const rawDate = report.issueDate || report.uploadDate || report.date || report.createdAt;
+    const rawDate = report.issueDate || report.uploadDate || report.uploadedAt || report.date || report.createdAt;
     if (!rawDate) return null;
     const date = new Date(rawDate);
     if (Number.isNaN(date.getTime())) return null;
@@ -112,7 +130,7 @@ const StudentReports = () => {
     let result = [...reports];
     
     if (filters.reportType !== 'all') {
-      result = result.filter(report => report.type === filters.reportType);
+      result = result.filter((report) => (report.reportType || report.type) === filters.reportType);
     }
     
     if (filters.month !== 'all') {
@@ -154,9 +172,24 @@ const StudentReports = () => {
     }));
   };
 
-  const handleDownload = async (reportId, fileName) => {
+  const handleDownload = async (report) => {
     try {
-      await downloadStudentReport(reportId, fileName);
+      const fileUrl = report?.fileUrl || report?.downloadURL || report?.downloadUrl;
+      const fileName = report?.fileName || report?.title || 'report.pdf';
+
+      // Prefer direct fileUrl (Firebase Storage) when available
+      if (fileUrl && typeof fileUrl === 'string' && fileUrl.startsWith('http')) {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.target = '_blank';
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        await downloadStudentReport(report.id, fileName);
+      }
+
       setNotification({
         open: true,
         message: 'Report downloaded successfully',
@@ -177,12 +210,15 @@ const StudentReports = () => {
   };
 
   // Extract unique years from reports
-  const availableYears = ['all', ...new Set(
-    reports
-      .map((report) => getReportDate(report))
-      .filter((date) => date !== null)
-      .map((date) => date.getFullYear())
-  )].sort((a, b) => b - a);
+  const availableYears = (() => {
+    const years = new Set(
+      reports
+        .map((report) => getReportDate(report))
+        .filter((date) => date !== null)
+        .map((date) => date.getFullYear())
+    );
+    return ['all', ...Array.from(years).sort((a, b) => b - a)];
+  })();
 
   if (loading && reports.length === 0) {
     return (
@@ -299,12 +335,12 @@ const StudentReports = () => {
                   <Box display="flex" alignItems="center" mb={1}>
                     <DescriptionIcon color="primary" sx={{ mr: 1 }} />
                     <Typography variant="h6" component="div">
-                      {report.title || 'Academic Report'}
+                      {getReportDisplayTitle(report)}
                     </Typography>
                   </Box>
                   
                   <Chip 
-                    label={report.type || 'Report'} 
+                    label={report.reportType || report.type || 'Report'} 
                     size="small" 
                     color="primary"
                     variant="outlined"
@@ -343,14 +379,20 @@ const StudentReports = () => {
                 </CardContent>
                 <Divider />
                 <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+                  {(() => {
+                    const fileUrl = report?.fileUrl || report?.downloadURL || report?.downloadUrl;
+                    const canDownload = Boolean(fileUrl) || Boolean(report?.id);
+                    return (
                   <Button 
                     size="small" 
                     startIcon={<DownloadIcon />}
-                    onClick={() => handleDownload(report.id, report.fileName)}
-                    disabled={!report.downloadUrl}
+                    onClick={() => handleDownload(report)}
+                    disabled={!canDownload}
                   >
                     Download
                   </Button>
+                    );
+                  })()}
                 </CardActions>
               </Card>
             </Grid>
