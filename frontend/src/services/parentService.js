@@ -87,7 +87,17 @@ const parentService = {
    */
   getChildAttendance: async (studentId) => {
     try {
-      const response = await api.get(`/attendance/student/${studentId}`);
+      const storedUser = localStorage.getItem('user');
+      const userData = storedUser ? JSON.parse(storedUser) : null;
+      const schoolId =
+        localStorage.getItem('schoolId') ||
+        userData?.school?.id ||
+        userData?.schoolId ||
+        null;
+
+      const response = await api.get(`/attendance/student/${studentId}`, {
+        params: schoolId ? { schoolId } : undefined
+      });
       const data = response.data;
 
       if (Array.isArray(data)) {

@@ -30,6 +30,7 @@ const ParentDashboard = () => {
   // State for data
   const [children, setChildren] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [attendanceWarning, setAttendanceWarning] = useState('');
   const [announcements, setAnnouncements] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,7 @@ const ParentDashboard = () => {
         const childrenData = await parentService.getMyChildren(user.phoneNumber);
         if (childrenData && childrenData.length > 0) {
           setChildren(childrenData);
+          setAttendanceWarning('');
           
           // Set default filter to first child
           if (!filters.childId && childrenData[0]?.id) {
@@ -82,6 +84,11 @@ const ParentDashboard = () => {
             .flatMap(result => result.value);
             
           setAttendance(allAttendance);
+
+          const attendanceFailureCount = attendanceResults.filter(r => r.status === 'rejected').length;
+          if (attendanceFailureCount > 0 && allAttendance.length === 0) {
+            setAttendanceWarning('Attendance data is currently unavailable. Your linked children are still shown below.');
+          }
           
           // Fetch other data in parallel
           const [announcementsRes, eventsRes] = await Promise.allSettled([
@@ -96,6 +103,7 @@ const ParentDashboard = () => {
           // No children found - still show dashboard but with placeholder data
           setChildren([]);
           setAttendance([]);
+          setAttendanceWarning('');
           setAnnouncements([]);
           setEvents([]);
         }
@@ -109,6 +117,7 @@ const ParentDashboard = () => {
           // 404 might mean no data exists, which is not an error
           setChildren([]);
           setAttendance([]);
+          setAttendanceWarning('');
           setAnnouncements([]);
           setEvents([]);
           setError('');
@@ -236,6 +245,12 @@ const ParentDashboard = () => {
             day: 'numeric' 
           })}
         </Typography>
+
+        {children.length > 0 && attendanceWarning && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {attendanceWarning}
+          </Alert>
+        )}
 
         {/* Filter Section */}
         <Paper sx={{ p: 2, mt: 3, mb: 3 }}>
@@ -519,6 +534,32 @@ const ParentDashboard = () => {
 
         {/* Right Column */}
         <Grid item xs={12} md={4}>
+          {children.length > 0 && (
+            <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+              <Typography variant="h6" fontWeight="bold" mb={2}>Linked Children</Typography>
+              <List disablePadding>
+                {children.map((child) => (
+                  <ListItem
+                    key={child.id}
+                    sx={{
+                      borderRadius: 1,
+                      mb: 1,
+                      bgcolor: filters.childId === child.id ? 'action.selected' : 'transparent'
+                    }}
+                    button
+                    onClick={() => setFilters(prev => ({ ...prev, childId: child.id }))}
+                  >
+                    <ListItemText
+                      primary={child.name}
+                      secondary={child.grade ? `Grade: ${child.grade}` : undefined}
+                    />
+                    <ChevronRightIcon color="action" />
+                  </ListItem>
+                ))}
+              </List>
+            </Paper>
+          )}
+
           {/* Quick Actions */}
           <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
             <Typography variant="h6" fontWeight="bold" mb={2}>Quick Actions</Typography>
