@@ -851,11 +851,11 @@ const Users = () => {
                                     <TextField
                                         {...params}
                                         margin="dense"
-                                        label="Link Existing Parent(s)"
-                                        placeholder="Search by name or phone"
+                                        label="Select Existing Parent(s)"
+                                        placeholder="Search existing parents by name or phone"
                                         variant="outlined"
                                         error={formErrors.parentPhoneNumber}
-                                        helperText={formErrors.parentPhoneNumber ? 'At least one parent/guardian is required for students' : ''}
+                                        helperText={formErrors.parentPhoneNumber ? 'At least one parent/guardian is required for students' : 'Selecting an existing parent will link them to this student (no duplicate parent record).'}
                                     />
                                 )}
                                 sx={{ mb: 2 }}

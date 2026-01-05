@@ -15,7 +15,8 @@ useEffect(() => {
   const userData = storedUser ? JSON.parse(storedUser) : null;
   
   // Skip if not a parent user
-  if (!userData || userData.role !== 'PARENT') {
+  const userRole = (userData?.role || '').toString().toUpperCase();
+  if (!userData || userRole !== 'PARENT') {
     setLoading(false);
     return;
   }
@@ -65,7 +66,10 @@ useEffect(() => {
         error,
         refresh: () => {
           setLoading(true);
-          return parentService.getMyChildren()
+          const stored = localStorage.getItem('user');
+          const currentUser = stored ? JSON.parse(stored) : null;
+          const phoneNumber = currentUser?.phoneNumber;
+          return parentService.getMyChildren(phoneNumber)
             .then(setChildrenData)
             .catch(setError)
             .finally(() => setLoading(false));
