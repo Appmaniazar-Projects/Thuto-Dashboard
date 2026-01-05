@@ -39,7 +39,7 @@ import {
   Download as DownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, getParentStudents, linkParentStudents } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
@@ -66,6 +66,11 @@ const Users = () => {
     const [newParents, setNewParents] = useState([
         { name: '', lastName: '', email: '', phoneNumber: '' }
     ]);
+
+    const [selectedStudents, setSelectedStudents] = useState([]);
+    const [studentSearchInput, setStudentSearchInput] = useState('');
+    const [studentSearchOptions, setStudentSearchOptions] = useState([]);
+    const [studentSearchLoading, setStudentSearchLoading] = useState(false);
     
     // Form state
     const [userForm, setUserForm] = useState({
@@ -120,6 +125,26 @@ const Users = () => {
         loadGrades();
         loadSubjects();
     }, []);
+
+    useEffect(() => {
+        if (userForm.role !== 'parent') return;
+        const query = (studentSearchInput || '').trim();
+        if (!query) {
+            setStudentSearchOptions([]);
+            setStudentSearchLoading(false);
+            return;
+        }
+
+        setStudentSearchLoading(true);
+        const timer = setTimeout(() => {
+            searchStudents(query)
+                .then((results) => setStudentSearchOptions(Array.isArray(results) ? results : []))
+                .catch(() => setStudentSearchOptions([]))
+                .finally(() => setStudentSearchLoading(false));
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [studentSearchInput, userForm.role]);
 
     const loadGrades = async () => {
         try {
@@ -276,7 +301,22 @@ const Users = () => {
             if (editingUser) {
                 await updateUser(editingUser.id, formData);
             } else {
-                await createUser(formData);
+                const created = await createUser(formData);
+                const roleLower = (formData.role || '').toString().toLowerCase();
+                const createdId = created?.id || created?.user?.id || created?.data?.id;
+                if (roleLower === 'parent' && createdId && selectedStudents.length > 0) {
+                    const studentIds = selectedStudents
+                        .map((s) => s?.id)
+                        .filter((id) => id !== null && id !== undefined);
+
+                    if (studentIds.length > 0) {
+                        try {
+                            await linkParentStudents(createdId, studentIds);
+                        } catch (linkErr) {
+                            console.error('Failed to link parent to students:', linkErr);
+                        }
+                    }
+                }
             }
             setDialogOpen(false);
             setEditingUser(null);
@@ -325,9 +365,19 @@ const Users = () => {
         }
         setSelectedParents([]);
         setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
+        setSelectedStudents([]);
+        setStudentSearchInput('');
+        setStudentSearchOptions([]);
         setFormErrors({});
         setError('');
         setDialogOpen(true);
+
+        const roleLower = normalizeRole(user?.role);
+        if (user && roleLower === 'parent' && user.id) {
+            getParentStudents(user.id)
+                .then((data) => setSelectedStudents(Array.isArray(data) ? data : []))
+                .catch(() => setSelectedStudents([]));
+        }
     };
 
     const resetForm = () => {
@@ -347,6 +397,9 @@ const Users = () => {
         });
         setSelectedParents([]);
         setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
+        setSelectedStudents([]);
+        setStudentSearchInput('');
+        setStudentSearchOptions([]);
         setFormErrors({});
     };
 
@@ -755,6 +808,13 @@ const Users = () => {
                         onChange={(e) => {
                             setUserForm({ ...userForm, role: e.target.value });
                             setFormErrors({ ...formErrors, role: false });
+
+                            const nextRole = (e.target.value || '').toString().toLowerCase();
+                            if (nextRole !== 'parent') {
+                                setSelectedStudents([]);
+                                setStudentSearchInput('');
+                                setStudentSearchOptions([]);
+                            }
                         }}
                         error={formErrors.role}
                         helperText={editingUser ? 'Role cannot be changed after creation' : (formErrors.role ? 'Role is required' : '')}
@@ -768,6 +828,53 @@ const Users = () => {
                             </MenuItem>
                         ))}
                     </TextField>
+
+                    {userForm.role === 'parent' && (
+                        <Autocomplete
+                            multiple
+                            options={studentSearchOptions || []}
+                            value={selectedStudents}
+                            loading={studentSearchLoading}
+                            inputValue={studentSearchInput}
+                            onInputChange={(event, newInputValue) => {
+                                setStudentSearchInput(newInputValue);
+                            }}
+                            onChange={(event, newValue) => {
+                                setSelectedStudents(newValue || []);
+                            }}
+                            filterOptions={(x) => x}
+                            isOptionEqualToValue={(option, value) => String(option?.id) === String(value?.id)}
+                            getOptionLabel={(option) => {
+                                const username = option?.username ? `${option.username} ` : '';
+                                const first = option?.name || '';
+                                const last = option?.lastName || '';
+                                const grade = option?.grade?.name || option?.grade || option?.gradeId;
+                                const nameLabel = `${first} ${last}`.trim();
+                                const gradeLabel = grade ? ` • ${grade}` : '';
+                                return `${username}${nameLabel}${gradeLabel}`.trim();
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    margin="dense"
+                                    label="Link Student(s)"
+                                    placeholder="Search by username, name, or surname"
+                                    variant="outlined"
+                                    helperText="Select one or more students to link to this parent"
+                                    InputProps={{
+                                        ...params.InputProps,
+                                        endAdornment: (
+                                            <>
+                                                {studentSearchLoading ? <CircularProgress color="inherit" size={18} /> : null}
+                                                {params.InputProps.endAdornment}
+                                            </>
+                                        )
+                                    }}
+                                />
+                            )}
+                            sx={{ mb: 2 }}
+                        />
+                    )}
                     
                     {(userForm.role === 'teacher' || userForm.role === 'student') && (
                         <>

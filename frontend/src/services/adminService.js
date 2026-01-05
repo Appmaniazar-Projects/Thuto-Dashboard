@@ -53,6 +53,75 @@ export const getAllUsers = async () => {
   }
 };
 
+export const searchStudents = async (query, limit = 10) => {
+  try {
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
+
+    const params = {
+      query,
+      limit
+    };
+    if (schoolId) params.schoolId = schoolId;
+    if (adminInfo.email) params.adminEmail = adminInfo.email;
+
+    const response = await api.get('/admin/students/search', { params });
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to search students:', error);
+    if (error.response?.status === 404) return [];
+    throw error;
+  }
+};
+
+export const getParentStudents = async (parentId) => {
+  try {
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
+
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+    if (adminInfo.email) params.adminEmail = adminInfo.email;
+
+    const response = await api.get(`/admin/parents/${parentId}/students`, { params });
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch parent students:', error);
+    if (error.response?.status === 404) return [];
+    throw error;
+  }
+};
+
+export const linkParentStudents = async (parentId, studentIds = []) => {
+  try {
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
+
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+    if (adminInfo.email) params.adminEmail = adminInfo.email;
+
+    const payload = {
+      studentIds: Array.isArray(studentIds) ? studentIds : []
+    };
+
+    const response = await api.post(`/admin/parents/${parentId}/link-students`, payload, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to link parent to students:', error);
+    throw error;
+  }
+};
+
 /**
  * Fetches users by role
  * @param {string} role - User role to filter by

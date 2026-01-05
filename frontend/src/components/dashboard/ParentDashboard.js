@@ -73,9 +73,18 @@ const ParentDashboard = () => {
             setFilters(prev => ({ ...prev, childId: childrenData[0].id }));
           }
           
-          // Fetch attendance for all children in parallel (no filters sent to backend)
+          const month = Number(filters.month);
+          const year = Number(filters.year);
+          const startDate = Number.isFinite(year) && Number.isFinite(month)
+            ? new Date(year, month - 1, 1)
+            : null;
+          const endDate = Number.isFinite(year) && Number.isFinite(month)
+            ? new Date(year, month, 0)
+            : null;
+
+          // Fetch attendance for all children in parallel
           const attendancePromises = childrenData.map(child => 
-            parentService.getChildAttendance(child.id)
+            parentService.getChildAttendance(child.id, { startDate, endDate })
           );
           
           const attendanceResults = await Promise.allSettled(attendancePromises);
@@ -152,27 +161,21 @@ const ParentDashboard = () => {
     const presentDays = filteredAttendance.filter(a => a.status === 'present').length;
     const absentDays = filteredAttendance.filter(a => a.status === 'absent').length;
     const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
-    
-    // Group by subject
-    const subjectStats = filteredAttendance.reduce((acc, record) => {
-      if (!acc[record.subject]) {
-        acc[record.subject] = { present: 0, total: 0 };
-      }
-      acc[record.subject].total++;
-      if (record.status === 'present') {
-        acc[record.subject].present++;
-      }
-      return acc;
-    }, {});
-    
+
     return {
       totalDays,
       presentDays,
       absentDays,
-      attendancePercentage,
-      subjectStats
+      attendancePercentage
     };
   }, [filteredAttendance]);
+
+  const getChildGradeLabel = (child) => {
+    if (child?.grade?.name) return child.grade.name;
+    if (child?.grade) return child.grade;
+    if (child?.gradeId) return child.gradeId;
+    return '';
+  };
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -476,60 +479,6 @@ const ParentDashboard = () => {
               </List>
             )}
           </Paper>
-
-          {/* Subject-wise Stats */}
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>Subject-wise Attendance</Typography>
-            {Object.keys(stats.subjectStats).length === 0 ? (
-              <Box textAlign="center" py={4}>
-                <SchoolIcon color="disabled" sx={{ fontSize: 50, mb: 2 }} />
-                <Typography variant="body1" color="textSecondary">
-                  No subject data available for the selected filters.
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                  Subject statistics will appear here when attendance data is available.
-                </Typography>
-              </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {Object.entries(stats.subjectStats).map(([subject, { present, total }]) => {
-                  const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-                  return (
-                    <Grid item xs={12} sm={6} key={subject}>
-                      <Box mb={1}>
-                        <Box display="flex" justifyContent="space-between" mb={0.5}>
-                          <Typography variant="body2" fontWeight="medium">
-                            {subject}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {present}/{total} days ({percentage}%)
-                          </Typography>
-                        </Box>
-                        <Box 
-                          sx={{
-                            height: 8,
-                            bgcolor: 'grey.200',
-                            borderRadius: 4,
-                            overflow: 'hidden'
-                          }}
-                        >
-                          <Box 
-                            sx={{
-                              height: '100%',
-                              width: `${percentage}%`,
-                              bgcolor: percentage >= 90 ? 'success.main' : 
-                                      percentage >= 75 ? 'warning.main' : 'error.main',
-                              transition: 'all 0.3s ease'
-                            }}
-                          />
-                        </Box>
-                      </Box>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            )}
-          </Paper>
         </Grid>
 
         {/* Right Column */}
@@ -548,12 +497,35 @@ const ParentDashboard = () => {
                     }}
                     button
                     onClick={() => setFilters(prev => ({ ...prev, childId: child.id }))}
+                    secondaryAction={
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/parent/reports?studentId=${child.id}`);
+                          }}
+                        >
+                          <EventIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          edge="end"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/parent/academic?studentId=${child.id}`);
+                          }}
+                        >
+                          <AssignmentIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    }
                   >
                     <ListItemText
                       primary={child.name}
-                      secondary={child.grade ? `Grade: ${child.grade}` : undefined}
+                      secondary={getChildGradeLabel(child) ? `Grade: ${getChildGradeLabel(child)}` : undefined}
                     />
-                    <ChevronRightIcon color="action" />
                   </ListItem>
                 ))}
               </List>

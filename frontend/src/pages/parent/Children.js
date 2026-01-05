@@ -58,13 +58,6 @@ const Children = () => {
           <Typography variant="h4" fontWeight="bold">
             My Children
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => alert('Navigate to add child page')}
-          >
-            Link New Child
-          </Button>
         </Box>
 
         <TableContainer component={Paper}>
@@ -127,21 +120,21 @@ const Children = () => {
                 <Divider sx={{ my: 2 }} />
                 <Chip label={`${child.grade} - ${child.class}`} sx={{ mb: 2 }} />
                 <Typography variant="body2" color="text.secondary">
-                  Quick links to view {child.name.split(' ')[0]}'s grades and attendance.
+                  Quick links to view {child.name.split(' ')[0]}'s reports and attendance.
                 </Typography>
               </CardContent>
               <CardActions sx={{ justifyContent: 'flex-start', px: 2, pb: 2 }}>
                 <Button
                   size="small"
                   startIcon={<GradesIcon />}
-                  onClick={() => navigate(`/parent/grades/${child.id}`)}
+                  onClick={() => navigate(`/parent/academic?studentId=${child.id}`)}
                 >
-                  View Grades
+                  View Reports
                 </Button>
                 <Button
                   size="small"
                   startIcon={<EventIcon />}
-                  onClick={() => navigate(`/parent/attendance/${child.id}`)}
+                  onClick={() => navigate(`/parent/reports?studentId=${child.id}`)}
                 >
                   View Attendance
                 </Button>

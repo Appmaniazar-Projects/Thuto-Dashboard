@@ -83,9 +83,12 @@ const parentService = {
   /**
    * Fetches attendance records for a specific child
    * @param {string} studentId - The ID of the student
+   * @param {Object} [options] - Optional query options
+   * @param {Date|string} [options.startDate] - Start date (YYYY-MM-DD or Date)
+   * @param {Date|string} [options.endDate] - End date (YYYY-MM-DD or Date)
    * @returns {Promise<Array>} Attendance data
    */
-  getChildAttendance: async (studentId) => {
+  getChildAttendance: async (studentId, options = {}) => {
     try {
       const storedUser = localStorage.getItem('user');
       const userData = storedUser ? JSON.parse(storedUser) : null;
@@ -95,8 +98,24 @@ const parentService = {
         userData?.schoolId ||
         null;
 
+      const formatDateParam = (value) => {
+        if (!value) return null;
+        if (value instanceof Date) return value.toISOString().split('T')[0];
+        const trimmed = value.toString().trim();
+        return trimmed ? trimmed : null;
+      };
+
+      const startDate = formatDateParam(options?.startDate);
+      const endDate = formatDateParam(options?.endDate);
+
+      const params = {
+        ...(schoolId ? { schoolId } : {}),
+        ...(startDate ? { startDate } : {}),
+        ...(endDate ? { endDate } : {})
+      };
+
       const response = await api.get(`/attendance/student/${studentId}`, {
-        params: schoolId ? { schoolId } : undefined
+        params: Object.keys(params).length > 0 ? params : undefined
       });
       const data = response.data;
 

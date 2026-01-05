@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box, Paper, Typography, FormControl, InputLabel, Select, 
   MenuItem, Grid, CircularProgress, Alert, Button
 } from '@mui/material';
 import { Assessment as AssessmentIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { useLocation } from 'react-router-dom';
 import { useParent } from '../../context/ParentContext';
 import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
@@ -11,16 +12,35 @@ import parentService from '../../services/parentService';
 const AcademicReportsPage = () => {
   const { children, loading: childrenLoading, error: childrenError } = useParent();
   const { user } = useAuth();
+  const location = useLocation();
   const [selectedChildId, setSelectedChildId] = useState('');
   const [reports, setReports] = useState([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [reportsError, setReportsError] = useState('');
 
+  const queryStudentId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('studentId');
+    return id ? id.toString() : '';
+  }, [location.search]);
+
+  const coerceId = (id) => {
+    if (id === null || id === undefined || id === '') return '';
+    const num = Number(id);
+    return Number.isNaN(num) ? id : num;
+  };
+
   useEffect(() => {
-    if (children.length > 0 && !selectedChildId) {
-      setSelectedChildId(children[0]?.id || '');
+    if (children.length === 0) return;
+
+    const queryId = coerceId(queryStudentId);
+    const queryExists = queryId ? children.some(c => String(c.id) === String(queryId)) : false;
+    const nextId = queryExists ? queryId : (children[0]?.id || '');
+
+    if (nextId && String(nextId) !== String(selectedChildId)) {
+      setSelectedChildId(nextId);
     }
-  }, [children, selectedChildId]);
+  }, [children, queryStudentId, selectedChildId]);
 
   useEffect(() => {
     if (selectedChildId) {

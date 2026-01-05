@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box, Paper, Typography, Grid, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, FormControl, InputLabel, Select, MenuItem,
@@ -12,11 +12,13 @@ import {
   PieChart as PieChartIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
 
 const ParentAttendance = () => {
   const { user: parent } = useAuth();
+  const location = useLocation();
   const [children, setChildren] = useState([]);
   const [attendanceData, setAttendanceData] = useState({});
   const [selectedChildId, setSelectedChildId] = useState('');
@@ -24,6 +26,31 @@ const ParentAttendance = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const queryStudentId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get('studentId');
+    return id ? id.toString() : '';
+  }, [location.search]);
+
+  const coerceId = (id) => {
+    if (id === null || id === undefined || id === '') return '';
+    const num = Number(id);
+    return Number.isNaN(num) ? id : num;
+  };
+
+  const fetchAttendanceForChild = useCallback(async (childId) => {
+    if (!childId) return;
+
+    const startDate = new Date(selectedYear, selectedMonth, 1);
+    const endDate = new Date(selectedYear, selectedMonth + 1, 0);
+
+    const data = await parentService.getChildAttendance(childId, { startDate, endDate });
+    setAttendanceData(prev => ({
+      ...prev,
+      [childId]: Array.isArray(data) ? data : []
+    }));
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -52,16 +79,16 @@ const ParentAttendance = () => {
         const childProfiles = await parentService.getMyChildren(parent.phoneNumber);
         setChildren(childProfiles);
 
-        // 2. Fetch attendance for each child
-        const attendance = {};
-        for (const child of childProfiles) {
-          attendance[child.id] = await parentService.getChildAttendance(child.id);
-        }
-        setAttendanceData(attendance);
-
-        // 3. Default to first child
+        // 2. Default to querystring child if present, otherwise first child
         if (childProfiles.length > 0) {
-          setSelectedChildId(childProfiles[0].id);
+          const queryId = coerceId(queryStudentId);
+          const queryExists = queryId
+            ? childProfiles.some(c => String(c.id) === String(queryId))
+            : false;
+          const initialChildId = queryExists ? queryId : childProfiles[0].id;
+
+          setSelectedChildId(initialChildId);
+          await fetchAttendanceForChild(initialChildId);
         } else {
           setError('No children are linked to your profile.');
         }
@@ -75,7 +102,12 @@ const ParentAttendance = () => {
     };
 
     loadInitialData();
-  }, [parent]);
+  }, [parent, queryStudentId, fetchAttendanceForChild]);
+
+  useEffect(() => {
+    if (!selectedChildId) return;
+    fetchAttendanceForChild(selectedChildId);
+  }, [selectedChildId, fetchAttendanceForChild]);
 
   const handleChildChange = (event) => {
     setSelectedChildId(event.target.value);
