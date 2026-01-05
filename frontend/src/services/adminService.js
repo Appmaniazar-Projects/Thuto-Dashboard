@@ -10,7 +10,10 @@ export const getAllUsers = async () => {
   try {
     // Get admin info for context
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
     
     console.log('Fetching all users from /admin/users with context:', {
       adminEmail: adminInfo.email,
@@ -60,7 +63,10 @@ export const getUsersByRole = async (role) => {
   try {
     // Get admin info for context
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
     
     // Add admin context as query parameters
     const params = {};
@@ -90,38 +96,75 @@ export const createUser = async (userData) => {
   try {
     // Get admin info from localStorage
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId;
     
     // Validate required data
     if (!schoolId && !adminInfo.email) {
       throw new Error('Missing school context. Admin must be properly logged in.');
     }
     
-    // Clean and validate user data
-    const cleanedUserData = {
-      ...userData,
-      // Ensure subjects is an array
-      subjects: Array.isArray(userData.subjects) ? userData.subjects : [],
-      // Remove/trim string fields
+    const normalizedRole = (userData.role || '').toString().trim();
+    const roleUpper = normalizedRole ? normalizedRole.toUpperCase() : 'STUDENT';
+
+    const normalizeNullableString = (value) => {
+      const trimmed = (value ?? '').toString().trim();
+      return trimmed ? trimmed : null;
+    };
+
+    const normalizeNumber = (value) => {
+      if (value === null || value === undefined || value === '') return null;
+      const num = Number(value);
+      return Number.isNaN(num) ? null : num;
+    };
+
+    const normalizeNumberArray = (value) => {
+      if (!Array.isArray(value)) return [];
+      return value
+        .map((v) => normalizeNumber(v))
+        .filter((v) => v !== null);
+    };
+
+    const basePayload = {
       name: userData.name?.trim() || '',
       lastName: userData.lastName?.trim() || '',
       email: userData.email?.trim() || '',
-      phoneNumber: userData.phoneNumber?.trim() || '',
-      username: userData.username?.trim() || '',
-      parentName: userData.parentName?.trim() || '',
-      parentLastName: userData.parentLastName?.trim() || '',
-      parentPhoneNumber: userData.parentPhoneNumber?.trim() || '',
-      parentEmail: userData.parentEmail?.trim() || '',
-      grade: userData.grade,
-    };
-    
-    // Prepare payload with admin context
-    const payload = {
-      ...cleanedUserData,
-      schoolId: schoolId || 'MISSING_SCHOOL_ID',
+      phoneNumber: normalizeNullableString(userData.phoneNumber),
+      role: roleUpper,
+      schoolId: normalizeNumber(schoolId) ?? schoolId,
       createdBy: adminInfo.email || adminInfo.id || 'MISSING_ADMIN_EMAIL',
       createdByRole: 'admin',
-      adminEmail: adminInfo.email // Add admin email as separate field
+      adminEmail: adminInfo.email
+    };
+
+    const roleSpecificPayload = {};
+
+    if (roleUpper === 'STUDENT') {
+      roleSpecificPayload.username = userData.username?.trim() || '';
+      roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
+      roleSpecificPayload.parentName = normalizeNullableString(userData.parentName);
+      roleSpecificPayload.parentLastName = normalizeNullableString(userData.parentLastName);
+      roleSpecificPayload.parentPhoneNumber = normalizeNullableString(userData.parentPhoneNumber);
+      roleSpecificPayload.parentEmail = normalizeNullableString(userData.parentEmail);
+    }
+
+    if (roleUpper === 'TEACHER') {
+      roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
+      roleSpecificPayload.subjects = normalizeNumberArray(userData.subjects);
+    }
+
+    if (roleUpper === 'PARENT') {
+      roleSpecificPayload.parentName = normalizeNullableString(userData.name);
+      roleSpecificPayload.parentLastName = normalizeNullableString(userData.lastName);
+      roleSpecificPayload.parentPhoneNumber = normalizeNullableString(userData.phoneNumber);
+      roleSpecificPayload.parentEmail = normalizeNullableString(userData.email);
+    }
+
+    const payload = {
+      ...basePayload,
+      ...roleSpecificPayload
     };
     
     const response = await api.post('/admin/createUser', payload);

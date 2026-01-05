@@ -138,9 +138,10 @@ export const submitTeacherAttendance = async ({ grade, teacherId, date, attendan
   try {
     const response = await api.post("/attendance/submission", { 
       grade,
+      gradeId: grade,
       teacherId,
-      date, 
-      attendance 
+      date,
+      attendance
     });
     return response.data;
   } catch (error) {
@@ -202,7 +203,7 @@ export const getAttendanceSubmissions = async () => {
  */
 export const updateAttendanceSubmission = async (submissionId, updateData) => {
   try {
-    const response = await api.patch(`attendance/submissions/${submissionId}`, updateData);
+    const response = await api.patch(`/attendance/submissions/${submissionId}`, updateData);
     return response.data;
   } catch (error) {
     console.error('Failed to update attendance submission:', error);

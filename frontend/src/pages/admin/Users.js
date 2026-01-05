@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
 import { 
   Box, 
+  Autocomplete,
   CircularProgress, 
   Typography, 
   Paper, 
@@ -35,7 +36,8 @@ import {
   Person as PersonIcon,
   AdminPanelSettings as AdminIcon,
   School as TeacherIcon,
-  Download as DownloadIcon
+  Download as DownloadIcon,
+  UploadFile as UploadFileIcon
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
@@ -57,6 +59,13 @@ const Users = () => {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [formErrors, setFormErrors] = useState({});
+
+    const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
+
+    const [selectedParents, setSelectedParents] = useState([]);
+    const [newParents, setNewParents] = useState([
+        { name: '', lastName: '', email: '', phoneNumber: '' }
+    ]);
     
     // Form state
     const [userForm, setUserForm] = useState({
@@ -80,6 +89,20 @@ const Users = () => {
         { value: 'parent', label: 'Parent' },
         { value: 'teacher', label: 'Teacher' },
     ];
+
+    const addNewParent = () => {
+        setNewParents((prev) => [...prev, { name: '', lastName: '', email: '', phoneNumber: '' }]);
+    };
+
+    const removeNewParent = (indexToRemove) => {
+        setNewParents((prev) => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    const updateNewParent = (indexToUpdate, key, value) => {
+        setNewParents((prev) =>
+            prev.map((p, index) => (index === indexToUpdate ? { ...p, [key]: value } : p))
+        );
+    };
 
     const normalizePhoneNumber = (phone) => {
         if (!phone) return '';
@@ -174,39 +197,53 @@ const Users = () => {
         }
         
 
-            if (userForm.role !== 'student') {
-            // existing phone validation
+        if (userForm.role !== 'student') {
+            // For parent/teacher, keep phone required
             if (!userForm.phoneNumber.trim()) {
                 errors.phoneNumber = true;
             } else {
                 const phoneRegex = /^[\d\s\+\-\(\)]+$/;
                 if (!phoneRegex.test(userForm.phoneNumber)) {
-                errors.phoneNumber = true;
+                    errors.phoneNumber = true;
                 }
             }
-            } else {
-            // role === 'student'
+        } else {
+            // For students, phone can be null. Validate only when provided.
             const studentPhone = userForm.phoneNumber.trim();
-            const parentPhone = userForm.parentPhoneNumber?.trim() || '';
-
-            // Parent phone is required (when creating a new student)
-            if (!editingUser && !parentPhone) {
-                errors.parentPhoneNumber = true;
-            } else if (parentPhone) {
-                const phoneRegex = /^[\d\s\+\-\(\)]+$/;
-                if (!phoneRegex.test(parentPhone)) {
-                errors.parentPhoneNumber = true;
-                }
-            }
-
-            // If student phone is provided, validate format
             if (studentPhone) {
                 const phoneRegex = /^[\d\s\+\-\(\)]+$/;
                 if (!phoneRegex.test(studentPhone)) {
-                errors.phoneNumber = true;
+                    errors.phoneNumber = true;
                 }
             }
+
+            // Student must have a username
+            if (!userForm.username.trim()) {
+                errors.username = true;
             }
+
+            // Student must have a grade selected
+            if (!userForm.grade) {
+                errors.grade = true;
+            }
+
+            const selectedParentCount = selectedParents.length;
+            const validNewParentCount = newParents.filter((p) => p.phoneNumber?.trim()).length;
+            const fallbackParentPhone = userForm.parentPhoneNumber?.trim() || '';
+
+            if (!editingUser && selectedParentCount === 0 && validNewParentCount === 0 && !fallbackParentPhone) {
+                errors.parentPhoneNumber = true;
+            }
+        }
+
+        if (userForm.role === 'teacher') {
+            if (!userForm.grade) {
+                errors.grade = true;
+            }
+            if (!Array.isArray(userForm.subjects) || userForm.subjects.length === 0) {
+                errors.subjects = true;
+            }
+        }
 
 
 
@@ -223,9 +260,16 @@ const Users = () => {
         }
         
         // Normalize form data before submission
+        const primarySelectedParent = selectedParents[0] || null;
+        const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
+
         const formData = {
             ...userForm,
-            role: normalizeRole(userForm.role)
+            role: normalizeRole(userForm.role),
+            parentName: primarySelectedParent?.name || primaryNewParent?.name || userForm.parentName,
+            parentLastName: primarySelectedParent?.lastName || primaryNewParent?.lastName || userForm.parentLastName,
+            parentEmail: primarySelectedParent?.email || primaryNewParent?.email || userForm.parentEmail,
+            parentPhoneNumber: primarySelectedParent?.phoneNumber || primaryNewParent?.phoneNumber || userForm.parentPhoneNumber,
         };
 
         try {
@@ -279,6 +323,8 @@ const Users = () => {
             setEditingUser(null);
             resetForm();
         }
+        setSelectedParents([]);
+        setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
         setFormErrors({});
         setError('');
         setDialogOpen(true);
@@ -299,6 +345,8 @@ const Users = () => {
             parentPhoneNumber: '',
             parentEmail: '',
         });
+        setSelectedParents([]);
+        setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
         setFormErrors({});
     };
 
@@ -340,6 +388,44 @@ const Users = () => {
         saveAs(blob, fileName);
     };
 
+    const downloadBulkUploadTemplate = () => {
+        const headers = [
+            'role',
+            'name',
+            'lastName',
+            'email',
+            'phoneNumber',
+            'username',
+            'grade',
+            'subjects',
+            'parentName',
+            'parentLastName',
+            'parentPhoneNumber',
+            'parentEmail'
+        ];
+
+        const sampleRows = [
+            {
+                role: 'STUDENT',
+                name: 'TheStudent',
+                lastName: 'Surname',
+                email: 'student@gmail.com',
+                phoneNumber: '0761234567',
+                username: 'ST10283',
+                grade: '8',
+                subjects: '',
+                parentName: 'Name',
+                parentLastName: 'Surname',
+                parentPhoneNumber: '0765078112',
+                parentEmail: 'guard@gmail.com'
+            }
+        ];
+
+        const csv = Papa.unparse(sampleRows, { header: true, columns: headers });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        saveAs(blob, `user_bulk_upload_template_${new Date().toISOString().split('T')[0]}.csv`);
+    };
+
     const getRoleColor = (role) => {
         switch (role) {
             case 'admin': return 'error';
@@ -366,7 +452,7 @@ const Users = () => {
                                 startIcon={<AddIcon />}
                                 onClick={() => {
                                     const roleMap = {
-                                        'All Users': 'user',
+                                        'All Users': 'student',
                                         'Parents': 'parent',
                                         'Students': 'student',
                                         'Teachers': 'teacher'
@@ -386,6 +472,14 @@ const Users = () => {
                                 Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
                             </Button>
                         )}
+                        <Button
+                            variant="outlined"
+                            startIcon={<UploadFileIcon />}
+                            onClick={() => setBulkUploadDialogOpen(true)}
+                            sx={{ mr: 1 }}
+                        >
+                            Bulk Upload (Coming Soon)
+                        </Button>
                         <Button
                             variant="outlined"
                             startIcon={<DownloadIcon />}
@@ -688,6 +782,8 @@ const Users = () => {
                                 SelectProps={{
                                     multiple: true,
                                 }}
+                                error={formErrors.subjects}
+                                helperText={formErrors.subjects ? 'At least one subject is required for teachers' : ''}
                                 sx={{ mb: 2 }}
                             >
                                 {subjects.map((subject) => (
@@ -704,10 +800,12 @@ const Users = () => {
                                 variant="outlined"
                                 value={userForm.grade}
                                 onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
+                                error={formErrors.grade}
+                                helperText={formErrors.grade ? 'Grade is required' : ''}
                                 sx={{ mb: 2 }}
                             >
                                 {grades.map((grade) => {
-                                    const gradeValue = grade.id || grade.name;
+                                    const gradeValue = grade.id;
                                     return (
                                             <MenuItem key={grade.id} value={gradeValue}>
                                                 {grade.name}
@@ -727,8 +825,112 @@ const Users = () => {
                             variant="outlined"
                             value={userForm.username}
                             onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                            error={formErrors.username}
+                            helperText={formErrors.username ? 'Username is required for students' : ''}
                             sx={{ mb: 2 }}
                             />
+
+                            <Autocomplete
+                                multiple
+                                options={parents || []}
+                                value={selectedParents}
+                                onChange={(event, newValue) => {
+                                    setSelectedParents(newValue || []);
+                                    if (!editingUser) {
+                                        setFormErrors({ ...formErrors, parentPhoneNumber: false });
+                                    }
+                                }}
+                                getOptionLabel={(option) => {
+                                    const first = option?.name || '';
+                                    const last = option?.lastName || '';
+                                    const phone = option?.phoneNumber || '';
+                                    return `${first} ${last}`.trim() + (phone ? ` (${phone})` : '');
+                                }}
+                                isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        margin="dense"
+                                        label="Link Existing Parent(s)"
+                                        placeholder="Search by name or phone"
+                                        variant="outlined"
+                                        error={formErrors.parentPhoneNumber}
+                                        helperText={formErrors.parentPhoneNumber ? 'At least one parent/guardian is required for students' : ''}
+                                    />
+                                )}
+                                sx={{ mb: 2 }}
+                            />
+
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2">Add New Parent(s)</Typography>
+                                <Button size="small" onClick={addNewParent} startIcon={<AddIcon />}>
+                                    Add Parent
+                                </Button>
+                            </Box>
+
+                            {newParents.map((p, index) => (
+                                <Box key={index} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="subtitle2">Parent {index + 1}</Typography>
+                                        <Button
+                                            size="small"
+                                            color="error"
+                                            onClick={() => removeNewParent(index)}
+                                            disabled={newParents.length === 1}
+                                        >
+                                            Remove
+                                        </Button>
+                                    </Box>
+
+                                    <Grid container spacing={2}>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                margin="dense"
+                                                label="First Name"
+                                                fullWidth
+                                                variant="outlined"
+                                                value={p.name}
+                                                onChange={(e) => updateNewParent(index, 'name', e.target.value)}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                margin="dense"
+                                                label="Last Name"
+                                                fullWidth
+                                                variant="outlined"
+                                                value={p.lastName}
+                                                onChange={(e) => updateNewParent(index, 'lastName', e.target.value)}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                margin="dense"
+                                                label="Email"
+                                                fullWidth
+                                                variant="outlined"
+                                                value={p.email}
+                                                onChange={(e) => updateNewParent(index, 'email', e.target.value)}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6}>
+                                            <TextField
+                                                margin="dense"
+                                                label="Phone Number"
+                                                fullWidth
+                                                variant="outlined"
+                                                value={p.phoneNumber}
+                                                onChange={(e) => updateNewParent(index, 'phoneNumber', e.target.value)}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            ))}
+
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                                For now, the backend only links one parent. The first selected parent (or first new parent with a phone) will be sent as the primary parent.
+                            </Typography>
+
                             <TextField
                             margin="dense"
                             label="Parent/Guardian First Name"
@@ -790,6 +992,32 @@ const Users = () => {
                     <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
                     <Button onClick={handleSubmit} variant="contained">
                         {editingUser ? 'Update' : 'Create'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={bulkUploadDialogOpen} onClose={() => setBulkUploadDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Bulk Upload Users (Coming Soon)</DialogTitle>
+                <DialogContent>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        Bulk uploads are being added to support a smooth transition. For now, you can download a CSV template.
+                    </Alert>
+                    <TextField
+                        fullWidth
+                        disabled
+                        label="Upload CSV"
+                        margin="dense"
+                        placeholder="Coming soon"
+                        sx={{ mb: 2 }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setBulkUploadDialogOpen(false)}>Close</Button>
+                    <Button variant="outlined" onClick={downloadBulkUploadTemplate}>
+                        Download CSV Template
+                    </Button>
+                    <Button variant="contained" disabled startIcon={<UploadFileIcon />}>
+                        Upload (Coming Soon)
                     </Button>
                 </DialogActions>
             </Dialog>
