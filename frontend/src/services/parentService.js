@@ -146,7 +146,14 @@ const parentService = {
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
-      throw new Error('Failed to load academic reports.');
+
+      // Treat "no reports" and "not allowed" as empty rather than a hard error
+      // so the UI can show the default empty state.
+      if (error.response?.status === 404 || error.response?.status === 403) {
+        return [];
+      }
+
+      return [];
     }
   }
 };

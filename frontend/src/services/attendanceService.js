@@ -185,7 +185,23 @@ export const getChildAttendance = async (studentId) => {
  */
 export const getAttendanceSubmissions = async () => {
   try {
-    const response = await api.get('/attendance/submissions');
+    const storedUser = localStorage.getItem('user');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      userData?.school?.id ||
+      userData?.schoolId ||
+      null;
+    const adminEmail = userData?.email || null;
+
+    const params = {
+      ...(schoolId ? { schoolId } : {}),
+      ...(adminEmail ? { adminEmail } : {})
+    };
+
+    const response = await api.get('/attendance/submissions', {
+      params: Object.keys(params).length > 0 ? params : undefined
+    });
     return response.data || [];
   } catch (error) {
     console.error('Error fetching attendance submissions:', error);
@@ -203,7 +219,23 @@ export const getAttendanceSubmissions = async () => {
  */
 export const updateAttendanceSubmission = async (submissionId, updateData) => {
   try {
-    const response = await api.patch(`/attendance/submissions/${submissionId}`, updateData);
+    const storedUser = localStorage.getItem('user');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      userData?.school?.id ||
+      userData?.schoolId ||
+      null;
+    const adminEmail = userData?.email || null;
+
+    const params = {
+      ...(schoolId ? { schoolId } : {}),
+      ...(adminEmail ? { adminEmail } : {})
+    };
+
+    const response = await api.put(`/attendance/submissions/${submissionId}`, updateData, {
+      params: Object.keys(params).length > 0 ? params : undefined
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to update attendance submission:', error);

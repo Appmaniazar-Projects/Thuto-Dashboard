@@ -57,7 +57,7 @@ const Children = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" fontWeight="bold">
             My Children
-          </Typography>
+          </Typography> 
         </Box>
 
         <TableContainer component={Paper}>
@@ -91,13 +91,6 @@ const Children = () => {
         <Typography variant="h4" fontWeight="bold">
           My Children
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => alert('Navigate to add child page')}
-        >
-          Link New Child
-        </Button>
       </Box>
 
       <Grid container spacing={3}>

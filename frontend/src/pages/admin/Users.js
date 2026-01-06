@@ -845,22 +845,19 @@ const Users = () => {
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(option, value) => String(option?.id) === String(value?.id)}
                             getOptionLabel={(option) => {
-                                const username = option?.username ? `${option.username} ` : '';
-                                const first = option?.name || '';
-                                const last = option?.lastName || '';
+                                const username = option?.username ? `${option.username}` : '';
                                 const grade = option?.grade?.name || option?.grade || option?.gradeId;
-                                const nameLabel = `${first} ${last}`.trim();
                                 const gradeLabel = grade ? ` • ${grade}` : '';
-                                return `${username}${nameLabel}${gradeLabel}`.trim();
+                                return `${username}${gradeLabel}`.trim();
                             }}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
                                     margin="dense"
                                     label="Link Student(s)"
-                                    placeholder="Search by username, name, or surname"
+                                    placeholder="Search by username"
                                     variant="outlined"
-                                    helperText="Select one or more students to link to this parent"
+                                    helperText="Search by student username and select one or more students to link to this parent"
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (

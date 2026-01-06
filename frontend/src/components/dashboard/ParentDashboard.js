@@ -532,43 +532,6 @@ const ParentDashboard = () => {
             </Paper>
           )}
 
-          {/* Quick Actions */}
-          <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>Quick Actions</Typography>
-            <List disablePadding>
-              <ListItem 
-                button 
-                component={Link} 
-                to="/parent/children"
-                sx={{ borderRadius: 1, mb: 1, '&:hover': { bgcolor: 'action.hover' } }}
-              >
-                <ListItemIcon><PeopleIcon color="primary" /></ListItemIcon>
-                <ListItemText primary="View All Children" />
-                <ChevronRightIcon color="action" />
-              </ListItem>
-              <ListItem 
-                button 
-                component={Link} 
-                to="/parent/reports"
-                sx={{ borderRadius: 1, mb: 1, '&:hover': { bgcolor: 'action.hover' } }}
-              >
-                <ListItemIcon><SchoolIcon color="primary" /></ListItemIcon>
-                <ListItemText primary="View Attendance Reports" />
-                <ChevronRightIcon color="action" />
-              </ListItem>
-              <ListItem 
-                button 
-                component={Link} 
-                to="/parent/academic"
-                sx={{ borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}
-              >
-                <ListItemIcon><AssignmentIcon color="primary" /></ListItemIcon>
-                <ListItemText primary="View Academic Reports" />
-                <ChevronRightIcon color="action" />
-              </ListItem>
-            </List>
-          </Paper>
-
           {/* Upcoming Events */}
           <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>

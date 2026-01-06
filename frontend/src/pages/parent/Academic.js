@@ -48,7 +48,7 @@ const AcademicReportsPage = () => {
         try {
           setIsLoadingReports(true);
           setReportsError('');
-          
+
           // Check if user has phoneNumber
           if (!user?.phoneNumber) {
             setReportsError('Phone number not found. Please update your profile.');
@@ -58,10 +58,9 @@ const AcademicReportsPage = () => {
           }
           
           const data = await parentService.getChildAcademicReports(user.phoneNumber, selectedChildId);
-          setReports(data || []);
+          setReports(Array.isArray(data) ? data : []);
         } catch (err) {
           console.error('Error fetching reports:', err);
-          setReportsError('Failed to fetch academic reports. Please try again.');
           setReports([]);
         } finally {
           setIsLoadingReports(false);
