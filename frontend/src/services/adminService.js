@@ -55,21 +55,12 @@ export const getAllUsers = async () => {
 
 export const searchStudents = async (query, limit = 10) => {
   try {
-    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId =
-      localStorage.getItem('schoolId') ||
-      adminInfo.school?.id ||
-      adminInfo.schoolId;
+    const username = (query ?? '').toString().trim();
+    if (!username) return [];
 
-    const params = {
-      query,
-      limit
-    };
-    if (schoolId) params.schoolId = schoolId;
-    if (adminInfo.email) params.adminEmail = adminInfo.email;
-
-    const response = await api.get('/admin/students/search', { params });
-    return response.data || [];
+    const response = await api.get(`/student/details/${encodeURIComponent(username)}`);
+    const student = response.data;
+    return student ? [student] : [];
   } catch (error) {
     console.error('Failed to search students:', error);
     if (error.response?.status === 404) return [];
@@ -196,6 +187,17 @@ export const createUser = async (userData) => {
         .filter((v) => v !== null);
     };
 
+    const normalizeStudentDTOS = (value) => {
+      if (!Array.isArray(value)) return [];
+      return value
+        .map((item) => {
+          const id = normalizeNumber(item?.id ?? item);
+          if (id === null) return null;
+          return { id };
+        })
+        .filter(Boolean);
+    };
+
     const basePayload = {
       name: userData.name?.trim() || '',
       lastName: userData.lastName?.trim() || '',
@@ -229,6 +231,11 @@ export const createUser = async (userData) => {
       roleSpecificPayload.parentLastName = normalizeNullableString(userData.lastName);
       roleSpecificPayload.parentPhoneNumber = normalizeNullableString(userData.phoneNumber);
       roleSpecificPayload.parentEmail = normalizeNullableString(userData.email);
+
+      const studentDTOS = normalizeStudentDTOS(userData.studentDTOS);
+      if (studentDTOS.length > 0) {
+        roleSpecificPayload.studentDTOS = studentDTOS;
+      }
     }
 
     const payload = {

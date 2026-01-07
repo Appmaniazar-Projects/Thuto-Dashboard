@@ -39,7 +39,7 @@ import {
   Download as DownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, getParentStudents, linkParentStudents } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
@@ -297,26 +297,21 @@ const Users = () => {
             parentPhoneNumber: primarySelectedParent?.phoneNumber || primaryNewParent?.phoneNumber || userForm.parentPhoneNumber,
         };
 
+        if ((formData.role || '').toString().toLowerCase() === 'parent') {
+            const studentDTOS = (selectedStudents || [])
+                .map((s) => ({ id: s?.id }))
+                .filter((s) => s?.id !== null && s?.id !== undefined);
+
+            if (studentDTOS.length > 0) {
+                formData.studentDTOS = studentDTOS;
+            }
+        }
+
         try {
             if (editingUser) {
                 await updateUser(editingUser.id, formData);
             } else {
-                const created = await createUser(formData);
-                const roleLower = (formData.role || '').toString().toLowerCase();
-                const createdId = created?.id || created?.user?.id || created?.data?.id;
-                if (roleLower === 'parent' && createdId && selectedStudents.length > 0) {
-                    const studentIds = selectedStudents
-                        .map((s) => s?.id)
-                        .filter((id) => id !== null && id !== undefined);
-
-                    if (studentIds.length > 0) {
-                        try {
-                            await linkParentStudents(createdId, studentIds);
-                        } catch (linkErr) {
-                            console.error('Failed to link parent to students:', linkErr);
-                        }
-                    }
-                }
+                await createUser(formData);
             }
             setDialogOpen(false);
             setEditingUser(null);
@@ -371,13 +366,6 @@ const Users = () => {
         setFormErrors({});
         setError('');
         setDialogOpen(true);
-
-        const roleLower = normalizeRole(user?.role);
-        if (user && roleLower === 'parent' && user.id) {
-            getParentStudents(user.id)
-                .then((data) => setSelectedStudents(Array.isArray(data) ? data : []))
-                .catch(() => setSelectedStudents([]));
-        }
     };
 
     const resetForm = () => {
@@ -841,6 +829,8 @@ const Users = () => {
                             }}
                             onChange={(event, newValue) => {
                                 setSelectedStudents(newValue || []);
+                                setStudentSearchInput('');
+                                setStudentSearchOptions([]);
                             }}
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(option, value) => String(option?.id) === String(value?.id)}
@@ -857,7 +847,7 @@ const Users = () => {
                                     label="Link Student(s)"
                                     placeholder="Search by username"
                                     variant="outlined"
-                                    helperText="Search by student username and select one or more students to link to this parent"
+                                    helperText="Type the student's exact username, select to link, then type another username to add more"
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (

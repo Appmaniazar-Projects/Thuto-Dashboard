@@ -199,10 +199,30 @@ export const getAttendanceSubmissions = async () => {
       ...(adminEmail ? { adminEmail } : {})
     };
 
-    const response = await api.get('/attendance/submissions', {
+    const response = await api.get('/attendance', {
       params: Object.keys(params).length > 0 ? params : undefined
     });
-    return response.data || [];
+
+    const rows = Array.isArray(response.data) ? response.data : [];
+    return rows.map((record) => {
+      const teacherName = record?.teacher?.name || record?.teacherName || 'Unknown';
+      const gradeLabel =
+        record?.grade?.name ||
+        record?.grade?.id ||
+        record?.grade ||
+        'N/A';
+      const subjectLabel = record?.subject?.name || record?.subject || 'N/A';
+      const status = record?.status || 'UNKNOWN';
+
+      return {
+        id: record?.id,
+        date: record?.date,
+        teacherName,
+        grade: gradeLabel,
+        subject: subjectLabel,
+        status
+      };
+    });
   } catch (error) {
     console.error('Error fetching attendance submissions:', error);
     if (error.response?.status === 404) {
@@ -233,7 +253,7 @@ export const updateAttendanceSubmission = async (submissionId, updateData) => {
       ...(adminEmail ? { adminEmail } : {})
     };
 
-    const response = await api.put(`/attendance/submissions/${submissionId}`, updateData, {
+    const response = await api.put(`/attendance/${submissionId}`, updateData, {
       params: Object.keys(params).length > 0 ? params : undefined
     });
     return response.data;
