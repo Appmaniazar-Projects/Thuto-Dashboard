@@ -8,7 +8,22 @@ const parentService = {
    */
   getMyChildren: async (phoneNumber) => {
     try {
-      const response = await api.get(`/parent/${phoneNumber}/children`);
+      const storedUser = localStorage.getItem('user');
+      const userData = storedUser ? JSON.parse(storedUser) : null;
+      const schoolId =
+        localStorage.getItem('schoolId') ||
+        userData?.school?.id ||
+        userData?.schoolId ||
+        null;
+
+      const encodedPhone = encodeURIComponent((phoneNumber ?? '').toString().trim());
+      const params = {
+        ...(schoolId ? { schoolId } : {})
+      };
+
+      const response = await api.get(`/parent/${encodedPhone}/children`, {
+        params: Object.keys(params).length > 0 ? params : undefined
+      });
       return response.data || [];
     } catch (error) {
       console.error('Failed to fetch children:', error);

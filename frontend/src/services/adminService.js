@@ -58,7 +58,21 @@ export const searchStudents = async (query, limit = 10) => {
     const username = (query ?? '').toString().trim();
     if (!username) return [];
 
-    const response = await api.get(`/student/details/${encodeURIComponent(username)}`);
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId ||
+      null;
+
+    const params = {
+      ...(schoolId ? { schoolId } : {}),
+      ...(adminInfo.email ? { adminEmail: adminInfo.email } : {})
+    };
+
+    const response = await api.get(`/student/details/${encodeURIComponent(username)}`, {
+      params: Object.keys(params).length > 0 ? params : undefined
+    });
     const student = response.data;
     return student ? [student] : [];
   } catch (error) {
