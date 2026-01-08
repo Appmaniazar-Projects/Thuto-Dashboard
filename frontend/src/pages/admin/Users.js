@@ -62,10 +62,10 @@ const Users = () => {
 
     const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
 
-    const [selectedParents, setSelectedParents] = useState([]);
-    const [newParents, setNewParents] = useState([
-        { name: '', lastName: '', email: '', phoneNumber: '' }
-    ]);
+    const [newParents, setNewParents] = useState([]);
+    const [parentLookupPhone, setParentLookupPhone] = useState('');
+    const [parentLookupResult, setParentLookupResult] = useState(null);
+    const [parentLookupTried, setParentLookupTried] = useState(false);
 
     const [selectedStudents, setSelectedStudents] = useState([]);
     const [studentSearchInput, setStudentSearchInput] = useState('');
@@ -109,15 +109,38 @@ const Users = () => {
         );
     };
 
-    const normalizePhoneNumber = (phone) => {
-        if (!phone) return '';
-        return phone.replace(/\D/g, '');
+    const normalizePhone = (value) => (value || '').toString().replace(/\D/g, '');
+
+    const findExistingParentByPhone = (phone) => {
+        const normalized = normalizePhone(phone);
+        if (!normalized) return null;
+        return (parents || []).find((p) => normalizePhone(p?.phoneNumber) === normalized) || null;
     };
 
-    const findParentByPhoneNumber = (phone) => {
-        const normalized = normalizePhoneNumber(phone);
-        if (!normalized) return null;
-        return parents.find((parent) => normalizePhoneNumber(parent.phoneNumber) === normalized) || null;
+    const handleFindParent = () => {
+        const found = findExistingParentByPhone(parentLookupPhone);
+        setParentLookupTried(true);
+        setParentLookupResult(found);
+
+        if (found) {
+            setNewParents([
+                {
+                    name: found?.name || '',
+                    lastName: found?.lastName || '',
+                    email: found?.email || '',
+                    phoneNumber: found?.phoneNumber || parentLookupPhone || '',
+                },
+            ]);
+            setFormErrors((prev) => ({ ...prev, parentPhoneNumber: false }));
+        }
+    };
+
+    const clearParentLookup = () => {
+        setParentLookupPhone('');
+        setParentLookupResult(null);
+        setParentLookupTried(false);
+        setNewParents([]);
+        setFormErrors((prev) => ({ ...prev, parentPhoneNumber: false }));
     };
 
     useEffect(() => {
@@ -252,11 +275,9 @@ const Users = () => {
                 errors.grade = true;
             }
 
-            const selectedParentCount = selectedParents.length;
             const validNewParentCount = newParents.filter((p) => p.phoneNumber?.trim()).length;
-            const fallbackParentPhone = userForm.parentPhoneNumber?.trim() || '';
 
-            if (!editingUser && selectedParentCount === 0 && validNewParentCount === 0 && !fallbackParentPhone) {
+            if (!editingUser && validNewParentCount === 0) {
                 errors.parentPhoneNumber = true;
             }
         }
@@ -285,16 +306,15 @@ const Users = () => {
         }
         
         // Normalize form data before submission
-        const primarySelectedParent = selectedParents[0] || null;
         const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
 
         const formData = {
             ...userForm,
             role: normalizeRole(userForm.role),
-            parentName: primarySelectedParent?.name || primaryNewParent?.name || userForm.parentName,
-            parentLastName: primarySelectedParent?.lastName || primaryNewParent?.lastName || userForm.parentLastName,
-            parentEmail: primarySelectedParent?.email || primaryNewParent?.email || userForm.parentEmail,
-            parentPhoneNumber: primarySelectedParent?.phoneNumber || primaryNewParent?.phoneNumber || userForm.parentPhoneNumber,
+            parentName: primaryNewParent?.name || '',
+            parentLastName: primaryNewParent?.lastName || '',
+            parentEmail: primaryNewParent?.email || '',
+            parentPhoneNumber: primaryNewParent?.phoneNumber || '',
         };
 
         if ((formData.role || '').toString().toLowerCase() === 'parent') {
@@ -358,8 +378,10 @@ const Users = () => {
             setEditingUser(null);
             resetForm();
         }
-        setSelectedParents([]);
-        setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
+        setNewParents([]);
+        setParentLookupPhone('');
+        setParentLookupResult(null);
+        setParentLookupTried(false);
         setSelectedStudents([]);
         setStudentSearchInput('');
         setStudentSearchOptions([]);
@@ -383,8 +405,10 @@ const Users = () => {
             parentPhoneNumber: '',
             parentEmail: '',
         });
-        setSelectedParents([]);
-        setNewParents([{ name: '', lastName: '', email: '', phoneNumber: '' }]);
+        setNewParents([]);
+        setParentLookupPhone('');
+        setParentLookupResult(null);
+        setParentLookupTried(false);
         setSelectedStudents([]);
         setStudentSearchInput('');
         setStudentSearchOptions([]);
@@ -924,158 +948,132 @@ const Users = () => {
                             sx={{ mb: 2 }}
                             />
 
-                            <Autocomplete
-                                multiple
-                                options={parents || []}
-                                value={selectedParents}
-                                onChange={(event, newValue) => {
-                                    setSelectedParents(newValue || []);
-                                    if (!editingUser) {
-                                        setFormErrors({ ...formErrors, parentPhoneNumber: false });
-                                    }
-                                }}
-                                getOptionLabel={(option) => {
-                                    const first = option?.name || '';
-                                    const last = option?.lastName || '';
-                                    const phone = option?.phoneNumber || '';
-                                    return `${first} ${last}`.trim() + (phone ? ` (${phone})` : '');
-                                }}
-                                isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        margin="dense"
-                                        label="Select Existing Parent(s)"
-                                        placeholder="Search existing parents by name or phone"
-                                        variant="outlined"
-                                        error={formErrors.parentPhoneNumber}
-                                        helperText={formErrors.parentPhoneNumber ? 'At least one parent/guardian is required for students' : 'Selecting an existing parent will link them to this student (no duplicate parent record).'}
-                                    />
-                                )}
-                                sx={{ mb: 2 }}
-                            />
+                            <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                    Find Existing Parent/Guardian
+                                </Typography>
 
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography variant="subtitle2">Add New Parent(s)</Typography>
-                                <Button size="small" onClick={addNewParent} startIcon={<AddIcon />}>
-                                    Add Parent
-                                </Button>
-                            </Box>
-
-                            {newParents.map((p, index) => (
-                                <Box key={index} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                        <Typography variant="subtitle2">Parent {index + 1}</Typography>
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} sm={8}>
+                                        <TextField
+                                            margin="dense"
+                                            label="Parent/Guardian Phone Number"
+                                            fullWidth
+                                            variant="outlined"
+                                            value={parentLookupPhone}
+                                            onChange={(e) => {
+                                                setParentLookupPhone(e.target.value);
+                                                setParentLookupTried(false);
+                                                setParentLookupResult(null);
+                                                setFormErrors((prev) => ({ ...prev, parentPhoneNumber: false }));
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
                                         <Button
-                                            size="small"
-                                            color="error"
-                                            onClick={() => removeNewParent(index)}
-                                            disabled={newParents.length === 1}
+                                            variant="outlined"
+                                            fullWidth
+                                            onClick={handleFindParent}
+                                            disabled={!normalizePhone(parentLookupPhone)}
                                         >
-                                            Remove
+                                            Find Parent
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+
+                                {parentLookupTried && parentLookupResult && (
+                                    <Alert severity="success" sx={{ mt: 2 }}>
+                                        Existing parent found: {(parentLookupResult?.name || '')} {(parentLookupResult?.lastName || '')}{parentLookupResult?.phoneNumber ? ` (${parentLookupResult.phoneNumber})` : ''}
+                                    </Alert>
+                                )}
+
+                                {parentLookupTried && !parentLookupResult && (
+                                    <Alert severity="info" sx={{ mt: 2 }}>
+                                        No existing parent found for that phone number. Please add a new parent/guardian below.
+                                    </Alert>
+                                )}
+
+                                {(parentLookupTried || parentLookupPhone || newParents.length > 0) && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                        <Button size="small" onClick={clearParentLookup}>
+                                            Clear
                                         </Button>
                                     </Box>
+                                )}
+                            </Box>
 
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                margin="dense"
-                                                label="First Name"
-                                                fullWidth
-                                                variant="outlined"
-                                                value={p.name}
-                                                onChange={(e) => updateNewParent(index, 'name', e.target.value)}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                margin="dense"
-                                                label="Last Name"
-                                                fullWidth
-                                                variant="outlined"
-                                                value={p.lastName}
-                                                onChange={(e) => updateNewParent(index, 'lastName', e.target.value)}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                margin="dense"
-                                                label="Email"
-                                                fullWidth
-                                                variant="outlined"
-                                                value={p.email}
-                                                onChange={(e) => updateNewParent(index, 'email', e.target.value)}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <TextField
-                                                margin="dense"
-                                                label="Phone Number"
-                                                fullWidth
-                                                variant="outlined"
-                                                value={p.phoneNumber}
-                                                onChange={(e) => updateNewParent(index, 'phoneNumber', e.target.value)}
-                                            />
-                                        </Grid>
-                                    </Grid>
+                            {newParents.length === 0 && (
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 2 }}>
+                                    <Button size="small" onClick={addNewParent} startIcon={<AddIcon />}>
+                                        Add Parent/Guardian
+                                    </Button>
                                 </Box>
-                            ))}
+                            )}
 
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                                For now, the backend only links one parent. The first selected parent (or first new parent with a phone) will be sent as the primary parent.
-                            </Typography>
+                            {newParents.length > 0 && (
+                                <>
+                                    {newParents.map((p, index) => (
+                                        <Box key={index} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                                <Typography variant="subtitle2">Parent/Guardian</Typography>
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => removeNewParent(index)}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </Box>
 
-                            <TextField
-                            margin="dense"
-                            label="Parent/Guardian First Name"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.parentName}
-                            onChange={(e) => setUserForm({ ...userForm, parentName: e.target.value })}
-                            sx={{ mb: 2 }}
-                            />
-                            <TextField
-                            margin="dense"
-                            label="Parent/Guardian Last Name"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.parentLastName}
-                            onChange={(e) => setUserForm({ ...userForm, parentLastName: e.target.value })}
-                            sx={{ mb: 2 }}
-                            />
-                            <TextField
-                            margin="dense"
-                            label="Parent/Guardian Email"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.parentEmail}
-                            onChange={(e) => setUserForm({ ...userForm, parentEmail: e.target.value })}
-                            sx={{ mb: 2 }}
-                            />
-                            <TextField
-                            margin="dense"
-                            label="Parent/Guardian Phone Number"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.parentPhoneNumber}
-                            onChange={(e) => {
-                                const newPhone = e.target.value;
-                                setUserForm((prev) => {
-                                    const updatedForm = { ...prev, parentPhoneNumber: newPhone };
-                                    const matchedParent = findParentByPhoneNumber(newPhone);
-                                    if (matchedParent) {
-                                        updatedForm.parentName = matchedParent.name || updatedForm.parentName;
-                                        updatedForm.parentLastName = matchedParent.lastName || updatedForm.parentLastName;
-                                        updatedForm.parentEmail = matchedParent.email || updatedForm.parentEmail;
-                                    }
-                                    return updatedForm;
-                                });
-                                setFormErrors({ ...formErrors, parentPhoneNumber: false });
-                            }}
-                            error={formErrors.parentPhoneNumber}
-                            helperText={formErrors.parentPhoneNumber ? 'Parent/guardian phone number is required for students' : ''}
-                            sx={{ mb: 2 }}
-                            />
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} sm={6}>
+                                                    <TextField
+                                                        margin="dense"
+                                                        label="First Name"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        value={p.name}
+                                                        onChange={(e) => updateNewParent(index, 'name', e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sm={6}>
+                                                    <TextField
+                                                        margin="dense"
+                                                        label="Last Name"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        value={p.lastName}
+                                                        onChange={(e) => updateNewParent(index, 'lastName', e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sm={6}>
+                                                    <TextField
+                                                        margin="dense"
+                                                        label="Email"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        value={p.email}
+                                                        onChange={(e) => updateNewParent(index, 'email', e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sm={6}>
+                                                    <TextField
+                                                        margin="dense"
+                                                        label="Phone Number"
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        value={p.phoneNumber}
+                                                        onChange={(e) => updateNewParent(index, 'phoneNumber', e.target.value)}
+                                                        error={formErrors.parentPhoneNumber}
+                                                        helperText={formErrors.parentPhoneNumber ? 'Parent/guardian phone number is required for students' : ''}
+                                                    />
+                                                </Grid>
+                                            </Grid>
+                                        </Box>
+                                    ))}
+                                </>
+                            )}
+
                         </>
                         )}
                     
