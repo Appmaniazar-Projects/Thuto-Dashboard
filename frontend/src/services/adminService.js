@@ -335,7 +335,21 @@ export const updateUser = async (userId, userData) => {
  */
 export const deleteUser = async (userId) => {
   try {
-    await api.delete(`/admin/removeUser/${userId}`);
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId ||
+      null;
+
+    const params = {
+      ...(schoolId ? { schoolId } : {}),
+      ...(adminInfo.email ? { adminEmail: adminInfo.email } : {})
+    };
+
+    await api.delete(`/admin/removeUser/${userId}`, {
+      params: Object.keys(params).length > 0 ? params : undefined
+    });
     console.log('✅ User deleted successfully');
   } catch (error) {
     console.error('Failed to delete user:', error);

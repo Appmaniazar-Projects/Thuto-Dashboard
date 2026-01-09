@@ -47,6 +47,9 @@ const SystemSettings = () => {
       <Typography variant="h4" gutterBottom>
         System Settings
       </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        These settings are currently managed by the system administrator. Editing from the dashboard is not available yet.
+      </Typography>
       
       <form onSubmit={handleSubmit}>
         <Grid container spacing={3}>
@@ -68,6 +71,7 @@ const SystemSettings = () => {
                       name="schoolName"
                       value={settings.schoolName}
                       onChange={handleChange}
+                      disabled
                       margin="normal"
                       variant="outlined"
                     />
@@ -79,6 +83,7 @@ const SystemSettings = () => {
                       name="academicYear"
                       value={settings.academicYear}
                       onChange={handleChange}
+                      disabled
                       margin="normal"
                       variant="outlined"
                     />
@@ -91,6 +96,7 @@ const SystemSettings = () => {
                         value={settings.timezone}
                         onChange={handleChange}
                         label="Timezone"
+                        disabled
                       >
                         {timezones.map((tz) => (
                           <MenuItem key={tz} value={tz}>
@@ -124,6 +130,7 @@ const SystemSettings = () => {
                           onChange={handleChange}
                           name="maintenanceMode"
                           color="primary"
+                          disabled
                         />
                       }
                       label="Maintenance Mode"
@@ -141,6 +148,7 @@ const SystemSettings = () => {
                       name="maxLoginAttempts"
                       value={settings.maxLoginAttempts}
                       onChange={handleChange}
+                      disabled
                       margin="normal"
                       variant="outlined"
                       inputProps={{ min: 1, max: 10 }}
@@ -155,6 +163,7 @@ const SystemSettings = () => {
                       name="sessionTimeout"
                       value={settings.sessionTimeout}
                       onChange={handleChange}
+                      disabled
                       margin="normal"
                       variant="outlined"
                       inputProps={{ min: 5, max: 120 }}
@@ -182,6 +191,7 @@ const SystemSettings = () => {
                       onChange={handleChange}
                       name="enableNotifications"
                       color="primary"
+                      disabled
                     />
                   }
                   label="Enable Email Notifications"
@@ -202,6 +212,7 @@ const SystemSettings = () => {
                 color="primary"
                 size="large"
                 startIcon={<SaveIcon />}
+                disabled
               >
                 Save Settings
               </Button>

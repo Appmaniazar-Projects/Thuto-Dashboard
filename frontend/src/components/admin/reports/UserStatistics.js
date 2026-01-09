@@ -17,8 +17,10 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  useMediaQuery
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getAllUsers } from '../../../services/adminService';
 import StatCard from '../../common/StatCard';
@@ -31,6 +33,27 @@ const UserStatistics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeFilter, setTimeFilter] = useState('30');
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const getUserCreatedAt = (user) => {
+    const raw = user?.createdAt ?? user?.created_at ?? user?.createdOn ?? user?.createdDate ?? user?.registrationDate;
+    if (!raw) return null;
+    const dt = new Date(raw);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+  };
+
+  const isUserActive = (user) => {
+    const status = (user?.status ?? user?.accountStatus ?? user?.state ?? '').toString().trim().toLowerCase();
+    if (status) {
+      return status === 'active' || status === 'enabled' || status === 'approved';
+    }
+    if (typeof user?.enabled === 'boolean') return user.enabled;
+    if (typeof user?.isActive === 'boolean') return user.isActive;
+    // If backend does not provide a status, treat users as active by default.
+    return true;
+  };
 
   useEffect(() => {
     fetchUserData();
@@ -63,8 +86,9 @@ const UserStatistics = () => {
       const dateStr = date.toISOString().split('T')[0];
       
       const registrations = allUsers.filter(user => {
-        if (!user.createdAt) return false;
-        const userDate = new Date(user.createdAt).toISOString().split('T')[0];
+        const createdAt = getUserCreatedAt(user);
+        if (!createdAt) return false;
+        const userDate = createdAt.toISOString().split('T')[0];
         return userDate === dateStr;
       }).length;
       
@@ -83,14 +107,14 @@ const UserStatistics = () => {
     const last7Days = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
     
     const recent30 = allUsers.filter(user => 
-      user.createdAt && new Date(user.createdAt) >= last30Days
+      getUserCreatedAt(user) && getUserCreatedAt(user) >= last30Days
     ).length;
     
     const recent7 = allUsers.filter(user => 
-      user.createdAt && new Date(user.createdAt) >= last7Days
+      getUserCreatedAt(user) && getUserCreatedAt(user) >= last7Days
     ).length;
     
-    const activeUsers = allUsers.filter(user => user.status === 'active').length;
+    const activeUsers = allUsers.filter((user) => isUserActive(user)).length;
     
     return {
       newUsersLast30Days: recent30,
@@ -115,8 +139,10 @@ const UserStatistics = () => {
 
   const getRecentUsers = () => {
     return allUsers
-      .filter(user => user.createdAt)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((u) => ({ user: u, createdAt: getUserCreatedAt(u) }))
+      .filter((row) => !!row.createdAt)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map((row) => row.user)
       .slice(0, 10);
   };
 
@@ -191,7 +217,16 @@ const UserStatistics = () => {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: 1,
+                  mb: 2
+                }}
+              >
                 <Typography variant="h6">
                   Registration Trends
                 </Typography>
@@ -208,13 +243,13 @@ const UserStatistics = () => {
                   </Select>
                 </FormControl>
               </Box>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                 <LineChart data={registrationTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis dataKey="date" interval={isMobile ? 'preserveStartEnd' : 0} />
                   <YAxis />
                   <Tooltip />
-                  <Legend />
+                  {!isMobile && <Legend />}
                   <Line type="monotone" dataKey="registrations" stroke="#1976d2" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
@@ -229,15 +264,15 @@ const UserStatistics = () => {
                 User Role Distribution
               </Typography>
               {roleDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                   <PieChart>
                     <Pie
                       data={roleDistribution}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      label={isMobile ? false : ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={isMobile ? 65 : 80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -285,10 +320,10 @@ const UserStatistics = () => {
                         {user.role || 'N/A'}
                       </TableCell>
                       <TableCell sx={{ textTransform: 'capitalize' }}>
-                        {user.status || 'N/A'}
+                        {(user.status || user.accountStatus || user.state) ? (user.status || user.accountStatus || user.state) : (isUserActive(user) ? 'active' : 'inactive')}
                       </TableCell>
                       <TableCell>
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        {getUserCreatedAt(user) ? getUserCreatedAt(user).toLocaleDateString() : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}

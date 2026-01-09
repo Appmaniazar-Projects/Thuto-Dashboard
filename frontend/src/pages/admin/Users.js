@@ -390,7 +390,6 @@ const Users = () => {
             });
 
             // If editing a parent, show the currently linked student(s) in the dialog.
-            // Backend may provide different shapes; support several common ones.
             const roleLower = (normalizeRole(user.role) || '').toString().toLowerCase();
             if (roleLower === 'parent') {
                 const rawLinks = user.studentDTOS || user.students || user.studentIds || [];
@@ -541,9 +540,26 @@ const Users = () => {
         return (
         <Card>
             <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">{title}</Typography>
-                    <Box>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 1,
+                        mb: 2
+                    }}
+                >
+                    <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{title}</Typography>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            width: { xs: '100%', sm: 'auto' },
+                            justifyContent: { xs: 'flex-start', sm: 'flex-end' }
+                        }}
+                    >
                         {canCreateRole && (
                             <Button
                                 variant="contained"
@@ -565,7 +581,7 @@ const Users = () => {
                                     setError('');
                                     setDialogOpen(true);
                                 }}
-                                sx={{ mr: 1 }}
+                                sx={{ flexGrow: 0 }}
                             >
                                 Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
                             </Button>
@@ -574,7 +590,6 @@ const Users = () => {
                             variant="outlined"
                             startIcon={<UploadFileIcon />}
                             onClick={() => setBulkUploadDialogOpen(true)}
-                            sx={{ mr: 1 }}
                         >
                             Bulk Upload (Coming Soon)
                         </Button>

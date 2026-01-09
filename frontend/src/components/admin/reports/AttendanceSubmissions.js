@@ -18,8 +18,10 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuItem
+  MenuItem,
+  useMediaQuery
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getAttendanceSubmissions } from '../../../services/attendanceService';
 import StatCard from '../../common/StatCard';
@@ -38,6 +40,9 @@ const AttendanceSubmissions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchSubmissions();
@@ -179,15 +184,15 @@ const AttendanceSubmissions = () => {
                 Submission Status Distribution
               </Typography>
               {statusDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                   <PieChart>
                     <Pie
                       data={statusDistribution}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      label={isMobile ? false : ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={isMobile ? 65 : 80}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -214,10 +219,16 @@ const AttendanceSubmissions = () => {
                 Submissions by Teacher
               </Typography>
               {teacherData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
                   <BarChart data={teacherData.slice(0, 10)}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="teacher" angle={-45} textAnchor="end" height={100} />
+                    <XAxis
+                      dataKey="teacher"
+                      angle={isMobile ? 0 : -45}
+                      textAnchor={isMobile ? 'middle' : 'end'}
+                      height={isMobile ? 50 : 100}
+                      interval={isMobile ? 1 : 0}
+                    />
                     <YAxis />
                     <Tooltip />
                     <Bar dataKey="total" fill="#1976d2" />
@@ -236,7 +247,16 @@ const AttendanceSubmissions = () => {
       {/* Submissions Table */}
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 1,
+              mb: 2
+            }}
+          >
             <Typography variant="h6">
               Recent Submissions
             </Typography>
