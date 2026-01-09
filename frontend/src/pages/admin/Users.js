@@ -318,13 +318,17 @@ const Users = () => {
         // Normalize form data before submission
         const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
 
+        const shouldOverrideParentFields = !!(primaryNewParent?.phoneNumber || '').toString().trim();
+
         const formData = {
             ...userForm,
             role: normalizeRole(userForm.role),
-            parentName: primaryNewParent?.name || '',
-            parentLastName: primaryNewParent?.lastName || '',
-            parentEmail: primaryNewParent?.email || '',
-            parentPhoneNumber: primaryNewParent?.phoneNumber || '',
+            // Preserve existing linked parent details when editing a student,
+            // unless the admin explicitly finds/enters a new parent/guardian.
+            parentName: shouldOverrideParentFields ? (primaryNewParent?.name || '') : (userForm.parentName || ''),
+            parentLastName: shouldOverrideParentFields ? (primaryNewParent?.lastName || '') : (userForm.parentLastName || ''),
+            parentEmail: shouldOverrideParentFields ? (primaryNewParent?.email || '') : (userForm.parentEmail || ''),
+            parentPhoneNumber: shouldOverrideParentFields ? (primaryNewParent?.phoneNumber || '') : (userForm.parentPhoneNumber || ''),
         };
 
         if ((formData.role || '').toString().toLowerCase() === 'parent') {
@@ -384,6 +388,22 @@ const Users = () => {
                 parentPhoneNumber: user.parentPhoneNumber || '',
                 parentEmail: user.parentEmail || '',
             });
+
+            // If editing a parent, show the currently linked student(s) in the dialog.
+            // Backend may provide different shapes; support several common ones.
+            const roleLower = (normalizeRole(user.role) || '').toString().toLowerCase();
+            if (roleLower === 'parent') {
+                const rawLinks = user.studentDTOS || user.students || user.studentIds || [];
+                const linkedIds = (Array.isArray(rawLinks) ? rawLinks : [])
+                    .map((s) => (typeof s === 'object' && s !== null ? s.id : s))
+                    .filter((id) => id !== null && id !== undefined);
+
+                const linkedStudents = linkedIds
+                    .map((id) => (students || []).find((st) => String(st?.id) === String(id)) || { id })
+                    .filter(Boolean);
+
+                setSelectedStudents(linkedStudents);
+            }
         } else {
             setEditingUser(null);
             resetForm();
@@ -392,7 +412,10 @@ const Users = () => {
         setParentLookupPhone('');
         setParentLookupResult(null);
         setParentLookupTried(false);
-        setSelectedStudents([]);
+        // Only clear linked students when creating a new user or editing non-parent roles.
+        if (!user || (normalizeRole(user?.role) || '').toString().toLowerCase() !== 'parent') {
+            setSelectedStudents([]);
+        }
         setStudentSearchInput('');
         setStudentSearchOptions([]);
         setFormErrors({});
