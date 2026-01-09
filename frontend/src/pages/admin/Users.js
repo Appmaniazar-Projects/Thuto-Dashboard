@@ -280,6 +280,16 @@ const Users = () => {
             if (!editingUser && validNewParentCount === 0) {
                 errors.parentPhoneNumber = true;
             }
+
+            // If parent email is provided, ensure it's a valid email (avoid backend validation errors)
+            const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
+            const parentEmail = (primaryNewParent?.email || '').trim();
+            if (parentEmail) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(parentEmail)) {
+                    errors.parentEmail = true;
+                }
+            }
         }
 
         if (userForm.role === 'teacher') {
@@ -859,10 +869,17 @@ const Users = () => {
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(option, value) => String(option?.id) === String(value?.id)}
                             getOptionLabel={(option) => {
-                                const username = option?.username ? `${option.username}` : '';
+                                const firstName = (option?.name ?? '').toString().trim();
+                                const lastName = (option?.lastName ?? '').toString().trim();
+                                const fullName = `${firstName} ${lastName}`.trim();
+
+                                const username = (option?.username ?? '').toString().trim();
+                                const baseLabel = fullName || username || (option?.id ? `Student #${option.id}` : 'Student');
+
                                 const grade = option?.grade?.name || option?.grade || option?.gradeId;
                                 const gradeLabel = grade ? ` • ${grade}` : '';
-                                return `${username}${gradeLabel}`.trim();
+
+                                return `${baseLabel}${gradeLabel}`.trim();
                             }}
                             renderInput={(params) => (
                                 <TextField
