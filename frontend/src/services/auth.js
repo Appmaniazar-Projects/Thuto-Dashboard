@@ -13,13 +13,12 @@ const login = async (phoneNumber, role, username) => {
   
   const firebaseToken = await firebaseUser.getIdToken();
   
-  
   // Backend expects firebaseToken (not idToken) and extracts phone from Firebase token
   try {
     const requestData = {
       phoneNumber: phoneNumber.replace(/\s+/g, ''),
       firebaseToken,
-      role,
+      role: (role ?? '').toString().toUpperCase(),
       username: username || null,
     };
     
