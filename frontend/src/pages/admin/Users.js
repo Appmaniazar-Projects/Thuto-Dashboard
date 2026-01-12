@@ -222,6 +222,44 @@ const Users = () => {
         return role.toLowerCase();
     };
 
+    const toIdString = (value) => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'object') {
+            const maybeId = value.id ?? value.subjectId ?? value.gradeId ?? value.value;
+            return maybeId === null || maybeId === undefined ? '' : String(maybeId);
+        }
+        return String(value);
+    };
+
+    const normalizeSubjectIds = (rawSubjects) => {
+        if (!Array.isArray(rawSubjects)) return [];
+        return rawSubjects
+            .map((s) => {
+                if (typeof s === 'object' && s !== null) {
+                    return toIdString(s.id ?? s.subjectId ?? s.value ?? s.name);
+                }
+                return toIdString(s);
+            })
+            .filter(Boolean);
+    };
+
+    const normalizeGradeId = (user) => {
+        const raw = user?.grade?.id ?? user?.gradeId ?? user?.grade;
+        return toIdString(raw);
+    };
+
+    const normalizeSchoolId = (user) => {
+        return toIdString(user?.schoolId ?? user?.school?.id);
+    };
+
+    const toNumberIfNumeric = (value) => {
+        if (value === null || value === undefined) return value;
+        const str = String(value).trim();
+        if (!str) return value;
+        const num = Number(str);
+        return Number.isFinite(num) ? num : value;
+    };
+
     const handleSubmit = async () => {
         // Reset previous errors
         setFormErrors({});
@@ -323,6 +361,10 @@ const Users = () => {
         const formData = {
             ...userForm,
             role: normalizeRole(userForm.role),
+            grade: userForm.grade ? toNumberIfNumeric(userForm.grade) : userForm.grade,
+            subjects: Array.isArray(userForm.subjects)
+                ? userForm.subjects.map((id) => toNumberIfNumeric(id)).filter((id) => id !== '' && id !== null && id !== undefined)
+                : [],
             // Preserve existing linked parent details when editing a student,
             // unless the admin explicitly finds/enters a new parent/guardian.
             parentName: shouldOverrideParentFields ? (primaryNewParent?.name || '') : (userForm.parentName || ''),
@@ -373,16 +415,25 @@ const Users = () => {
     const openDialog = (user = null) => {
         if (user) {
             setEditingUser(user);
+
+            const roleLower = (normalizeRole(user.role) || '').toString().toLowerCase();
+            const normalizedUsername = normalizePhone(user.username);
+            const normalizedPhone = normalizePhone(user.phoneNumber);
+            const safeUsername =
+                roleLower === 'student' && normalizedUsername && normalizedPhone && normalizedUsername === normalizedPhone
+                    ? ''
+                    : (user.username || '');
+
             setUserForm({
                 name: user.name || '',
                 lastName: user.lastName || '',
-                username: user.username || '',
+                username: safeUsername,
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
                 role: normalizeRole(user.role) || '',
-                subjects: user.subjects || [],
-                grade: user.grade || '',
-                schoolId: user.schoolId || '',
+                subjects: normalizeSubjectIds(user.subjects),
+                grade: normalizeGradeId(user),
+                schoolId: normalizeSchoolId(user),
                 parentName: user.parentName || '',
                 parentLastName: user.parentLastName || '',
                 parentPhoneNumber: user.parentPhoneNumber || '',
@@ -390,7 +441,6 @@ const Users = () => {
             });
 
             // If editing a parent, show the currently linked student(s) in the dialog.
-            const roleLower = (normalizeRole(user.role) || '').toString().toLowerCase();
             if (roleLower === 'parent') {
                 const rawLinks = user.studentDTOS || user.students || user.studentIds || [];
                 const linkedIds = (Array.isArray(rawLinks) ? rawLinks : [])
@@ -432,6 +482,7 @@ const Users = () => {
             role: '',
             subjects: [],
             grade: '',
+            schoolId: '',
             parentName: '',
             parentLastName: '',
             parentPhoneNumber: '',
@@ -951,7 +1002,11 @@ const Users = () => {
                                 fullWidth
                                 variant="outlined"
                                 value={userForm.subjects}
-                                onChange={(e) => setUserForm({ ...userForm, subjects: e.target.value })}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
+                                    setUserForm({ ...userForm, subjects: next });
+                                }}
                                 SelectProps={{
                                     multiple: true,
                                 }}
@@ -960,7 +1015,7 @@ const Users = () => {
                                 sx={{ mb: 2 }}
                             >
                                 {subjects.map((subject) => (
-                                    <MenuItem key={subject.id} value={subject.id}> {/* Changed from subject.name to subject.id */}
+                                    <MenuItem key={subject.id} value={String(subject.id)}>
                                         {subject.name}
                                     </MenuItem>
                                 ))}
@@ -972,13 +1027,13 @@ const Users = () => {
                                 fullWidth
                                 variant="outlined"
                                 value={userForm.grade}
-                                onChange={(e) => setUserForm({ ...userForm, grade: e.target.value })}
+                                onChange={(e) => setUserForm({ ...userForm, grade: String(e.target.value) })}
                                 error={formErrors.grade}
                                 helperText={formErrors.grade ? 'Grade is required' : ''}
                                 sx={{ mb: 2 }}
                             >
                                 {grades.map((grade) => {
-                                    const gradeValue = grade.id;
+                                    const gradeValue = String(grade.id);
                                     return (
                                             <MenuItem key={grade.id} value={gradeValue}>
                                                 {grade.name}
