@@ -16,15 +16,36 @@ const parentService = {
         userData?.schoolId ||
         null;
 
-      const encodedPhone = encodeURIComponent((phoneNumber ?? '').toString().trim());
+      const normalizePhone = (value) => {
+        const raw = (value ?? '').toString().trim();
+        if (!raw) return '';
+        const digits = raw.replace(/\D/g, '');
+        if (digits.startsWith('27') && digits.length === 11) {
+          return `0${digits.slice(2)}`;
+        }
+        return digits || raw;
+      };
+
+      const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
+      const encodedPhone = encodeURIComponent(normalizedPhone);
       const params = {
         ...(schoolId ? { schoolId } : {})
       };
 
-      const response = await api.get(`/parent/${encodedPhone}/children`, {
-        params: Object.keys(params).length > 0 ? params : undefined
-      });
-      return response.data || [];
+      // Prefer token-based endpoint (most common + avoids role/phone mismatch issues)
+      try {
+        const response = await api.get('/parent/children', {
+          params: Object.keys(params).length > 0 ? params : undefined
+        });
+        return response.data || [];
+      } catch (primaryError) {
+        // Fallback to legacy phone-in-path endpoint if backend requires it.
+        if (!encodedPhone) throw primaryError;
+        const response = await api.get(`/parent/${encodedPhone}/children`, {
+          params: Object.keys(params).length > 0 ? params : undefined
+        });
+        return response.data || [];
+      }
     } catch (error) {
       console.error('Failed to fetch children:', error);
       throw new Error('Failed to load children. Please try again.');

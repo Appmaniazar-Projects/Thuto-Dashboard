@@ -160,7 +160,8 @@ const Login = () => {
       setAuthData(user, token);
       
       // Navigate based on user role
-      const dashboardPath = user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
+      const roleLower = (user?.role || role || '').toString().toLowerCase();
+      const dashboardPath = roleLower === 'parent' ? '/parent/dashboard' : '/dashboard';
       navigate(dashboardPath);
     } catch (err) {
       console.error('❌ Login process failed:', err);
