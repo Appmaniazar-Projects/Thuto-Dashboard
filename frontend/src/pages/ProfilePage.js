@@ -5,6 +5,7 @@ import '../App.css';
 const ProfilePage = () => {
   const { currentUser, updateUserProfile } = useAuth();
   const [activeSection, setActiveSection] = useState('account');
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [formData, setFormData] = useState({
@@ -42,6 +43,17 @@ const ProfilePage = () => {
     }));
   };
 
+  const handleCancelEditAccount = () => {
+    setSaveError('');
+    setIsEditingAccount(false);
+    setFormData({
+      name: user.name || user.displayName || '',
+      lastName: user.lastName || '',
+      email: user.email || '',
+      phoneNumber: user.phoneNumber || ''
+    });
+  };
+
   const handleSaveAccount = async () => {
     try {
       setSaveError('');
@@ -59,6 +71,7 @@ const ProfilePage = () => {
       });
 
       await updateUserProfile(updates);
+      setIsEditingAccount(false);
     } catch (err) {
       setSaveError(err?.response?.data?.message || err?.message || 'Failed to update profile');
     } finally {
@@ -75,27 +88,36 @@ const ProfilePage = () => {
           <p>{displayRole}</p>
         </div>
         <div className="profile-navigation">
-          <button
-            type="button"
+          <a
+            href="#account"
             className={activeSection === 'account' ? 'active' : ''}
-            onClick={() => setActiveSection('account')}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveSection('account');
+            }}
           >
             Account
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href="#security"
             className={activeSection === 'security' ? 'active' : ''}
-            onClick={() => setActiveSection('security')}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveSection('security');
+            }}
           >
             Security
-          </button>
-          <button
-            type="button"
-            className={activeSection === 'notification' ? 'active' : ''}
-            onClick={() => setActiveSection('settings')}
+          </a>
+          <a
+            href="#notifications"
+            className={activeSection === 'notifications' ? 'active' : ''}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveSection('notifications');
+            }}
           >
             Notifications
-          </button>
+          </a>
         </div>
       </div>
       <div className="profile-main-content">
@@ -112,35 +134,55 @@ const ProfilePage = () => {
             <div className="detail-grid">
               <div className="detail-item">
                 <strong>First Name:</strong>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={handleInputChange('name')}
-                />
+                {isEditingAccount ? (
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={handleInputChange('name')}
+                    style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #ddd' }}
+                  />
+                ) : (
+                  <span>{user.name || user.displayName || 'N/A'}</span>
+                )}
               </div>
               <div className="detail-item">
                 <strong>Last Name:</strong>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleInputChange('lastName')}
-                />
+                {isEditingAccount ? (
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleInputChange('lastName')}
+                    style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #ddd' }}
+                  />
+                ) : (
+                  <span>{user.lastName || 'N/A'}</span>
+                )}
               </div>
               <div className="detail-item">
                 <strong>Email:</strong>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange('email')}
-                />
+                {isEditingAccount ? (
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange('email')}
+                    style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #ddd' }}
+                  />
+                ) : (
+                  <span>{user.email || 'N/A'}</span>
+                )}
               </div>
               <div className="detail-item">
                 <strong>Phone:</strong>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={handleInputChange('phoneNumber')}
-                />
+                {isEditingAccount ? (
+                  <input
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange('phoneNumber')}
+                    style={{ padding: '0.5rem', borderRadius: 6, border: '1px solid #ddd' }}
+                  />
+                ) : (
+                  <span>{user.phoneNumber || 'N/A'}</span>
+                )}
               </div>
               <div className="detail-item">
                 <strong>Role:</strong>
@@ -153,13 +195,34 @@ const ProfilePage = () => {
             </div>
 
             <div className="content-actions">
-              <button
-                className="edit-profile-btn"
-                onClick={handleSaveAccount}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+              {!isEditingAccount ? (
+                <button
+                  className="edit-profile-btn"
+                  onClick={() => setIsEditingAccount(true)}
+                  disabled={isSaving}
+                >
+                  Edit Profile
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="edit-profile-btn"
+                    onClick={handleSaveAccount}
+                    disabled={isSaving}
+                    style={{ marginRight: 8 }}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button
+                    className="edit-profile-btn"
+                    onClick={handleCancelEditAccount}
+                    disabled={isSaving}
+                    style={{ backgroundColor: '#6c757d' }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -180,7 +243,7 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {activeSection === 'notification' && (
+        {activeSection === 'notifications' && (
           <div className="content-card">
             <h4>Notifications</h4>
             <div className="detail-grid">

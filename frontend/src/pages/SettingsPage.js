@@ -1,53 +1,71 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Divider,
+  FormControlLabel,
+  Switch,
+  Typography
+} from '@mui/material';
+import {
+  ArrowForward as ArrowForwardIcon,
+  Notifications as NotificationsIcon,
+  Save as SaveIcon,
+  Settings as SettingsIcon
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const SettingsPage = () => {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [formData, setFormData] = useState({
-    name: '',
-    lastName: '',
-    email: '',
-    phoneNumber: ''
+  const [saveStatus, setSaveStatus] = useState('');
+  const [settings, setSettings] = useState({
+    emailNotifications: true,
+    systemAlerts: true,
+    weeklySummary: true,
+    darkMode: false
   });
 
   useEffect(() => {
-    if (!currentUser) return;
-    setFormData({
-      name: currentUser.name || currentUser.displayName || '',
-      lastName: currentUser.lastName || '',
-      email: currentUser.email || '',
-      phoneNumber: currentUser.phoneNumber || ''
-    });
+    try {
+      const raw = localStorage.getItem('app_settings');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        setSettings((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (err) {
+      console.warn('Failed to load app_settings from localStorage', err);
+    }
   }, [currentUser]);
 
-  const handleInputChange = (key) => (e) => {
-    setFormData((prev) => ({
+  const displayRole = useMemo(() => {
+    return String(currentUser?.role || 'N/A').toUpperCase();
+  }, [currentUser]);
+
+  const handleSettingChange = (key) => (event) => {
+    setSettings((prev) => ({
       ...prev,
-      [key]: e.target.value
+      [key]: event.target.checked
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     try {
       setSaveError('');
+      setSaveStatus('');
       setIsSaving(true);
-
-      const updates = {
-        name: formData.name?.trim() || null,
-        lastName: formData.lastName?.trim() || null,
-        email: formData.email?.trim() || null,
-        phoneNumber: formData.phoneNumber?.trim() || null
-      };
-
-      Object.keys(updates).forEach((k) => {
-        if (updates[k] === null) delete updates[k];
-      });
-
-      await updateUserProfile(updates);
+      localStorage.setItem('app_settings', JSON.stringify(settings));
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(''), 2500);
     } catch (err) {
-      setSaveError(err?.response?.data?.message || err?.message || 'Failed to save settings');
+      setSaveError(err?.message || 'Failed to save settings');
     } finally {
       setIsSaving(false);
     }
@@ -55,53 +73,133 @@ const SettingsPage = () => {
 
   if (!currentUser) {
     return (
-      <div style={{ padding: '2rem' }}>
-        <h2>Settings</h2>
-        <p>Loading...</p>
-      </div>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Typography>Loading...</Typography>
+      </Box>
     );
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Settings</h2>
-      <p>Basics</p>
+    <Box sx={{ width: '100%' }}>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" sx={{ mb: 0.5 }}>Settings</Typography>
+        <Typography variant="body2" color="text.secondary">
+          Manage system preferences and notifications
+        </Typography>
+      </Box>
+
+      {saveStatus === 'success' && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Settings saved
+        </Alert>
+      )}
 
       {saveError ? (
-        <div className="error-message" style={{ marginBottom: '1rem' }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {saveError}
-        </div>
+        </Alert>
       ) : null}
 
-      <div className="detail-grid" style={{ maxWidth: 720 }}>
-        <div className="detail-item">
-          <strong>First Name:</strong>
-          <input type="text" value={formData.name} onChange={handleInputChange('name')} />
-        </div>
-        <div className="detail-item">
-          <strong>Last Name:</strong>
-          <input type="text" value={formData.lastName} onChange={handleInputChange('lastName')} />
-        </div>
-        <div className="detail-item">
-          <strong>Email:</strong>
-          <input type="email" value={formData.email} onChange={handleInputChange('email')} />
-        </div>
-        <div className="detail-item">
-          <strong>Phone:</strong>
-          <input type="tel" value={formData.phoneNumber} onChange={handleInputChange('phoneNumber')} />
-        </div>
-        <div className="detail-item">
-          <strong>Role:</strong>
-          <span>{String(currentUser.role || 'N/A').toUpperCase()}</span>
-        </div>
-      </div>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <SettingsIcon sx={{ mr: 1 }} />
+            Account
+          </Typography>
+          <Divider sx={{ my: 2 }} />
 
-      <div style={{ marginTop: '1rem' }}>
-        <button onClick={handleSave} disabled={isSaving} className="edit-profile-btn">
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
-      </div>
-    </div>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            Signed in as
+          </Typography>
+          <Typography sx={{ mb: 0.5 }}>
+            {(currentUser.name || currentUser.displayName || 'N/A')} {currentUser.lastName || ''}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            {currentUser.email || currentUser.phoneNumber || 'N/A'} • {displayRole}
+          </Typography>
+
+          <Button
+            variant="outlined"
+            endIcon={<ArrowForwardIcon />}
+            onClick={() => navigate('/profile')}
+          >
+            Edit Profile
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <NotificationsIcon sx={{ mr: 1 }} />
+            Notifications
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!settings.emailNotifications}
+                onChange={handleSettingChange('emailNotifications')}
+              />
+            }
+            label="Email notifications"
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!settings.systemAlerts}
+                onChange={handleSettingChange('systemAlerts')}
+              />
+            }
+            label="System alerts"
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!settings.weeklySummary}
+                onChange={handleSettingChange('weeklySummary')}
+              />
+            }
+            label="Weekly summary"
+          />
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <SettingsIcon sx={{ mr: 1 }} />
+            Preferences
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!settings.darkMode}
+                onChange={handleSettingChange('darkMode')}
+                disabled
+              />
+            }
+            label="Dark mode (coming soon)"
+          />
+        </CardContent>
+      </Card>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Button
+          variant="contained"
+          startIcon={<SaveIcon />}
+          onClick={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? 'Saving...' : 'Save Settings'}
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
