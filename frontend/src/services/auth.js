@@ -18,7 +18,7 @@ const login = async (phoneNumber, role, username) => {
     const requestData = {
       phoneNumber: phoneNumber.replace(/\s+/g, ''),
       firebaseToken,
-      role: (role ?? '').toString().toUpperCase(),
+      role,
       username: username || null,
     };
     
