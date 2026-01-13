@@ -159,8 +159,8 @@ const Login = () => {
       
       setAuthData(user, token);
       
-      // Navigate based on user role
-      const dashboardPath = user?.role === 'PARENT' ? '/parent/dashboard' : '/dashboard';
+      // Navigate based on user role 
+      const dashboardPath = user?.role === 'parent' ? '/parent/dashboard' : '/dashboard';
       navigate(dashboardPath);
     } catch (err) {
       console.error('❌ Login process failed:', err);
@@ -232,7 +232,7 @@ const Login = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 margin="normal"
                 disabled={loading}
-                helperText="Enter the student's username (e.g. name and surname)."
+                helperText="Enter the student's username"
               />
             )}
 
