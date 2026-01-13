@@ -82,11 +82,20 @@ api.interceptors.response.use(
       error.message =
         "Unable to connect to server.";
     } else if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("schoolId");
-      window.location.href = "/login";
+      const requestUrl = (error.config?.url || '').toString();
+      const isAuthRequest =
+        requestUrl.includes('/auth/login') ||
+        requestUrl.includes('/admin/login') ||
+        requestUrl.includes('/superadmins/auth/login') ||
+        requestUrl.includes('/auth/refresh-token');
+
+      if (!isAuthRequest) {
+        // Handle unauthorized access
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("schoolId");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
