@@ -43,25 +43,25 @@ const LandingPage = () => {
           alignItems: 'center',
           flexWrap: 'wrap'
         }}>
-          <StudentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#667eea' }} />
-          <ParentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#f093fb' }} />
-          <TeacherIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: '#4facfe' }} />
+          <StudentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: theme.palette.primary.main }} />
+          <ParentIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: theme.palette.secondary.main }} />
+          <TeacherIcon sx={{ fontSize: { xs: 32, sm: 36, md: 40 }, color: theme.palette.primary.dark }} />
         </Box>
       ),
       path: '/login',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      gradient: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
       buttonText: isMobile ? 'Login' : 'Continue to Login',
-      color: '#667eea'
+      color: theme.palette.primary.main
     },
     {
       title: isMobile ? 'Administrators' : 'School Administrators',
       description: 'Complete control over school operations',
       features: ['Manage Users', 'System Settings', 'Reports & Analytics', 'School Operations'],
-      icon: <AdminIcon sx={{ fontSize: { xs: 40, sm: 48, md: 56 }, color: '#f093fb' }} />,
+      icon: <AdminIcon sx={{ fontSize: { xs: 40, sm: 48, md: 56 }, color: theme.palette.secondary.main }} />,
       path: '/admin/login',
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      gradient: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark || theme.palette.secondary.main} 100%)`,
       buttonText: isMobile ? 'Admin Login' : 'Admin Access',
-      color: '#f093fb'
+      color: theme.palette.secondary.main
     }
   ];
 
@@ -74,7 +74,7 @@ const LandingPage = () => {
       sx={{
         minHeight: '100vh',
         width: '100%',
-        background: 'linear-gradient(135deg, #0f2027 0%, #203a43 25%, #2c5364 50%, #667eea 100%)',
+        background: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
         p: 0,
@@ -87,12 +87,7 @@ const LandingPage = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: `
-            radial-gradient(circle at 15% 20%, rgba(102, 126, 234, 0.15), transparent 40%),
-            radial-gradient(circle at 85% 80%, rgba(240, 147, 251, 0.15), transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(79, 172, 254, 0.1), transparent 50%)
-          `,
-          animation: 'none',
+          display: 'none',
         },
       }}
     >
@@ -147,9 +142,9 @@ const LandingPage = () => {
               display: 'inline-block',
               p: { xs: 1, sm: 1.5 },
               borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(25, 118, 210, 0.15)',
               maxWidth: '100%',
               boxSizing: 'border-box',
               mt: { xs: 2, sm: 3 }
@@ -162,7 +157,7 @@ const LandingPage = () => {
                 height: isMobile ? '40px' : (isTablet ? '50px' : '60px'),
                 width: 'auto',
                 maxWidth: '100%',
-                filter: 'brightness(0) invert(1) drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+                filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.12))',
               }}
             />
           </Box>
@@ -172,10 +167,10 @@ const LandingPage = () => {
             variant={isMobile ? 'h5' : (isTablet ? 'h4' : 'h3')}
             component="h1"
             sx={{
-              color: 'white',
+              color: theme.palette.text.primary,
               fontWeight: 800,
               mb: { xs: 1, sm: 1.5 },
-              textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.08)',
               animation: 'fadeInUp 1s ease-out 0.2s both',
               letterSpacing: '-0.02em',
               lineHeight: 1.2,
@@ -195,10 +190,10 @@ const LandingPage = () => {
           <Typography
             variant={isMobile ? 'body2' : (isTablet ? 'body1' : 'h6')}
             sx={{
-              color: 'rgba(255,255,255,0.9)',
+              color: theme.palette.text.secondary,
               mb: { xs: 1.5, sm: 2 },
               fontWeight: 400,
-              textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              textShadow: '0 1px 6px rgba(0,0,0,0.06)',
               animation: 'fadeInUp 1s ease-out 0.4s both',
               textAlign: 'center',
               px: { xs: 1, sm: 0 },
@@ -219,9 +214,9 @@ const LandingPage = () => {
               px: { xs: 2, sm: 3 },
               py: { xs: 0.75, sm: 1 },
               borderRadius: '50px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
               animation: 'fadeIn 1s ease-out 0.6s both',
               mb: { xs: 1, sm: 1.5 },
               maxWidth: '90%',
@@ -232,7 +227,7 @@ const LandingPage = () => {
             <Typography
               variant="body2"
               sx={{
-                color: 'rgba(255,255,255,0.95)',
+                color: theme.palette.text.secondary,
                 fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.95rem' },
                 fontWeight: 500,
                 whiteSpace: 'nowrap',
@@ -287,9 +282,9 @@ const LandingPage = () => {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: 'rgba(255, 255, 255, 0.92)',
+                  backdropFilter: 'blur(6px)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
                   borderRadius: '16px',
                   transition: 'all 0.3s ease',
                   cursor: 'pointer',
@@ -297,7 +292,7 @@ const LandingPage = () => {
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     boxShadow: `0 12px 24px ${userType.color}40`,
-                    borderColor: `${userType.color}80`,
+                    borderColor: `${userType.color}40`,
                   },
                   '@media (hover: none)': {
                     '&:hover': {
@@ -332,7 +327,7 @@ const LandingPage = () => {
                       mb: { xs: 1.5, sm: 2 },
                       p: { xs: 1.5, sm: 2 },
                       borderRadius: '50%',
-                      background: 'rgba(255, 255, 255, 0.1)',
+                      background: `${userType.color}12`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -374,7 +369,7 @@ const LandingPage = () => {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: 'rgba(255,255,255,0.75)',
+                      color: theme.palette.text.secondary,
                       fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' },
                       lineHeight: 1.5,
                       mb: { xs: 1.5, sm: 2 },
@@ -394,12 +389,12 @@ const LandingPage = () => {
                           display: 'flex',
                           alignItems: 'center',
                           gap: 0.75,
-                          color: 'rgba(255,255,255,0.8)',
+                          color: theme.palette.text.secondary,
                           fontSize: { xs: '0.75rem', sm: '0.85rem' }
                         }}
                       >
                         <CheckIcon sx={{ fontSize: 16, color: userType.color }} />
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
                           {feature}
                         </Typography>
                       </Box>
@@ -434,7 +429,7 @@ const LandingPage = () => {
                         '&:active': {
                           transform: 'scale(0.98)',
                           boxShadow: `0 2px 10px ${userType.color}60`,
-                        }
+                        },
                       },
                     }}
                   >
@@ -462,15 +457,15 @@ const LandingPage = () => {
               px: 2.5,
               py: 1,
               borderRadius: '50px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
             }}
           >
             <Typography
               variant="body2"
               sx={{
-                color: 'rgba(255,255,255,0.7)',
+                color: theme.palette.text.secondary,
                 fontSize: '0.75rem',
                 fontWeight: 500,
                 letterSpacing: '0.5px'
