@@ -34,6 +34,12 @@ const STATUS_COLORS = {
   rejected: '#f44336'
 };
 
+const truncateText = (value, maxLength) => {
+  const text = (value ?? '').toString();
+  if (!maxLength || text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
+};
+
 const AttendanceSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
@@ -220,18 +226,27 @@ const AttendanceSubmissions = () => {
               </Typography>
               {teacherData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
-                  <BarChart data={teacherData.slice(0, 10)}>
+                  <BarChart
+                    data={teacherData.slice(0, 10)}
+                    margin={{ top: 10, right: 20, left: 0, bottom: isMobile ? 20 : 40 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="teacher"
-                      angle={isMobile ? 0 : -45}
+                      angle={isMobile ? 0 : -25}
                       textAnchor={isMobile ? 'middle' : 'end'}
-                      height={isMobile ? 50 : 100}
-                      interval={isMobile ? 1 : 0}
+                      height={isMobile ? 60 : 90}
+                      interval={0}
+                      tickMargin={8}
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      tickFormatter={(value) => truncateText(value, isMobile ? 10 : 16)}
                     />
                     <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="total" fill="#1976d2" />
+                    <Tooltip
+                      labelFormatter={(label) => `Teacher: ${label}`}
+                      formatter={(value) => [value, 'Total']}
+                    />
+                    <Bar dataKey="total" fill="#1976d2" name="Total Submissions" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

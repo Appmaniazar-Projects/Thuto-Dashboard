@@ -227,7 +227,7 @@ const AdminDashboard = () => {
         </Typography>
         
         {/* Filter Section */}
-        <Paper sx={{ p: 2, mb: 3 }}>
+        {/* <Paper sx={{ p: 2, mb: 3 }}>
           <Box display="flex" alignItems="center" mb={2}>
             <FilterIcon sx={{ mr: 1 }} />
             <Typography variant="h6">Filters</Typography>
@@ -320,8 +320,8 @@ const AdminDashboard = () => {
               </FormControl>
             </Grid>
           </Grid>
-        </Paper>
-      </Box>
+        </Paper>*/}
+      </Box> 
 
       {/* Quick Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -383,14 +383,6 @@ const AdminDashboard = () => {
                 onClick={() => navigate('/admin/users')}
               >
                 Manage Users
-              </Button>
-              <Button 
-                startIcon={<SettingsIcon />} 
-                fullWidth 
-                sx={{ justifyContent: 'flex-start', mb: 1 }}
-                onClick={() => navigate('/admin/settings')}
-              >
-                System Settings
               </Button>
               <Button 
                 startIcon={<CampaignIcon />} 

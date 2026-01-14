@@ -12,6 +12,7 @@ import {
   CheckCircleOutline as AttendanceIcon,
   PeopleOutline as PeopleIcon,
   Campaign as AnnounceIcon,
+  CloudUpload as CloudUploadIcon,
   Event as EventIcon,
   Message as MessageIcon,
   Info as InfoIcon,

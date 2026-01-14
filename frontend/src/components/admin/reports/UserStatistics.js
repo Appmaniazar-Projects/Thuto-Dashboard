@@ -28,6 +28,12 @@ import { People, PersonAdd, TrendingUp, AccountCircle } from '@mui/icons-materia
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+const truncateText = (value, maxLength) => {
+  const text = (value ?? '').toString();
+  if (!maxLength || text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(0, maxLength - 1))}…`;
+};
+
 const UserStatistics = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -243,10 +249,22 @@ const UserStatistics = () => {
                   </Select>
                 </FormControl>
               </Box>
-              <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
-                <LineChart data={registrationTrends}>
+              <ResponsiveContainer width="100%" height={isMobile ? 260 : 320}>
+                <LineChart
+                  data={registrationTrends}
+                  margin={{ top: 10, right: 20, left: 0, bottom: isMobile ? 16 : 24 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" interval={isMobile ? 'preserveStartEnd' : 0} />
+                  <XAxis
+                    dataKey="date"
+                    interval={isMobile ? 'preserveStartEnd' : 0}
+                    tick={{ fontSize: isMobile ? 10 : 12 }}
+                    tickMargin={8}
+                    angle={isMobile ? 0 : -20}
+                    textAnchor={isMobile ? 'middle' : 'end'}
+                    height={isMobile ? 50 : 70}
+                    tickFormatter={(value) => truncateText(value, isMobile ? 8 : 12)}
+                  />
                   <YAxis />
                   <Tooltip />
                   {!isMobile && <Legend />}
@@ -264,15 +282,15 @@ const UserStatistics = () => {
                 User Role Distribution
               </Typography>
               {roleDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height={isMobile ? 240 : 300}>
-                  <PieChart>
+                <ResponsiveContainer width="100%" height={isMobile ? 260 : 320}>
+                  <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                     <Pie
                       data={roleDistribution}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={isMobile ? false : ({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={isMobile ? 65 : 80}
+                      label={false}
+                      outerRadius={isMobile ? 60 : 75}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -281,6 +299,11 @@ const UserStatistics = () => {
                       ))}
                     </Pie>
                     <Tooltip />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={isMobile ? 56 : 36}
+                      wrapperStyle={{ fontSize: isMobile ? 11 : 12, lineHeight: 1.2 }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
