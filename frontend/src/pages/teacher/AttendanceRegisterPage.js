@@ -209,7 +209,12 @@ const AttendanceRegisterPage = () => {
       console.error('Save failed:', err);
       setSnackbar({
         open: true,
-        message: err.response?.data?.message || 'Failed to save attendance. Please try again.',
+        message:
+          err?.message ||
+          err.response?.data?.message ||
+          err.response?.data?.error ||
+          (typeof err.response?.data === 'string' ? err.response.data : null) ||
+          'Failed to save attendance. Please try again.',
         severity: 'error'
       });
     } finally {

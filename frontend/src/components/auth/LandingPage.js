@@ -100,29 +100,9 @@ const LandingPage = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          width: '100%',
           maxWidth: '100% !important',
-          margin: 0,
-          padding: '0 !important',
-          '&.MuiContainer-root': {
-            margin: 0,
-            padding: '0 !important',
-            maxWidth: '100% !important',
-            minHeight: '100vh',
-            width: '100%',
-          },
-          // Force override any padding on all screen sizes
-          '@media (min-width: 0px)': {
-            '&.MuiContainer-root': {
-              padding: '0 !important',
-              margin: 0,
-              '& > *': {
-                padding: '0 !important',
-                margin: 0,
-              }
-            }
-          },
-          overflowX: 'hidden',
+          minHeight: '100vh',
+          width: '100%',
         }}
       >
         <Box sx={{ 
@@ -245,21 +225,15 @@ const LandingPage = () => {
         {/* Role Selection Cards */}
        <Grid 
             container 
-            spacing={{ xs: 1.5, sm: 2, md: 3 }} 
+            spacing={{ xs: 2, sm: 3, md: 4 }} 
             justifyContent="center" 
             alignItems="stretch"
             sx={{ 
-              p: 0,  // Remove all padding
-              m: 0,  // Remove all margins
+              px: { xs: 2, sm: 3, md: 6 },
+              pb: { xs: 1, sm: 2, md: 3 },
               width: '100%',
               boxSizing: 'border-box',
-              '& .MuiGrid-item': {
-                display: 'flex',
-                flexDirection: 'column',
-                mb: { xs: 2, sm: 0 },
-                p: 0
-              },
-              flex: '1 0 auto'
+              flex: '1 0 auto',
             }}
           >
         

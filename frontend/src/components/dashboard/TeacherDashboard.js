@@ -318,6 +318,16 @@ const filteredResources = useMemo(() => {
             <Button
               fullWidth
               variant="contained"
+              startIcon={<AttendanceIcon />}
+              component={RouterLink}
+              to="/teacher/attendance"
+              sx={{ mb: 2 }}
+            >
+              Take Attendance
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
               startIcon={<AssignmentIcon />}
               component={RouterLink}
               to="/teacher/resources"
@@ -328,15 +338,42 @@ const filteredResources = useMemo(() => {
             <Button
               fullWidth
               variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              component={RouterLink}
+              to="/teacher/upload-report"
+              sx={{ mb: 2 }}
+            >
+              Upload Report
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
               startIcon={<AnnounceIcon />}
               disabled
+              sx={{
+                justifyContent: 'flex-start',
+                '& .MuiButton-startIcon': { mr: 1 },
+              }}
             >
-              Post Announcement
-              <Chip 
-                label="Coming Soon" 
-                size="small" 
-                sx={{ ml: 1, height: 20, '& .MuiChip-label': { px: 1 } }} 
-              />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  gap: 1,
+                  minWidth: 0,
+                }}
+              >
+                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  Post Announcement
+                </Box>
+                <Chip
+                  label="Coming Soon"
+                  size="small"
+                  sx={{ flexShrink: 0, height: 20, '& .MuiChip-label': { px: 1 } }}
+                />
+              </Box>
             </Button>
           </Paper>
 

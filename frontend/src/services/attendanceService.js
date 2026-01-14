@@ -136,16 +136,54 @@ export const getAttendanceHistory = async (gradeId) => {
  */
 export const submitTeacherAttendance = async ({ grade, teacherId, date, attendance }) => {
   try {
-    const response = await api.post("/attendance/submission", { 
+    const storedUser = localStorage.getItem('user');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      userData?.school?.id ||
+      userData?.schoolId ||
+      null;
+
+    const normalizedAttendance = Array.isArray(attendance) ? attendance : [];
+    const students = normalizedAttendance.map((record) => {
+      const status = (record?.status || '').toString().toLowerCase();
+      const isPresent = status !== 'absent';
+
+      return {
+        studentId: record?.studentId,
+        isPresent,
+        status: record?.status,
+        remarks: record?.remarks || ''
+      };
+    });
+
+    const payload = {
+      // New/documented shape
+      classId: grade,
+      attendanceType: 'full_day',
+      ...(schoolId ? { schoolId } : {}),
+      students,
+
+      // Backward-compatible fields for existing backend implementations
       grade,
       gradeId: grade,
       teacherId,
       date,
-      attendance
-    });
+      attendance: normalizedAttendance
+    };
+
+    const response = await api.post('/attendance/submission', payload);
     return response.data;
   } catch (error) {
+    const apiMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      (typeof error?.response?.data === 'string' ? error.response.data : null);
+
     console.error('Failed to submit attendance:', error);
+    if (apiMessage) {
+      error.message = apiMessage;
+    }
     throw error;
   }
 };

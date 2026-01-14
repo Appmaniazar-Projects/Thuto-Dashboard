@@ -56,8 +56,8 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
 
     const commonItems = [
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
-      { path: '/calendar', icon: <EventIcon />, text: 'Events' },
-      { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
+            { path: '/calendar', icon: <EventIcon />, text: 'Events' },
+            { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
     ];
 
     if (['admin', 'teacher'].includes(role)) {
@@ -71,7 +71,6 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
         { path: '/admin/subjects', icon: <SubjectIcon />, text: 'Subject Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
         { path: '/admin/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
-        { path: '/admin/settings', icon: <SettingsIcon />, text: 'System Settings' },
       ],
       teacher: [
         { path: '/teacher/attendance', icon: <AssignmentIcon />, text: 'Attendance' },

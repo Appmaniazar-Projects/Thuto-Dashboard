@@ -53,7 +53,6 @@ import {
   deleteAdmin
 } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
-import subjectService from '../../services/subjectService';
 
 const PROVINCES = [
   'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
@@ -65,7 +64,6 @@ const SuperAdminDashboard = () => {
   const [schools, setSchools] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [grades, setGrades] = useState([]);
-  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schools');
@@ -85,8 +83,6 @@ const SuperAdminDashboard = () => {
     email: '',
     principalName: '',
     province: '',
-    subjects: [],
-    grades: [],
     logo: ''
   });
   
@@ -103,7 +99,6 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     fetchData();
     loadGrades();
-    loadSubjects();
   }, []); 
 
   const fetchData = async () => {
@@ -153,24 +148,7 @@ const SuperAdminDashboard = () => {
     }
   };
 
-  const loadSubjects = async () => {
-    try {
-      // For superadmins, try to get all subjects first, fall back to school subjects if needed
-      try {
-        const subjectsData = await subjectService.getAllSubjects();
-        setSubjects(subjectsData);
-      } catch (allSubjectsError) {
-        // If getAllSubjects fails, it's a critical error for superadmins
-        console.error('Failed to load all subjects for superadmin:', allSubjectsError);
-        setError('Could not load subjects. Please try again.');
-        setSubjects([]); // Set to empty to avoid further errors
-      }
-    } catch (error) {
-      console.error('Error loading subjects:', error);
-      // Set empty array as fallback
-      setSubjects([]);
-    }
-  };
+  const loadSubjects = async () => {};
 
   // School Handlers
   const handleSchoolSubmit = async () => {
@@ -212,6 +190,9 @@ const SuperAdminDashboard = () => {
       if (isProvincialSuperAdmin()) {
         formDataToSubmit.province = currentUser?.province;
       }
+
+      delete formDataToSubmit.subjects;
+      delete formDataToSubmit.grades;
   
       if (!currentUser?.email) {
         setError('Unable to identify creator. Please log in again.');
@@ -249,8 +230,6 @@ const SuperAdminDashboard = () => {
         email: '',
         principalName: '',
         province: isProvincialSuperAdmin() ? currentUser?.province : '',
-        subjects: [],
-        grades: [],
         logo: ''
       });
       fetchData();
@@ -297,8 +276,7 @@ const SuperAdminDashboard = () => {
       setSchoolForm({
         ...school,
         phoneNumber: school.phoneNumber || '',
-        subjects: school.subjects || [],
-        grades: school.grades || []
+        logo: school.logo || ''
       });
     } else {
       setEditingSchool(null);
@@ -310,8 +288,6 @@ const SuperAdminDashboard = () => {
         email: '', 
         principalName: '', 
         province: isProvincialSuperAdmin() ? currentUser?.province : '',
-        subjects: [], 
-        grades: [],
         logo: ''
       });
     }
@@ -734,43 +710,6 @@ const SuperAdminDashboard = () => {
               </MenuItem>
             ))}
           </TextField>
-          <FormControl fullWidth margin="dense">
-            <InputLabel id="subjects-label">Subjects</InputLabel>
-            <Select
-              labelId="subjects-label"
-              multiple
-              value={schoolForm.subjects}
-              onChange={(e) => setSchoolForm({ ...schoolForm, subjects: e.target.value })}
-              input={<Input />}
-              renderValue={(selected) => selected.map(s => s.name || s).join(', ')}
-            >
-              {subjects.map((subject) => (
-                <MenuItem key={subject.id} value={subject.id}>
-                  <Checkbox checked={schoolForm.subjects.includes(subject.id)} />
-                  <ListItemText primary={subject.name} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth margin="dense">
-            <InputLabel id="grades-label">Grades</InputLabel>
-            <Select
-              labelId="grades-label"
-              multiple
-              value={schoolForm.grades}
-              onChange={(e) => setSchoolForm({ ...schoolForm, grades: e.target.value })}
-              input={<Input />}
-              renderValue={(selected) => selected.map(g => g.name || g).join(', ')}
-            >
-              {grades.map((grade) => (
-                <MenuItem key={grade.id} value={grade.id}>
-                  <Checkbox checked={schoolForm.grades.includes(grade.id)} />
-                  <ListItemText primary={grade.name} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
 
         </DialogContent>
         <DialogActions>
