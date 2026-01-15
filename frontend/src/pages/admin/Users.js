@@ -389,7 +389,10 @@ const Users = () => {
                 const roleLower = (formData.role || '').toString().toLowerCase();
 
                 if (roleLower === 'parent') {
-                    const exists = await checkParentPhoneExists(formData.phoneNumber);
+                    const exists =
+                        typeof checkParentPhoneExists === 'function'
+                            ? await checkParentPhoneExists(formData.phoneNumber)
+                            : !!findExistingParentByPhone(formData.phoneNumber);
                     if (exists) {
                         setFormErrors((prev) => ({ ...prev, phoneNumber: true }));
                         setError('A parent with this phone number already exists. Please enter a different phone number.');
@@ -400,7 +403,10 @@ const Users = () => {
                 if (roleLower === 'student') {
                     const parentPhone = (formData.parentPhoneNumber || '').toString().trim();
                     if (parentPhone) {
-                        const exists = await checkParentPhoneExists(parentPhone);
+                        const exists =
+                            typeof checkParentPhoneExists === 'function'
+                                ? await checkParentPhoneExists(parentPhone)
+                                : !!findExistingParentByPhone(parentPhone);
                         if (exists) {
                             setFormErrors((prev) => ({ ...prev, parentPhoneNumber: true }));
                             setError('A parent/guardian with this phone number already exists. Please use a different phone number.');

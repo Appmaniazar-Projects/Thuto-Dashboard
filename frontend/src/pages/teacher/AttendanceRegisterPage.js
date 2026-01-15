@@ -187,7 +187,11 @@ const AttendanceRegisterPage = () => {
     try {
       setSaving(true);
       const teacher = JSON.parse(localStorage.getItem('user'));
-      const teacherId = teacher.id || teacher.phoneNumber;
+      const teacherId = teacher?.id;
+
+      if (!teacherId) {
+        throw new Error('Teacher information not found. Please log in again.');
+      }
 
       await submitTeacherAttendance({
         grade: selectedGradeId,

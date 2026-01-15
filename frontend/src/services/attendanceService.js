@@ -136,41 +136,32 @@ export const getAttendanceHistory = async (gradeId) => {
  */
 export const submitTeacherAttendance = async ({ grade, teacherId, date, attendance }) => {
   try {
-    const storedUser = localStorage.getItem('user');
-    const userData = storedUser ? JSON.parse(storedUser) : null;
-    const schoolId =
-      localStorage.getItem('schoolId') ||
-      userData?.school?.id ||
-      userData?.schoolId ||
-      null;
-
     const normalizedAttendance = Array.isArray(attendance) ? attendance : [];
-    const students = normalizedAttendance.map((record) => {
-      const status = (record?.status || '').toString().toLowerCase();
-      const isPresent = status !== 'absent';
 
-      return {
-        studentId: record?.studentId,
-        isPresent,
-        status: record?.status,
-        remarks: record?.remarks || ''
-      };
-    });
+    const toId = (value) => {
+      if (value === null || value === undefined || value === '') return null;
+      const n = Number(value);
+      return Number.isNaN(n) ? null : n;
+    };
 
     const payload = {
-      // New/documented shape
-      classId: grade,
-      attendanceType: 'full_day',
-      ...(schoolId ? { schoolId } : {}),
-      students,
-
-      // Backward-compatible fields for existing backend implementations
-      grade,
-      gradeId: grade,
-      teacherId,
+      grade: toId(grade),
+      teacherId: toId(teacherId),
       date,
-      attendance: normalizedAttendance
+      attendance: normalizedAttendance.map((record) => ({
+        studentId: toId(record?.studentId),
+        status: (record?.status || '').toString().toLowerCase(),
+        remarks: (record?.remarks || '').toString()
+      }))
     };
+
+    if (!payload.grade) {
+      throw new Error('Missing grade ID for attendance submission');
+    }
+
+    if (!payload.teacherId) {
+      throw new Error('Missing teacher ID for attendance submission');
+    }
 
     const response = await api.post('/attendance/submission', payload);
     return response.data;

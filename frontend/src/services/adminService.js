@@ -639,6 +639,10 @@ export const uploadBulkData = async (file, dataType = 'students', onProgress = n
 
 export default {
   getAllUsers,
+  checkParentPhoneExists,
+  searchStudents,
+  getParentStudents,
+  linkParentStudents,
   getUsersByRole,
   createUser,
   updateUser,
