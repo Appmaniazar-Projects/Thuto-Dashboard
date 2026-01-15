@@ -39,7 +39,7 @@ import {
   Download as DownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
@@ -384,6 +384,32 @@ const Users = () => {
         }
 
         try {
+            // Server-side duplicate checks for parent phone numbers
+            if (!editingUser) {
+                const roleLower = (formData.role || '').toString().toLowerCase();
+
+                if (roleLower === 'parent') {
+                    const exists = await checkParentPhoneExists(formData.phoneNumber);
+                    if (exists) {
+                        setFormErrors((prev) => ({ ...prev, phoneNumber: true }));
+                        setError('A parent with this phone number already exists. Please enter a different phone number.');
+                        return;
+                    }
+                }
+
+                if (roleLower === 'student') {
+                    const parentPhone = (formData.parentPhoneNumber || '').toString().trim();
+                    if (parentPhone) {
+                        const exists = await checkParentPhoneExists(parentPhone);
+                        if (exists) {
+                            setFormErrors((prev) => ({ ...prev, parentPhoneNumber: true }));
+                            setError('A parent/guardian with this phone number already exists. Please use a different phone number.');
+                            return;
+                        }
+                    }
+                }
+            }
+
             if (editingUser) {
                 await updateUser(editingUser.id, formData);
             } else {

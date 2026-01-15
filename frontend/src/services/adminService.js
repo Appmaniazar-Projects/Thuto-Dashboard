@@ -53,6 +53,41 @@ export const getAllUsers = async () => {
   }
 };
 
+export const checkParentPhoneExists = async (phoneNumber) => {
+  try {
+    const raw = (phoneNumber ?? '').toString().trim();
+    if (!raw) return false;
+
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId ||
+      null;
+
+    const normalizedPhone = raw.replace(/\D/g, '');
+    const encodedPhone = encodeURIComponent(normalizedPhone || raw);
+
+    const params = {
+      ...(schoolId ? { schoolId } : {}),
+      ...(adminInfo.email ? { adminEmail: adminInfo.email } : {})
+    };
+
+    const response = await api.get(`/admin/parent/details/${encodedPhone}`, {
+      params: Object.keys(params).length > 0 ? params : undefined
+    });
+
+    const data = response.data;
+    if (typeof data === 'boolean') return data;
+    if (typeof data === 'string') return data.trim().toLowerCase() === 'true';
+    if (typeof data === 'number') return data === 1;
+    return !!data;
+  } catch (error) {
+    if (error.response?.status === 404) return false;
+    throw error;
+  }
+};
+
 export const searchStudents = async (query, limit = 10) => {
   try {
     const username = (query ?? '').toString().trim();
