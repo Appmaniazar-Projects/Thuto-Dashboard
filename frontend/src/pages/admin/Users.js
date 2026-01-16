@@ -39,7 +39,7 @@ import {
   Download as DownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists, linkParentStudents } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
@@ -401,8 +401,6 @@ const Users = () => {
 
         try {
             // Server-side duplicate checks for parent phone numbers
-            let existingParentToLink = null;
-
             if (!editingUser) {
                 const roleLower = (formData.role || '').toString().toLowerCase();
 
@@ -421,7 +419,7 @@ const Users = () => {
                 if (roleLower === 'student') {
                     const parentPhone = (formData.parentPhoneNumber || '').toString().trim();
                     if (parentPhone) {
-                        existingParentToLink = parentLookupResult || findExistingParentByPhone(parentPhone);
+                        findExistingParentByPhone(parentPhone);
                     }
                 }
             }
@@ -429,23 +427,7 @@ const Users = () => {
             if (editingUser) {
                 await updateUser(editingUser.id, formData);
             } else {
-                const payloadToCreate = { ...formData };
-
-                if (existingParentToLink?.id) {
-                    delete payloadToCreate.parentName;
-                    delete payloadToCreate.parentLastName;
-                    delete payloadToCreate.parentPhoneNumber;
-                    delete payloadToCreate.parentEmail;
-                }
-
-                const created = await createUser(payloadToCreate);
-
-                if (existingParentToLink?.id) {
-                    const createdStudentId = created?.id || created?.studentId || created?.userId;
-                    if (createdStudentId) {
-                        await linkParentStudents(existingParentToLink.id, [createdStudentId]);
-                    }
-                }
+                await createUser(formData);
             }
             setDialogOpen(false);
             setEditingUser(null);

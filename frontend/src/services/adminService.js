@@ -258,6 +258,20 @@ export const createUser = async (userData) => {
 
     if (adminInfo.email) {
       basePayload.createdBy = adminInfo.email;
+      basePayload.adminEmail = adminInfo.email;
+      basePayload.createdByRole = 'admin';
+    }
+
+    if (userData?.adminEmail && !basePayload.adminEmail) {
+      basePayload.adminEmail = normalizeNullableString(userData.adminEmail);
+    }
+
+    if (userData?.createdBy && !basePayload.createdBy) {
+      basePayload.createdBy = normalizeNullableString(userData.createdBy);
+    }
+
+    if (userData?.createdByRole && !basePayload.createdByRole) {
+      basePayload.createdByRole = normalizeNullableString(userData.createdByRole);
     }
 
     const roleSpecificPayload = {};
