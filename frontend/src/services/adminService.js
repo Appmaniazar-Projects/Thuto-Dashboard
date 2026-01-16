@@ -253,21 +253,28 @@ export const createUser = async (userData) => {
       email: userData.email?.trim() || '',
       phoneNumber: normalizeNullableString(userData.phoneNumber),
       role: roleUpper,
-      schoolId: normalizeNumber(schoolId) ?? schoolId,
-      createdBy: adminInfo.email || adminInfo.id || 'MISSING_ADMIN_EMAIL',
-      createdByRole: 'admin',
-      adminEmail: adminInfo.email
+      schoolId: normalizeNumber(schoolId) ?? schoolId
     };
+
+    if (adminInfo.email) {
+      basePayload.createdBy = adminInfo.email;
+    }
 
     const roleSpecificPayload = {};
 
     if (roleUpper === 'STUDENT') {
       roleSpecificPayload.username = userData.username?.trim() || '';
       roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
-      roleSpecificPayload.parentName = normalizeNullableString(userData.parentName);
-      roleSpecificPayload.parentLastName = normalizeNullableString(userData.parentLastName);
-      roleSpecificPayload.parentPhoneNumber = normalizeNullableString(userData.parentPhoneNumber);
-      roleSpecificPayload.parentEmail = normalizeNullableString(userData.parentEmail);
+
+      const parentName = normalizeNullableString(userData.parentName);
+      const parentLastName = normalizeNullableString(userData.parentLastName);
+      const parentPhoneNumber = normalizeNullableString(userData.parentPhoneNumber);
+      const parentEmail = normalizeNullableString(userData.parentEmail);
+
+      if (parentName !== null) roleSpecificPayload.parentName = parentName;
+      if (parentLastName !== null) roleSpecificPayload.parentLastName = parentLastName;
+      if (parentPhoneNumber !== null) roleSpecificPayload.parentPhoneNumber = parentPhoneNumber;
+      if (parentEmail !== null) roleSpecificPayload.parentEmail = parentEmail;
     }
 
     if (roleUpper === 'TEACHER') {
