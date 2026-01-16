@@ -39,7 +39,7 @@ import {
   Download as DownloadIcon,
   UploadFile as UploadFileIcon
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists, linkParentStudents } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import PageTitle from '../../components/common/PageTitle';
@@ -315,8 +315,20 @@ const Users = () => {
 
             const validNewParentCount = newParents.filter((p) => p.phoneNumber?.trim()).length;
 
-            if (!editingUser && validNewParentCount === 0) {
-                errors.parentPhoneNumber = true;
+            const hasLookupPhone = !!normalizePhone(parentLookupPhone);
+            const hasFoundExistingParent = !!parentLookupResult;
+            const shouldRequireNewParentDetails = parentLookupTried && !hasFoundExistingParent;
+
+            if (!editingUser) {
+                if (shouldRequireNewParentDetails) {
+                    if (validNewParentCount === 0) {
+                        errors.parentPhoneNumber = true;
+                    }
+                } else if (!hasFoundExistingParent) {
+                    if (!hasLookupPhone && validNewParentCount === 0) {
+                        errors.parentPhoneNumber = true;
+                    }
+                }
             }
 
             // If parent email is provided, ensure it's a valid email (avoid backend validation errors)
@@ -357,6 +369,8 @@ const Users = () => {
         const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
 
         const shouldOverrideParentFields = !!(primaryNewParent?.phoneNumber || '').toString().trim();
+        const lookupParentPhoneRaw = (parentLookupPhone || '').toString().trim();
+        const hasLookupParentPhone = !!normalizePhone(lookupParentPhoneRaw);
 
         const formData = {
             ...userForm,
@@ -370,7 +384,9 @@ const Users = () => {
             parentName: shouldOverrideParentFields ? (primaryNewParent?.name || '') : (userForm.parentName || ''),
             parentLastName: shouldOverrideParentFields ? (primaryNewParent?.lastName || '') : (userForm.parentLastName || ''),
             parentEmail: shouldOverrideParentFields ? (primaryNewParent?.email || '') : (userForm.parentEmail || ''),
-            parentPhoneNumber: shouldOverrideParentFields ? (primaryNewParent?.phoneNumber || '') : (userForm.parentPhoneNumber || ''),
+            parentPhoneNumber: shouldOverrideParentFields
+                ? (primaryNewParent?.phoneNumber || '')
+                : (hasLookupParentPhone ? lookupParentPhoneRaw : (userForm.parentPhoneNumber || '')),
         };
 
         if ((formData.role || '').toString().toLowerCase() === 'parent') {
@@ -385,6 +401,8 @@ const Users = () => {
 
         try {
             // Server-side duplicate checks for parent phone numbers
+            let existingParentToLink = null;
+
             if (!editingUser) {
                 const roleLower = (formData.role || '').toString().toLowerCase();
 
@@ -403,15 +421,7 @@ const Users = () => {
                 if (roleLower === 'student') {
                     const parentPhone = (formData.parentPhoneNumber || '').toString().trim();
                     if (parentPhone) {
-                        const exists =
-                            typeof checkParentPhoneExists === 'function'
-                                ? await checkParentPhoneExists(parentPhone)
-                                : !!findExistingParentByPhone(parentPhone);
-                        if (exists) {
-                            setFormErrors((prev) => ({ ...prev, parentPhoneNumber: true }));
-                            setError('A parent/guardian with this phone number already exists. Please use a different phone number.');
-                            return;
-                        }
+                        existingParentToLink = parentLookupResult || findExistingParentByPhone(parentPhone);
                     }
                 }
             }
@@ -419,7 +429,23 @@ const Users = () => {
             if (editingUser) {
                 await updateUser(editingUser.id, formData);
             } else {
-                await createUser(formData);
+                const payloadToCreate = { ...formData };
+
+                if (existingParentToLink?.id) {
+                    delete payloadToCreate.parentName;
+                    delete payloadToCreate.parentLastName;
+                    delete payloadToCreate.parentPhoneNumber;
+                    delete payloadToCreate.parentEmail;
+                }
+
+                const created = await createUser(payloadToCreate);
+
+                if (existingParentToLink?.id) {
+                    const createdStudentId = created?.id || created?.studentId || created?.userId;
+                    if (createdStudentId) {
+                        await linkParentStudents(existingParentToLink.id, [createdStudentId]);
+                    }
+                }
             }
             setDialogOpen(false);
             setEditingUser(null);
