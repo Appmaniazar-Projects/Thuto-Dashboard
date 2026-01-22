@@ -46,7 +46,7 @@ React-based frontend for the Thuto Dashboard educational management system.
    REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 
    # Backend API
-   REACT_APP_API_BASE_URL=http://localhost:8080/api
+   REACT_APP_API_URL=http://localhost:8080
    ```
 
 ### Firebase Setup Requirements - PHONE ONLY
@@ -134,17 +134,20 @@ src/
 The frontend expects these authentication endpoints:
 
 ```
-POST /api/auth/verify-otp
-- Verifies Firebase phone token and returns JWT
-- Body: { phoneNumber, firebaseUid, firebaseToken }
+POST /api/auth/login
+- Phone OTP login after Firebase verification
+- Body: { phoneNumber, firebaseToken, role, username }
 
-POST /api/auth/admin/login  
+POST /api/admin/login
 - Admin email/password login
 - Body: { email, password }
 
-POST /api/auth/superadmin/login
-- Super admin email/password login  
+POST /api/superadmins/auth/login
+- Super admin email/password login
 - Body: { email, password }
+
+POST /api/superadmins/auth/super/register
+- Super admin registration
 ```
 
 ### API Services
