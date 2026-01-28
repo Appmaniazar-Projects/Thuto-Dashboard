@@ -11,9 +11,11 @@ import {
   Delete as DeleteIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import { getMyStudents } from '../../services/teacherService';
+import NotesToSelfPanel from '../../components/teacher/NotesToSelfPanel';
 import { 
   uploadTeacherStudentReport, 
   getTeacherStudentReports,
@@ -32,6 +34,11 @@ const reportTypes = [
 ];
 
 const UploadReportPage = () => {
+  const { user } = useAuth();
+  const normalizedRole = (user?.role ?? '').toString().toLowerCase();
+  const isTeacher = normalizedRole === 'teacher';
+  const teacherId = user?.id || user?.phoneNumber || '';
+
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState('');
   const [selectedReportType, setSelectedReportType] = useState('');
@@ -276,6 +283,16 @@ const handleUpload = async () => {
     setNotification({ ...notification, open: false });
   };
 
+  if (!isTeacher) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">
+          This page is only available to teachers.
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -369,6 +386,11 @@ const handleUpload = async () => {
           </Grid>
         </Grid>
       </Paper>
+
+      <Box sx={{ mt: 3 }}>
+        <NotesToSelfPanel studentId={selectedStudent} teacherId={teacherId} />
+      </Box>
+
 <Paper sx={{ p: 3, mt: 3 }}>
   <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>
   {loading ? (
