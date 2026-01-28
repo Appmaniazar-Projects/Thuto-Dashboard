@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
+  Alert,
   Button,
   Card,
   CardContent,
@@ -132,7 +133,7 @@ const CalendarPage = () => {
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
 
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -172,13 +173,14 @@ const CalendarPage = () => {
   const loadEvents = useCallback(async () => {
     try {
       setLoading(true);
-      setError('');
+      setWarning('');
       const startDate = format(range.start, 'yyyy-MM-dd');
       const endDate = format(range.end, 'yyyy-MM-dd');
       const data = await getEvents(startDate, endDate);
       setEvents(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError(e?.message || 'Failed to load events');
+      setEvents([]);
+      setWarning('Events are temporarily unavailable. Showing an empty calendar.');
     } finally {
       setLoading(false);
     }
@@ -458,10 +460,15 @@ const CalendarPage = () => {
         )}
       </Stack>
 
-      {loading && <LoadingSpinner message="Loading events..." height={220} />}
-      {!loading && error && <ErrorDisplay message={error} onRetry={loadEvents} />}
+      {warning && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {warning}
+        </Alert>
+      )}
 
-      {!loading && !error && viewMode === 'agenda' && (
+      {loading && <LoadingSpinner message="Loading events..." height={220} />}
+
+      {!loading && viewMode === 'agenda' && (
         <Stack spacing={2}>
           {!agendaItems.length ? (
             <Card variant="outlined">
@@ -502,7 +509,7 @@ const CalendarPage = () => {
         </Stack>
       )}
 
-      {!loading && !error && viewMode === 'month' && (
+      {!loading && viewMode === 'month' && (
         <Box sx={{ height: { xs: 520, md: 680 }, '& .rbc-toolbar button': { minHeight: 44 } }}>
           <BigCalendar
             localizer={localizer}
