@@ -134,6 +134,7 @@ const CalendarPage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [warning, setWarning] = useState('');
+  const [apiFailed, setApiFailed] = useState(false);
 
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -174,6 +175,7 @@ const CalendarPage = () => {
     try {
       setLoading(true);
       setWarning('');
+      setApiFailed(false);
       const startDate = format(range.start, 'yyyy-MM-dd');
       const endDate = format(range.end, 'yyyy-MM-dd');
       const data = await getEvents(startDate, endDate);
@@ -181,14 +183,18 @@ const CalendarPage = () => {
     } catch (e) {
       setEvents([]);
       setWarning('Events are temporarily unavailable. Showing an empty calendar.');
+      setApiFailed(true);
+      setViewMode('month');
     } finally {
       setLoading(false);
     }
   }, [range.end, range.start]);
 
   useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
+    if (!apiFailed) {
+      loadEvents();
+    }
+  }, [apiFailed, loadEvents]);
 
   const rbcEvents = useMemo(() => {
     return (events || [])
@@ -461,7 +467,23 @@ const CalendarPage = () => {
       </Stack>
 
       {warning && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                setApiFailed(false);
+                loadEvents();
+              }}
+              sx={{ minHeight: 44 }}
+            >
+              Retry
+            </Button>
+          }
+        >
           {warning}
         </Alert>
       )}

@@ -46,7 +46,6 @@ export const getEvents = async (startDate, endDate) => {
     });
     return coerceEventsArray(response.data);
   } catch (error) {
-    console.error('Error fetching events:', error);
     throw error;
   }
 };
