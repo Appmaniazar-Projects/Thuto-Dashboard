@@ -152,10 +152,6 @@ const CalendarPage = () => {
     roles: [],
   });
 
-  useEffect(() => {
-    setViewMode(isMobile ? 'agenda' : 'month');
-  }, [isMobile]);
-
   const range = useMemo(() => {
     if (viewMode === 'agenda') {
       const start = new Date();
