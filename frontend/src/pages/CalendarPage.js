@@ -438,7 +438,7 @@ const CalendarPage = () => {
           size="small"
           sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' } }}
         >
-          <ToggleButton value="month" disabled={isMobile} sx={{ minHeight: 44 }}>
+          <ToggleButton value="month" sx={{ minHeight: 44 }}>
             Month
           </ToggleButton>
           <ToggleButton value="agenda" sx={{ minHeight: 44 }}>
