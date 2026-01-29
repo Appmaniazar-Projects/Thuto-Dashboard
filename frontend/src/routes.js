@@ -25,6 +25,7 @@ const ParentDashboardPage = lazy(() => import('./components/dashboard/ParentDash
 const ParentChildrenPage = lazy(() => import('./pages/parent/Children'));
 const ParentAcademicReportsPage = lazy(() => import('./pages/parent/Academic'));
 const ParentReports = lazy(() => import('./pages/parent/ParentReportsPage'));
+const ParentResources = lazy(() => import('./pages/parent/Resources'));
 
 const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
 const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
@@ -101,6 +102,7 @@ const protectedRoutes = [
   { path: '/parent/children', element: <ParentChildrenPage /> },
   { path: '/parent/academic', element: <ParentAcademicReportsPage /> },
   { path: '/parent/reports', element: <ParentReports /> },
+  { path: '/parent/resources', element: <ParentResources /> },
 
   // Teacher
   { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },

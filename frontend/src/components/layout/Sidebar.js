@@ -81,6 +81,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
         { path: '/parent/children', icon: <PeopleIcon />, text: 'My Children' },
         { path: '/parent/academic', icon: <AssessmentIcon />, text: 'Academic Reports' },
         { path: '/parent/reports', icon: <AssignmentIcon />, text: 'Attendance' },
+        { path: '/parent/resources', icon: <FolderIcon />, text: 'Resources' },
       ],
       student: [
         { path: '/student/subjects', icon: <LibraryBooksIcon />, text: 'My Subjects' },

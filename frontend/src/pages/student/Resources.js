@@ -32,8 +32,10 @@ import { getMyResources, downloadResource } from '../../services/resourceService
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 const Resources = () => {
+  const { user } = useAuth();
   const [resources, setResources] = useState([]);
   const [filteredResources, setFilteredResources] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,6 +90,36 @@ const Resources = () => {
 
   useEffect(() => {
     let result = [...resources];
+
+    const studentGradeId = user?.gradeId ?? user?.grade?.id ?? user?.grade ?? null;
+    const studentSubjectIds = Array.isArray(user?.subjectIds)
+      ? user.subjectIds
+      : Array.isArray(user?.subjects)
+      ? user.subjects.map((s) => s?.id).filter(Boolean)
+      : [];
+
+    result = result.filter((r) => {
+      const visibility = (r.visibilityType || '').toString().toUpperCase();
+      if (!visibility || visibility === 'PUBLIC') return true;
+      if (visibility !== 'GRADE_SUBJECT') return true;
+
+      const resourceGradeIds = Array.isArray(r.gradeIds)
+        ? r.gradeIds
+        : r.gradeId !== null && r.gradeId !== undefined
+        ? [r.gradeId]
+        : [];
+      const resourceSubjectIds = Array.isArray(r.subjectIds)
+        ? r.subjectIds
+        : r.subjectId !== null && r.subjectId !== undefined
+        ? [r.subjectId]
+        : [];
+
+      const matchesGrade = !resourceGradeIds.length || (studentGradeId && resourceGradeIds.some((gid) => String(gid) === String(studentGradeId)));
+      const matchesSubject = !resourceSubjectIds.length || resourceSubjectIds.some((sid) => studentSubjectIds.some((uSid) => String(uSid) === String(sid)));
+
+      return matchesGrade && matchesSubject;
+    });
+
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       result = result.filter((r) => {
@@ -97,13 +129,27 @@ const Resources = () => {
       });
     }
     if (selectedSubject !== 'all') {
-      result = result.filter((r) => String(r.subjectId) === String(selectedSubject));
+      result = result.filter((r) => {
+        const ids = Array.isArray(r.subjectIds)
+          ? r.subjectIds
+          : r.subjectId !== null && r.subjectId !== undefined
+          ? [r.subjectId]
+          : [];
+        return ids.some((sid) => String(sid) === String(selectedSubject));
+      });
     }
     if (selectedGrade !== 'all') {
-      result = result.filter((r) => String(r.gradeId) === String(selectedGrade));
+      result = result.filter((r) => {
+        const ids = Array.isArray(r.gradeIds)
+          ? r.gradeIds
+          : r.gradeId !== null && r.gradeId !== undefined
+          ? [r.gradeId]
+          : [];
+        return ids.some((gid) => String(gid) === String(selectedGrade));
+      });
     }
     setFilteredResources(result);
-  }, [searchTerm, selectedSubject, selectedGrade, resources]);
+  }, [searchTerm, selectedSubject, selectedGrade, resources, user]);
 
   const handleDownload = async (fileUrl, fileName) => {
     try {

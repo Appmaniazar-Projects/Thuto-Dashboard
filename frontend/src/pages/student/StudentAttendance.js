@@ -37,8 +37,12 @@ import {
   LinearProgress,
   CircularProgress,
   Alert,
-  Chip
+  Chip,
+  TextField,
+  Stack,
+  useMediaQuery
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as PresentIcon,
@@ -56,11 +60,27 @@ import { format, parseISO } from 'date-fns';
 const StudentAttendance = () => {
   // Get current authenticated user from context
   const { user } = useAuth();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   // State for selected month filter (format: YYYY-MM)
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7)
   );
+
+  const defaultRange = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(end, 'yyyy-MM-dd'),
+    };
+  };
+
+  const [startDate, setStartDate] = useState(() => defaultRange().startDate);
+  const [endDate, setEndDate] = useState(() => defaultRange().endDate);
   
   // State for storing fetched attendance records
   const [attendanceData, setAttendanceData] = useState(null);
@@ -98,14 +118,23 @@ const StudentAttendance = () => {
           return;
         }
         
-        // Calculate date range for selected month
-        // Start date: First day of selected month
-        const startDate = new Date(selectedMonth + '-01');
-        // End date: Last day of selected month
-        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        const parsedStart = startDate ? parseISO(startDate) : new Date(selectedMonth + '-01');
+        const parsedEnd = endDate
+          ? parseISO(endDate)
+          : new Date(parsedStart.getFullYear(), parsedStart.getMonth() + 1, 0);
+
+        if (Number.isNaN(parsedStart.getTime()) || Number.isNaN(parsedEnd.getTime())) {
+          setError('Please select a valid date range.');
+          return;
+        }
+
+        if (parsedStart.getTime() > parsedEnd.getTime()) {
+          setError('Start date must be before end date.');
+          return;
+        }
         
         // Fetch attendance data from API service
-        const response = await getStudentAttendance(user.id, startDate, endDate);
+        const response = await getStudentAttendance(user.id, parsedStart, parsedEnd);
         setAttendanceData(response);
       } catch (err) {
         // Handle API errors gracefully - distinguish between API errors and empty data
@@ -135,7 +164,15 @@ const StudentAttendance = () => {
 
     // Execute the fetch function
     fetchAttendance();
-  }, [selectedMonth, user]); // Re-run when month selection or user changes
+  }, [selectedMonth, startDate, endDate, user]); // Re-run when month selection or user changes
+
+  useEffect(() => {
+    if (!selectedMonth) return;
+    const start = new Date(selectedMonth + '-01');
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    setStartDate(format(start, 'yyyy-MM-dd'));
+    setEndDate(format(end, 'yyyy-MM-dd'));
+  }, [selectedMonth]);
 
   // Function to generate month options for the dropdown
   const generateMonthOptions = () => {
@@ -180,25 +217,46 @@ const StudentAttendance = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header with Title and Month Filter */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Typography variant="h4" component="h1">
           My Attendance
         </Typography>
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Select Month</InputLabel>
-          <Select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            label="Select Month"
+        <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Select Month</InputLabel>
+            <Select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              label="Select Month"
+              disabled={loading}
+            >
+              {generateMonthOptions().map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            size="small"
+            label="Start"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
             disabled={loading}
-          >
-            {generateMonthOptions().map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          />
+          <TextField
+            size="small"
+            label="End"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            disabled={loading}
+          />
+        </Box>
       </Box>
 
       {/* Stats Cards */}
@@ -283,46 +341,77 @@ const StudentAttendance = () => {
         ) : error ? (
           <Alert severity="error">{error}</Alert>
         ) : (
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Subject</TableCell>
-                <TableCell>Teacher</TableCell>
-                <TableCell>Remarks</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {Array.isArray(attendanceData?.details) && attendanceData.details.length > 0 ? (
-                attendanceData.details.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{format(parseISO(record.date), 'MMMM d, yyyy')}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={record.status}
-                        color={record.status === 'Present' ? 'success' : 'error'}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{getSubjectLabel(record.subject)}</TableCell>
-                    <TableCell>{getTeacherLabel(record.teacher)}</TableCell>
-                    <TableCell>{record.remarks || 'N/A'}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                  <Typography color="textSecondary">
-                    No attendance records found for this month.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <>
+          {Array.isArray(attendanceData?.details) && attendanceData.details.length > 0 ? (
+            isMobile ? (
+              <Stack spacing={2} sx={{ mt: 2 }}>
+                {attendanceData.details.map((record) => {
+                  const status = (record.status || '').toString();
+                  const statusLower = status.toLowerCase();
+                  const chipColor = statusLower === 'present' ? 'success' : statusLower === 'late' ? 'warning' : 'error';
+
+                  return (
+                    <Paper key={record.id} variant="outlined" sx={{ p: 2 }}>
+                      <Stack spacing={1}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+                          <Typography variant="subtitle2">
+                            {format(parseISO(record.date), 'MMMM d, yyyy')}
+                          </Typography>
+                          <Chip label={status || 'Unknown'} color={chipColor} size="small" />
+                        </Stack>
+
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Subject:</strong> {getSubjectLabel(record.subject)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Teacher:</strong> {getTeacherLabel(record.teacher)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Remarks:</strong> {record.remarks || 'N/A'}
+                        </Typography>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Subject</TableCell>
+                      <TableCell>Teacher</TableCell>
+                      <TableCell>Remarks</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {attendanceData.details.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>{format(parseISO(record.date), 'MMMM d, yyyy')}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={record.status}
+                            color={record.status === 'Present' ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>{getSubjectLabel(record.subject)}</TableCell>
+                        <TableCell>{getTeacherLabel(record.teacher)}</TableCell>
+                        <TableCell>{record.remarks || 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )
+          ) : (
+            <Typography color="textSecondary" sx={{ py: 3 }}>
+              No attendance records found for the selected date range.
+            </Typography>
+          )}
+        </>
         )}
       </Paper>
     </Box>

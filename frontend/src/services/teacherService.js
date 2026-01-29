@@ -47,6 +47,9 @@ export const uploadResource = async (file, metadata, onProgress = null) => {
     description = '', 
     gradeId = '', 
     subjectId = '', 
+    gradeIds = null,
+    subjectIds = null,
+    visibilityType = null,
     targetAudience = 'students' 
   } = metadata || {};
   try {
@@ -59,14 +62,23 @@ export const uploadResource = async (file, metadata, onProgress = null) => {
     }
 
     // Upload file to Firebase Storage
+    const normalizedGradeIds = Array.isArray(gradeIds) ? gradeIds.filter(Boolean) : [];
+    const normalizedSubjectIds = Array.isArray(subjectIds) ? subjectIds.filter(Boolean) : [];
+
+    const resolvedGradeId = gradeId || normalizedGradeIds[0] || null;
+    const resolvedSubjectId = subjectId || normalizedSubjectIds[0] || null;
+
     const uploadMetadata = {
       schoolId: schoolId,
       uploadedBy: userInfo.email,
       userRole: 'teacher',
       fileType: 'resource',
       targetAudience,
-      gradeId: gradeId || null,
-      subjectId: subjectId || null
+      gradeId: resolvedGradeId,
+      subjectId: resolvedSubjectId,
+      gradeIds: normalizedGradeIds,
+      subjectIds: normalizedSubjectIds,
+      visibilityType: visibilityType || null
     };
 
     const uploadResult = await fileUploadService.uploadFile(file, uploadMetadata, onProgress);
@@ -80,8 +92,11 @@ export const uploadResource = async (file, metadata, onProgress = null) => {
       filePath: uploadResult.filePath,
       fileSize: uploadResult.fileSize,
       fileType: uploadResult.fileType,
-      gradeId: gradeId || null,
-      subjectId: subjectId || null,
+      gradeId: resolvedGradeId,
+      subjectId: resolvedSubjectId,
+      gradeIds: normalizedGradeIds,
+      subjectIds: normalizedSubjectIds,
+      visibilityType: visibilityType || (normalizedGradeIds.length || normalizedSubjectIds.length ? 'GRADE_SUBJECT' : 'PUBLIC'),
       targetAudience,
       uploadDate: uploadResult.uploadDate,
       teacherId: userInfo.id

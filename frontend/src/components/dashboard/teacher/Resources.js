@@ -3,6 +3,7 @@ import {
   Box, Typography, Button, List, ListItem, ListItemText, ListItemSecondaryAction,
   IconButton, Paper, TextField, MenuItem, CircularProgress, Alert, Chip, Divider
 } from '@mui/material';
+
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -20,8 +21,18 @@ const TeacherResources = () => {
   const [filteredResources, setFilteredResources] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [selectedVisibilityFilter, setSelectedVisibilityFilter] = useState('');
+
+  const [uploadSubject, setUploadSubject] = useState('');
+  const [uploadGrade, setUploadGrade] = useState('');
+
+  const [visibilityType, setVisibilityType] = useState('PUBLIC');
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState([]);
+  const [selectedGradeIds, setSelectedGradeIds] = useState([]);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -30,19 +41,46 @@ const TeacherResources = () => {
 
   // Filter resources when subject or grade changes
   useEffect(() => {
+
     if (!Array.isArray(allResources) || allResources.length === 0) {
       setFilteredResources([]);
       return;
     }
 
     const filtered = allResources.filter(resource => {
-      const matchesSubject = !selectedSubject || resource.subjectId == selectedSubject;
-      const matchesGrade = !selectedGrade || resource.gradeId == selectedGrade;
-      return matchesSubject && matchesGrade;
+      const normalizedVisibility = (resource.visibilityType || '').toString().toUpperCase();
+      const resourceSubjectId = resource.subjectId ?? resource.subject?.id ?? null;
+      const resourceGradeId = resource.gradeId ?? resource.grade?.id ?? null;
+
+      const resourceSubjectIds = Array.isArray(resource.subjectIds)
+        ? resource.subjectIds
+        : resourceSubjectId !== null && resourceSubjectId !== undefined
+        ? [resourceSubjectId]
+        : [];
+
+      const resourceGradeIds = Array.isArray(resource.gradeIds)
+        ? resource.gradeIds
+        : resourceGradeId !== null && resourceGradeId !== undefined
+        ? [resourceGradeId]
+        : [];
+
+      const matchesVisibility =
+        !selectedVisibilityFilter ||
+        (selectedVisibilityFilter === 'PUBLIC' && normalizedVisibility === 'PUBLIC') ||
+        (selectedVisibilityFilter === 'GRADE_SUBJECT' && normalizedVisibility === 'GRADE_SUBJECT');
+
+      const matchesSubject =
+        !filterSubject ||
+        resourceSubjectIds.some((sid) => String(sid) === String(filterSubject));
+      const matchesGrade =
+        !filterGrade ||
+        resourceGradeIds.some((gid) => String(gid) === String(filterGrade));
+
+      return matchesVisibility && matchesSubject && matchesGrade;
     });
 
     setFilteredResources(filtered);
-  }, [selectedSubject, selectedGrade, allResources]);
+  }, [filterSubject, filterGrade, selectedVisibilityFilter, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -124,24 +162,34 @@ const TeacherResources = () => {
       setError('Please select a file to upload');
       return;
     }
-    
-    if (!selectedSubject || !selectedGrade) {
-      setError('Please select a subject and grade');
+
+    if (!title.trim()) {
+      setError('Please enter a title');
       return;
+    }
+
+    if (visibilityType === 'GRADE_SUBJECT') {
+      if (!selectedSubjectIds.length || !selectedGradeIds.length) {
+        setError('Please select at least one grade and one subject');
+        return;
+      }
     }
     
     try {
       setUploading(true);
       setError('');
       setSuccess('');
-      
-      const selectedSubjectObj = subjects.find((s) => String(s.id) === String(selectedSubject));
+
+      const selectedSubjectObj = subjects.find((s) => String(s.id) === String(selectedSubjectIds?.[0] ?? uploadSubject));
       const resourceMetadata = {
-        title: file.name.split('.')[0], // Use filename as title
-        description: `Resource for ${selectedSubjectObj?.name || 'subject'}`,
+        title: title.trim(),
+        description: description.trim() || `Resource for ${selectedSubjectObj?.name || 'subject'}`,
         category: 'teaching-material',
-        subjectId: selectedSubject,
-        gradeId: selectedGrade
+        visibilityType,
+        subjectId: visibilityType === 'GRADE_SUBJECT' ? '' : uploadSubject,
+        gradeId: visibilityType === 'GRADE_SUBJECT' ? '' : uploadGrade,
+        subjectIds: visibilityType === 'GRADE_SUBJECT' ? selectedSubjectIds : [],
+        gradeIds: visibilityType === 'GRADE_SUBJECT' ? selectedGradeIds : []
       };
       
       const newResource = await uploadResource(file, resourceMetadata);
@@ -152,17 +200,24 @@ const TeacherResources = () => {
       
       // Update filtered resources if needed
       let filtered = [newResource, ...filteredResources];
-      if (selectedSubject && newResource.subjectId !== selectedSubject) {
-        filtered = filtered.filter(r => r.subjectId === selectedSubject);
+      if (filterSubject && newResource.subjectId !== filterSubject) {
+        filtered = filtered.filter(r => r.subjectId === filterSubject);
       }
-      if (selectedGrade && newResource.gradeId !== selectedGrade) {
-        filtered = filtered.filter(r => r.gradeId === selectedGrade);
+      if (filterGrade && newResource.gradeId !== filterGrade) {
+        filtered = filtered.filter(r => r.gradeId === filterGrade);
       }
       setFilteredResources(filtered);
       setFile(null);
       setSuccess('Resource uploaded successfully!');
-      setSelectedSubject('');
-      setSelectedGrade('');
+      setFilterSubject('');
+      setFilterGrade('');
+      setUploadSubject('');
+      setUploadGrade('');
+      setTitle('');
+      setDescription('');
+      setVisibilityType('PUBLIC');
+      setSelectedGradeIds([]);
+      setSelectedSubjectIds([]);
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
@@ -251,37 +306,111 @@ const TeacherResources = () => {
         <Typography variant="h6">Resources</Typography>
       </Box>
 
-      {/* Subject and Grade Selection */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+      {/* Upload Details */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <TextField
+          label="Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          sx={{ minWidth: 240, flexGrow: 1 }}
+          disabled={uploading}
+        />
+        <TextField
+          label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          sx={{ minWidth: 240, flexGrow: 1 }}
+          disabled={uploading}
+        />
+      </Box>
+
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <TextField
           select
-          label="Subject"
-          value={selectedSubject}
-          onChange={(e) => setSelectedSubject(e.target.value)}
-          sx={{ minWidth: 200 }}
+          label="Visibility"
+          value={visibilityType}
+          onChange={(e) => {
+            const value = e.target.value;
+            setVisibilityType(value);
+            if (value === 'PUBLIC') {
+              setSelectedGradeIds([]);
+              setSelectedSubjectIds([]);
+            }
+          }}
+          sx={{ minWidth: 240 }}
           disabled={uploading}
         >
-          {subjects.map((subject) => (
-            <MenuItem key={subject.id} value={subject.id}>
-              {subject.name}
-            </MenuItem>
-          ))}
+          <MenuItem value="PUBLIC">Public (all teachers)</MenuItem>
+          <MenuItem value="GRADE_SUBJECT">Grade + Subject (restricted)</MenuItem>
         </TextField>
-        
-        <TextField
-          select
-          label="Grade"
-          value={selectedGrade}
-          onChange={(e) => setSelectedGrade(e.target.value)}
-          sx={{ minWidth: 200 }}
-          disabled={uploading}
-        >
-          {grades.map((grade) => (
-            <MenuItem key={grade.id} value={grade.id}>
-              {grade.name}
-            </MenuItem>
-          ))}
-        </TextField>
+
+        {visibilityType === 'GRADE_SUBJECT' ? (
+          <>
+            <TextField
+              select
+              label="Subjects"
+              SelectProps={{ multiple: true }}
+              value={selectedSubjectIds}
+              onChange={(e) => setSelectedSubjectIds(e.target.value)}
+              sx={{ minWidth: 240 }}
+              disabled={uploading}
+            >
+              {subjects.map((subject) => (
+                <MenuItem key={subject.id} value={String(subject.id)}>
+                  {subject.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Grades"
+              SelectProps={{ multiple: true }}
+              value={selectedGradeIds}
+              onChange={(e) => setSelectedGradeIds(e.target.value)}
+              sx={{ minWidth: 240 }}
+              disabled={uploading}
+            >
+              {grades.map((grade) => (
+                <MenuItem key={grade.id} value={String(grade.id)}>
+                  {grade.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </>
+        ) : (
+          <>
+            <TextField
+              select
+              label="Subject"
+              value={uploadSubject}
+              onChange={(e) => setUploadSubject(e.target.value)}
+              sx={{ minWidth: 200 }}
+              disabled={uploading}
+            >
+              <MenuItem value="">All subjects</MenuItem>
+              {subjects.map((subject) => (
+                <MenuItem key={subject.id} value={subject.id}>
+                  {subject.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Grade"
+              value={uploadGrade}
+              onChange={(e) => setUploadGrade(e.target.value)}
+              sx={{ minWidth: 200 }}
+              disabled={uploading}
+            >
+              <MenuItem value="">All grades</MenuItem>
+              {grades.map((grade) => (
+                <MenuItem key={grade.id} value={grade.id}>
+                  {grade.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </>
+        )}
       </Box>
 
       <Box 
@@ -325,7 +454,14 @@ const TeacherResources = () => {
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!file || uploading || !selectedGrade || !selectedSubject}
+          disabled={
+            !file ||
+            uploading ||
+            !title.trim() ||
+            (visibilityType === 'GRADE_SUBJECT'
+              ? !selectedGradeIds.length || !selectedSubjectIds.length
+              : false)
+          }
           startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
         >
           {uploading ? 'Uploading...' : 'Upload'}
@@ -346,10 +482,53 @@ const TeacherResources = () => {
 
       <Divider sx={{ my: 2 }} />
 
+      {/* List Filters */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <TextField
+          select
+          label="Visibility"
+          value={selectedVisibilityFilter}
+          onChange={(e) => setSelectedVisibilityFilter(e.target.value)}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="">All</MenuItem>
+          <MenuItem value="PUBLIC">Public</MenuItem>
+          <MenuItem value="GRADE_SUBJECT">Grade + Subject</MenuItem>
+        </TextField>
+        <TextField
+          select
+          label="Subject"
+          value={filterSubject}
+          onChange={(e) => setFilterSubject(e.target.value)}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="">All subjects</MenuItem>
+          {subjects.map((subject) => (
+            <MenuItem key={subject.id} value={subject.id}>
+              {subject.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Grade"
+          value={filterGrade}
+          onChange={(e) => setFilterGrade(e.target.value)}
+          sx={{ minWidth: 220 }}
+        >
+          <MenuItem value="">All grades</MenuItem>
+          {grades.map((grade) => (
+            <MenuItem key={grade.id} value={grade.id}>
+              {grade.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
+
       <Typography variant="subtitle1" gutterBottom>
         {filteredResources.length} {filteredResources.length === 1 ? 'Resource' : 'Resources'} found
-        {selectedSubject && ` for selected subject`}
-        {selectedGrade && ` and grade`}
+        {filterSubject && ` for selected subject`}
+        {filterGrade && ` and grade`}
       </Typography>
       
       {filteredResources.length > 0 ? (
@@ -368,6 +547,12 @@ const TeacherResources = () => {
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {displayName}
+                      {(resource.visibilityType || '').toString().toUpperCase() === 'PUBLIC' && (
+                        <Chip label="Public" size="small" variant="outlined" />
+                      )}
+                      {(resource.visibilityType || '').toString().toUpperCase() === 'GRADE_SUBJECT' && (
+                        <Chip label="Grade + Subject" size="small" variant="outlined" />
+                      )}
                       <Chip 
                         label={getFileType(fileNameForType)} 
                         size="small" 

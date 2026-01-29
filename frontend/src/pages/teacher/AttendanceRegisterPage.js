@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
-import { format, parseISO } from 'date-fns';
+import { differenceInHours, format, parseISO } from 'date-fns';
 import { submitTeacherAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
@@ -23,6 +23,8 @@ const AttendanceRegisterPage = () => {
   const [attendanceDate, setAttendanceDate] = useState(new Date());
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const isLocked = differenceInHours(new Date(), attendanceDate) > 48;
 
   useEffect(() => {
     const fetchTeacherGradesAndStudents = async () => {
@@ -166,6 +168,15 @@ const AttendanceRegisterPage = () => {
   };
 
   const handleSave = async () => {
+    if (isLocked) {
+      setSnackbar({
+        open: true,
+        message: 'Attendance is locked. You can only edit within 48 hours of the selected date.',
+        severity: 'error'
+      });
+      return;
+    }
+
     if (!selectedGradeId) {
       setSnackbar({
         open: true,
@@ -321,6 +332,12 @@ const AttendanceRegisterPage = () => {
             {error}
           </Alert>
         )}
+
+        {isLocked && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Attendance for {format(attendanceDate, 'dd MMM yyyy')} is locked. Teachers can only edit attendance within 48 hours.
+          </Alert>
+        )}
       </Box>
 
       {/* Student List */}
@@ -360,7 +377,7 @@ const AttendanceRegisterPage = () => {
                           color="success"
                           size="small"
                           onClick={() => handleStatusChange(student.id, 'present')}
-                          disabled={saving}
+                          disabled={saving || isLocked}
                         >
                           Present
                         </Button>
@@ -369,7 +386,7 @@ const AttendanceRegisterPage = () => {
                           color="warning"
                           size="small"
                           onClick={() => handleStatusChange(student.id, 'late')}
-                          disabled={saving}
+                          disabled={saving || isLocked}
                         >
                           Late
                         </Button>
@@ -378,7 +395,7 @@ const AttendanceRegisterPage = () => {
                           color="error"
                           size="small"
                           onClick={() => handleStatusChange(student.id, 'absent')}
-                          disabled={saving}
+                          disabled={saving || isLocked}
                         >
                           Absent
                         </Button>
@@ -391,7 +408,7 @@ const AttendanceRegisterPage = () => {
                         placeholder="Add remarks..."
                         value={student.remarks || ''}
                         onChange={(e) => handleRemarksChange(student.id, e.target.value)}
-                        disabled={saving}
+                        disabled={saving || isLocked}
                       />
                     </TableCell>
                   </TableRow>
@@ -412,7 +429,7 @@ const AttendanceRegisterPage = () => {
               variant="contained" 
               color="primary"
               onClick={handleSave}
-              disabled={saving || !selectedGradeId}
+              disabled={saving || !selectedGradeId || isLocked}
               startIcon={saving ? <CircularProgress size={20} /> : null}
               size="large"
             >
