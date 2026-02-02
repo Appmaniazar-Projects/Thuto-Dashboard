@@ -8,6 +8,7 @@ import { useLocation } from 'react-router-dom';
 import { useParent } from '../../context/ParentContext';
 import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
+import { formatDisplayDate } from '../../utils/date';
 
 const AcademicReportsPage = () => {
   const { children, loading: childrenLoading, error: childrenError } = useParent();
@@ -133,7 +134,7 @@ const AcademicReportsPage = () => {
                   <Box>
                     <Typography variant="h6" gutterBottom>{report.title}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Date: {new Date(report.date).toLocaleDateString()}
+                      Date: {formatDisplayDate(report.date)}
                     </Typography>
                     {report.description && (
                       <Typography variant="body2" color="text.secondary" mt={1}>

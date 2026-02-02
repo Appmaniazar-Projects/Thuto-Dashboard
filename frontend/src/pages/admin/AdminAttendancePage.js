@@ -25,6 +25,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { useSnackbar } from 'notistack';
 import { getAttendanceSubmissions, updateAttendanceSubmission } from '../../services/attendanceService';
 import PageTitle from '../../components/common/PageTitle';
+import { formatDisplayDate } from '../../utils/date';
 
 const style = {
   position: 'absolute',
@@ -204,7 +205,7 @@ const AdminAttendancePage = () => {
               {filteredSubmissions.length > 0 ? (
                 filteredSubmissions.map((sub) => (
                 <TableRow key={sub.id}>
-                  <TableCell>{new Date(sub.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDisplayDate(sub.date)}</TableCell>
                   <TableCell>{sub.teacherName}</TableCell>
                   <TableCell>{sub.grade}</TableCell>
                   <TableCell>{sub.subject}</TableCell>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Divider, IconButton } from '@mui/material';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import { useTheme } from '@mui/material/styles';
+import { formatDisplayDate } from '../../utils/date';
 
 const Announcements = ({ announcements = [], maxItems = 3 }) => {
   const theme = useTheme();
@@ -44,7 +45,7 @@ const Announcements = ({ announcements = [], maxItems = 3 }) => {
                 secondary={
                   announcement.date && (
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(announcement.date).toLocaleDateString()}
+                      {formatDisplayDate(announcement.date)}
                     </Typography>
                   )
                 }

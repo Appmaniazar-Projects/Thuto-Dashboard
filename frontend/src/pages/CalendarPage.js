@@ -511,7 +511,7 @@ const CalendarPage = () => {
                         <Chip label={status} color={getStatusColor(status)} size="small" />
                       </Stack>
                       <Typography variant="body2" color="text.secondary">
-                        {format(ev._start, 'EEE, dd MMM yyyy HH:mm')} – {format(ev._end, 'HH:mm')}
+                        {format(ev._start, 'dd/MM/yyyy, HH:mm')} – {format(ev._end, 'HH:mm')}
                       </Typography>
                       {ev.location && (
                         <Typography variant="body2" color="text.secondary">
@@ -564,9 +564,9 @@ const CalendarPage = () => {
               <Box>
                 <Typography variant="subtitle2">When</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {toSafeDate(selectedEvent.startDate) ? format(toSafeDate(selectedEvent.startDate), 'EEE, dd MMM yyyy HH:mm') : '—'}
+                  {toSafeDate(selectedEvent.startDate) ? format(toSafeDate(selectedEvent.startDate), 'dd/MM/yyyy, HH:mm') : '—'}
                   {' '}–{' '}
-                  {toSafeDate(selectedEvent.endDate) ? format(toSafeDate(selectedEvent.endDate), 'EEE, dd MMM yyyy HH:mm') : '—'}
+                  {toSafeDate(selectedEvent.endDate) ? format(toSafeDate(selectedEvent.endDate), 'dd/MM/yyyy, HH:mm') : '—'}
                 </Typography>
               </Box>
 

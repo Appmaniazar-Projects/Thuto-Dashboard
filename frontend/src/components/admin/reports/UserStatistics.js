@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
+import {
+  Box,
+  Typography,
   Card, 
   CardContent, 
   Grid,
@@ -22,7 +22,8 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { getAllUsers } from '../../../services/adminService';
+import adminService from '../../../services/adminService';
+import { formatDisplayDate } from '../../../utils/date';
 import StatCard from '../../common/StatCard';
 import { People, PersonAdd, TrendingUp, AccountCircle } from '@mui/icons-material';
 
@@ -99,7 +100,7 @@ const UserStatistics = () => {
       }).length;
       
       trends.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: formatDisplayDate(date),
         registrations
       });
     }
@@ -346,7 +347,7 @@ const UserStatistics = () => {
                         {(user.status || user.accountStatus || user.state) ? (user.status || user.accountStatus || user.state) : (isUserActive(user) ? 'active' : 'inactive')}
                       </TableCell>
                       <TableCell>
-                        {getUserCreatedAt(user) ? getUserCreatedAt(user).toLocaleDateString() : 'N/A'}
+                        {getUserCreatedAt(user) ? formatDisplayDate(getUserCreatedAt(user)) : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}

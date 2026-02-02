@@ -24,6 +24,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getAttendanceSubmissions } from '../../../services/attendanceService';
+import { formatDisplayDate } from '../../../utils/date';
 import StatCard from '../../common/StatCard';
 import { Assignment, CheckCircle, Schedule, Cancel } from '@mui/icons-material';
 
@@ -308,7 +309,7 @@ const AttendanceSubmissions = () => {
                       <TableCell>{submission.teacherName || 'N/A'}</TableCell>
                       <TableCell>{submission.className || 'N/A'}</TableCell>
                       <TableCell>
-                        {submission.date ? new Date(submission.date).toLocaleDateString() : 'N/A'}
+                        {submission.date ? formatDisplayDate(submission.date) : 'N/A'}
                       </TableCell>
                       <TableCell>
                         <Chip 
@@ -321,7 +322,7 @@ const AttendanceSubmissions = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        {submission.submittedAt ? new Date(submission.submittedAt).toLocaleDateString() : 'N/A'}
+                        {submission.submittedAt ? formatDisplayDate(submission.submittedAt) : 'N/A'}
                       </TableCell>
                     </TableRow>
                   ))}

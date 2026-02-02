@@ -9,10 +9,11 @@ import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useDropzone } from 'react-dropzone';
 import { 
-  getTeacherResources, 
   uploadResource,
   deleteResource
 } from '../../../services/teacherService';
+import { getSchoolResources } from '../../../services/resourceService';
+import { formatDisplayDateTime } from '../../../utils/date';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
 
@@ -21,16 +22,13 @@ const TeacherResources = () => {
   const [filteredResources, setFilteredResources] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
+  const [teacherSubjects, setTeacherSubjects] = useState([]);
+  const [teacherGrades, setTeacherGrades] = useState([]);
   const [filterSubject, setFilterSubject] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
-  const [selectedVisibilityFilter, setSelectedVisibilityFilter] = useState('');
 
   const [uploadSubject, setUploadSubject] = useState('');
   const [uploadGrade, setUploadGrade] = useState('');
-
-  const [visibilityType, setVisibilityType] = useState('PUBLIC');
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState([]);
-  const [selectedGradeIds, setSelectedGradeIds] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
@@ -48,7 +46,6 @@ const TeacherResources = () => {
     }
 
     const filtered = allResources.filter(resource => {
-      const normalizedVisibility = (resource.visibilityType || '').toString().toUpperCase();
       const resourceSubjectId = resource.subjectId ?? resource.subject?.id ?? null;
       const resourceGradeId = resource.gradeId ?? resource.grade?.id ?? null;
 
@@ -64,11 +61,6 @@ const TeacherResources = () => {
         ? [resourceGradeId]
         : [];
 
-      const matchesVisibility =
-        !selectedVisibilityFilter ||
-        (selectedVisibilityFilter === 'PUBLIC' && normalizedVisibility === 'PUBLIC') ||
-        (selectedVisibilityFilter === 'GRADE_SUBJECT' && normalizedVisibility === 'GRADE_SUBJECT');
-
       const matchesSubject =
         !filterSubject ||
         resourceSubjectIds.some((sid) => String(sid) === String(filterSubject));
@@ -76,11 +68,11 @@ const TeacherResources = () => {
         !filterGrade ||
         resourceGradeIds.some((gid) => String(gid) === String(filterGrade));
 
-      return matchesVisibility && matchesSubject && matchesGrade;
+      return matchesSubject && matchesGrade;
     });
 
     setFilteredResources(filtered);
-  }, [filterSubject, filterGrade, selectedVisibilityFilter, allResources]);
+  }, [filterSubject, filterGrade, allResources]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -117,8 +109,11 @@ const TeacherResources = () => {
       try {
         setLoading(true);
         setError('');
+        const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const teacherId = userInfo.id;
+
         const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getTeacherResources().catch(err => {
+          getSchoolResources().catch(err => {
             console.error('Error fetching resources:', err);
             return [];
           }),
@@ -131,6 +126,12 @@ const TeacherResources = () => {
             return [];
           })
         ]);
+
+        const [teacherSubjectsData, teacherGradesData] = await Promise.all([
+          teacherId ? subjectService.getSubjectsByTeacher(teacherId).catch(() => []) : Promise.resolve([]),
+          teacherId ? gradeService.getGradesByTeacher(teacherId).catch(() => []) : Promise.resolve([])
+        ]);
+
         const normalizedResources = Array.isArray(resourcesData)
           ? resourcesData
           : Array.isArray(resourcesData?.data)
@@ -142,6 +143,9 @@ const TeacherResources = () => {
         setAllResources(normalizedResources);
         setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
         setGrades(Array.isArray(gradesData) ? gradesData : []);
+
+        setTeacherSubjects(Array.isArray(teacherSubjectsData) ? teacherSubjectsData : []);
+        setTeacherGrades(Array.isArray(teacherGradesData) ? teacherGradesData : []);
         
         if (normalizedResources.length === 0) {
           setError('No resources found. Upload your first resource to get started!');
@@ -157,6 +161,9 @@ const TeacherResources = () => {
     fetchData();
   }, []);
 
+  const uploadSubjects = teacherSubjects.length ? teacherSubjects : subjects;
+  const uploadGrades = teacherGrades.length ? teacherGrades : grades;
+
   const handleUpload = async () => {
     if (!file) {
       setError('Please select a file to upload');
@@ -168,11 +175,9 @@ const TeacherResources = () => {
       return;
     }
 
-    if (visibilityType === 'GRADE_SUBJECT') {
-      if (!selectedSubjectIds.length || !selectedGradeIds.length) {
-        setError('Please select at least one grade and one subject');
-        return;
-      }
+    if (!uploadSubject || !uploadGrade) {
+      setError('Please select a grade and a subject');
+      return;
     }
     
     try {
@@ -180,16 +185,16 @@ const TeacherResources = () => {
       setError('');
       setSuccess('');
 
-      const selectedSubjectObj = subjects.find((s) => String(s.id) === String(selectedSubjectIds?.[0] ?? uploadSubject));
+      const selectedSubjectObj = uploadSubjects.find((s) => String(s.id) === String(uploadSubject));
       const resourceMetadata = {
         title: title.trim(),
         description: description.trim() || `Resource for ${selectedSubjectObj?.name || 'subject'}`,
         category: 'teaching-material',
-        visibilityType,
-        subjectId: visibilityType === 'GRADE_SUBJECT' ? '' : uploadSubject,
-        gradeId: visibilityType === 'GRADE_SUBJECT' ? '' : uploadGrade,
-        subjectIds: visibilityType === 'GRADE_SUBJECT' ? selectedSubjectIds : [],
-        gradeIds: visibilityType === 'GRADE_SUBJECT' ? selectedGradeIds : []
+        visibilityType: 'GRADE_SUBJECT',
+        subjectId: uploadSubject,
+        gradeId: uploadGrade,
+        subjectIds: [uploadSubject],
+        gradeIds: [uploadGrade]
       };
       
       const newResource = await uploadResource(file, resourceMetadata);
@@ -215,9 +220,6 @@ const TeacherResources = () => {
       setUploadGrade('');
       setTitle('');
       setDescription('');
-      setVisibilityType('PUBLIC');
-      setSelectedGradeIds([]);
-      setSelectedSubjectIds([]);
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
@@ -270,8 +272,6 @@ const TeacherResources = () => {
       setError('Failed to delete resource. Please try again.');
     }
   };
-
-  // Filtering is handled by the useEffect hook above
 
   const getFileType = (filename) => {
     if (!filename) return 'File';
@@ -327,90 +327,32 @@ const TeacherResources = () => {
       <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <TextField
           select
-          label="Visibility"
-          value={visibilityType}
-          onChange={(e) => {
-            const value = e.target.value;
-            setVisibilityType(value);
-            if (value === 'PUBLIC') {
-              setSelectedGradeIds([]);
-              setSelectedSubjectIds([]);
-            }
-          }}
+          label="Subject"
+          value={uploadSubject}
+          onChange={(e) => setUploadSubject(e.target.value)}
           sx={{ minWidth: 240 }}
           disabled={uploading}
         >
-          <MenuItem value="PUBLIC">Public (all teachers)</MenuItem>
-          <MenuItem value="GRADE_SUBJECT">Grade + Subject (restricted)</MenuItem>
+          {uploadSubjects.map((subject) => (
+            <MenuItem key={subject.id} value={subject.id}>
+              {subject.name}
+            </MenuItem>
+          ))}
         </TextField>
-
-        {visibilityType === 'GRADE_SUBJECT' ? (
-          <>
-            <TextField
-              select
-              label="Subjects"
-              SelectProps={{ multiple: true }}
-              value={selectedSubjectIds}
-              onChange={(e) => setSelectedSubjectIds(e.target.value)}
-              sx={{ minWidth: 240 }}
-              disabled={uploading}
-            >
-              {subjects.map((subject) => (
-                <MenuItem key={subject.id} value={String(subject.id)}>
-                  {subject.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Grades"
-              SelectProps={{ multiple: true }}
-              value={selectedGradeIds}
-              onChange={(e) => setSelectedGradeIds(e.target.value)}
-              sx={{ minWidth: 240 }}
-              disabled={uploading}
-            >
-              {grades.map((grade) => (
-                <MenuItem key={grade.id} value={String(grade.id)}>
-                  {grade.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </>
-        ) : (
-          <>
-            <TextField
-              select
-              label="Subject"
-              value={uploadSubject}
-              onChange={(e) => setUploadSubject(e.target.value)}
-              sx={{ minWidth: 200 }}
-              disabled={uploading}
-            >
-              <MenuItem value="">All subjects</MenuItem>
-              {subjects.map((subject) => (
-                <MenuItem key={subject.id} value={subject.id}>
-                  {subject.name}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Grade"
-              value={uploadGrade}
-              onChange={(e) => setUploadGrade(e.target.value)}
-              sx={{ minWidth: 200 }}
-              disabled={uploading}
-            >
-              <MenuItem value="">All grades</MenuItem>
-              {grades.map((grade) => (
-                <MenuItem key={grade.id} value={grade.id}>
-                  {grade.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          </>
-        )}
+        <TextField
+          select
+          label="Grade"
+          value={uploadGrade}
+          onChange={(e) => setUploadGrade(e.target.value)}
+          sx={{ minWidth: 240 }}
+          disabled={uploading}
+        >
+          {uploadGrades.map((grade) => (
+            <MenuItem key={grade.id} value={grade.id}>
+              {grade.name}
+            </MenuItem>
+          ))}
+        </TextField>
       </Box>
 
       <Box 
@@ -458,9 +400,8 @@ const TeacherResources = () => {
             !file ||
             uploading ||
             !title.trim() ||
-            (visibilityType === 'GRADE_SUBJECT'
-              ? !selectedGradeIds.length || !selectedSubjectIds.length
-              : false)
+            !uploadSubject ||
+            !uploadGrade
           }
           startIcon={uploading ? <CircularProgress size={20} /> : <CloudUploadIcon />}
         >
@@ -484,17 +425,6 @@ const TeacherResources = () => {
 
       {/* List Filters */}
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-        <TextField
-          select
-          label="Visibility"
-          value={selectedVisibilityFilter}
-          onChange={(e) => setSelectedVisibilityFilter(e.target.value)}
-          sx={{ minWidth: 220 }}
-        >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="PUBLIC">Public</MenuItem>
-          <MenuItem value="GRADE_SUBJECT">Grade + Subject</MenuItem>
-        </TextField>
         <TextField
           select
           label="Subject"
@@ -547,12 +477,6 @@ const TeacherResources = () => {
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       {displayName}
-                      {(resource.visibilityType || '').toString().toUpperCase() === 'PUBLIC' && (
-                        <Chip label="Public" size="small" variant="outlined" />
-                      )}
-                      {(resource.visibilityType || '').toString().toUpperCase() === 'GRADE_SUBJECT' && (
-                        <Chip label="Grade + Subject" size="small" variant="outlined" />
-                      )}
                       <Chip 
                         label={getFileType(fileNameForType)} 
                         size="small" 
@@ -592,7 +516,7 @@ const TeacherResources = () => {
                       </Box>
                       {(uploadedAt || fileSizeLabel) && (
                         <Box component="span" sx={{ display: 'block', color: 'text.secondary' }}>
-                          {uploadedAt && new Date(uploadedAt).toLocaleString()}
+                          {uploadedAt && (formatDisplayDateTime(uploadedAt) || '-')}
                           {uploadedAt && fileSizeLabel && ' \u2022 '}
                           {fileSizeLabel}
                         </Box>

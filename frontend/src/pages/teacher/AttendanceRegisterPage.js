@@ -321,7 +321,7 @@ const AttendanceRegisterPage = () => {
               {selectedGrade} ({students.length} students)
             </Typography>
             <Typography variant="body2">
-              Date: {format(attendanceDate, 'MMMM d, yyyy')}
+              Date: {format(attendanceDate, 'dd/MM/yyyy')}
             </Typography>
           </Paper>
         )}
@@ -335,7 +335,7 @@ const AttendanceRegisterPage = () => {
 
         {isLocked && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Attendance for {format(attendanceDate, 'dd MMM yyyy')} is locked. Teachers can only edit attendance within 48 hours.
+            Attendance for {format(attendanceDate, 'dd/MM/yyyy')} is locked. Teachers can only edit attendance within 48 hours.
           </Alert>
         )}
       </Box>

@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { getChildAttendance } from '../../services/parentService';
+import { formatDisplayDate } from '../../utils/date';
 
 const defaultRange = () => {
   const now = new Date();
@@ -124,7 +125,7 @@ const AttendanceView = ({ childId }) => {
                   <Stack spacing={1}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                       <Typography variant="subtitle2">
-                        {new Date(record.date).toLocaleDateString()}
+                        {formatDisplayDate(record.date)}
                       </Typography>
                       <Chip label={status || 'Unknown'} color={chipColor} size="small" />
                     </Stack>
@@ -154,7 +155,7 @@ const AttendanceView = ({ childId }) => {
               <TableBody>
                 {attendance.map((record) => (
                   <TableRow key={record.id}>
-                    <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{formatDisplayDate(record.date)}</TableCell>
                     <TableCell>{record.subject}</TableCell>
                     <TableCell>{record.status}</TableCell>
                     <TableCell>{record.teacherName}</TableCell>

@@ -25,10 +25,10 @@ import {
   FindInPage as FindInPageIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { downloadResource, getMyResources } from '../../services/resourceService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
+import { formatDisplayDate } from '../../utils/date';
 
 const ParentResources = () => {
   const [resources, setResources] = useState([]);
@@ -154,9 +154,8 @@ const ParentResources = () => {
   const getUploadDateLabel = (resource) => {
     const rawDate = resource?.uploadDate || resource?.uploadedAt || resource?.createdAt;
     if (!rawDate) return null;
-    const d = new Date(rawDate);
-    if (Number.isNaN(d.getTime())) return null;
-    return format(d, 'MMM d, yyyy');
+    const label = formatDisplayDate(rawDate);
+    return label || null;
   };
 
   const getFileName = (resource) => resource?.fileName || resource?.name || resource?.title || 'resource';

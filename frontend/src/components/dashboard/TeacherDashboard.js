@@ -23,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import teacherService from '../../services/teacherService';
+import { formatDisplayDate } from '../../utils/date';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import StatCard from '../common/StatCard';
@@ -221,12 +222,7 @@ const filteredResources = useMemo(() => {
           Welcome, {getUserDisplayName(user)}!
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
+          {formatDisplayDate(new Date())}
         </Typography>
       </Box>
 
@@ -301,7 +297,7 @@ const filteredResources = useMemo(() => {
                     <ListItemIcon><FolderIcon color="primary" /></ListItemIcon>
                     <ListItemText 
                       primary={resource.fileName}
-                      secondary={`Uploaded on: ${new Date(resource.uploadDate).toLocaleDateString()}`}
+                      secondary={`Uploaded on: ${formatDisplayDate(resource.uploadDate)}`}
                     />
                     <Button size="small" variant="outlined" href={resource.fileUrl} target="_blank">View</Button>
                   </ListItem>

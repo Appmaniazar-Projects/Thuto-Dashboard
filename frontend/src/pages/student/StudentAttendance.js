@@ -184,11 +184,8 @@ const StudentAttendance = () => {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       months.unshift({
         value: `${year}-${month}`,
-        label: date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long'
-        })
-      });
+        label: format(date, 'MM/yyyy')
+      })
       date.setMonth(date.getMonth() - 1);
     }
     return months;
@@ -355,7 +352,7 @@ const StudentAttendance = () => {
                       <Stack spacing={1}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
                           <Typography variant="subtitle2">
-                            {format(parseISO(record.date), 'MMMM d, yyyy')}
+                            {format(parseISO(record.date), 'dd/MM/yyyy')}
                           </Typography>
                           <Chip label={status || 'Unknown'} color={chipColor} size="small" />
                         </Stack>
@@ -389,7 +386,7 @@ const StudentAttendance = () => {
                   <TableBody>
                     {attendanceData.details.map((record) => (
                       <TableRow key={record.id}>
-                        <TableCell>{format(parseISO(record.date), 'MMMM d, yyyy')}</TableCell>
+                        <TableCell>{format(parseISO(record.date), 'dd/MM/yyyy')}</TableCell>
                         <TableCell>
                           <Chip
                             label={record.status}

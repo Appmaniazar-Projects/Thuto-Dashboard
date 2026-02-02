@@ -354,7 +354,7 @@ const StudentReports = () => {
                         return (
                           <>
                             <strong>Issued:</strong>{' '}
-                            {date ? format(date, 'MMM d, yyyy') : 'Date not available'}
+                            {date ? format(date, 'dd/MM/yyyy') : 'Date not available'}
                           </>
                         );
                       })()}

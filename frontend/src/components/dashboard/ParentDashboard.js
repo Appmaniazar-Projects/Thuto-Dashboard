@@ -20,6 +20,7 @@ import {
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import { formatDisplayDate, formatDisplayDateTime } from '../../utils/date';
 import parentService from '../../services/parentService';
 import StatCard from '../common/StatCard';
 
@@ -217,12 +218,24 @@ const ParentDashboard = () => {
 
   // Generate month options (all 12 months of the year)
   const monthOptions = [];
+  const monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+  ];
   for (let i = 0; i < 12; i++) {
-    const date = new Date();
-    date.setMonth(i);
     monthOptions.push({
       value: i + 1,
-      label: date.toLocaleString('default', { month: 'long' })
+      label: monthNames[i]
     });
   }
   const currentDate = new Date();
@@ -241,12 +254,7 @@ const ParentDashboard = () => {
           Parent Dashboard
         </Typography>
         <Typography variant="subtitle1" color="text.secondary">
-          {new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}
+          {formatDisplayDate(new Date())}
         </Typography>
 
         {children.length > 0 && attendanceWarning && (
@@ -441,11 +449,7 @@ const ParentDashboard = () => {
                         primary={
                           <Box display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="body1">
-                              {new Date(record.date).toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })}
+                              {formatDisplayDate(record.date)}
                             </Typography>
                             <Chip 
                               label={record.status?.toUpperCase() || 'UNKNOWN'}
@@ -576,12 +580,7 @@ const ParentDashboard = () => {
                       secondary={
                         <>
                           <Typography component="span" variant="body2" color="text.primary">
-                            {new Date(event.date).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatDisplayDateTime(event.date)}
                           </Typography>
                           {event.location && (
                             <Typography component="span" variant="body2" color="text.secondary" display="block">
@@ -655,11 +654,7 @@ const ParentDashboard = () => {
                             {announcement.message}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
-                            {new Date(announcement.date).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                            {formatDisplayDate(announcement.date)}
                           </Typography>
                         </>
                       }

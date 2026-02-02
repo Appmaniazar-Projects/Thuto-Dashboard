@@ -17,7 +17,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { formatDisplayDate } from '../../utils/date';
 import { getAttendanceStats } from '../../services/attendanceService';
 import { getMyProfile } from '../../services/studentService';
 import { getMyResources } from '../../services/resourceService';
@@ -26,7 +26,7 @@ import StatCard from '../common/StatCard';
 const StudentDashboard = () => {
   const { user } = useAuth();
   const theme = useTheme();
-  const today = format(new Date(), 'EEEE, MMMM d, yyyy');
+  const today = formatDisplayDate(new Date());
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

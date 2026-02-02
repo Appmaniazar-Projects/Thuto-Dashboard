@@ -31,7 +31,7 @@ import {
 import { getMyResources, downloadResource } from '../../services/resourceService';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
-import { format } from 'date-fns';
+import { formatDisplayDate } from '../../utils/date';
 import { useAuth } from '../../context/AuthContext';
 
 const Resources = () => {
@@ -216,9 +216,8 @@ const Resources = () => {
     if (!resource) return null;
     const rawDate = resource.uploadDate || resource.uploadedAt || resource.createdAt;
     if (!rawDate) return null;
-    const date = new Date(rawDate);
-    if (Number.isNaN(date.getTime())) return null;
-    return format(date, 'MMM d, yyyy');
+    const label = formatDisplayDate(rawDate);
+    return label || null;
   };
 
   if (isLoading) {

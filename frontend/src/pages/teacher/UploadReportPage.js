@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import { getMyStudents } from '../../services/teacherService';
-import NotesToSelfPanel from '../../components/teacher/NotesToSelfPanel';
+import { formatDisplayDate } from '../../utils/date';
 import { 
   uploadTeacherStudentReport, 
   getTeacherStudentReports,
@@ -37,7 +37,6 @@ const UploadReportPage = () => {
   const { user } = useAuth();
   const normalizedRole = (user?.role ?? '').toString().toLowerCase();
   const isTeacher = normalizedRole === 'teacher';
-  const teacherId = user?.id || user?.phoneNumber || '';
 
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState('');
@@ -215,8 +214,9 @@ const formatUploadDate = (uploadDate) => {
   if (Number.isNaN(date.getTime())) {
     return '-';
   }
-  
-  return date.toLocaleDateString();           
+
+  const label = formatDisplayDate(date);
+  return label || '-';
 };
 
 const handleUpload = async () => {
@@ -386,10 +386,6 @@ const handleUpload = async () => {
           </Grid>
         </Grid>
       </Paper>
-
-      <Box sx={{ mt: 3 }}>
-        <NotesToSelfPanel studentId={selectedStudent} teacherId={teacherId} />
-      </Box>
 
 <Paper sx={{ p: 3, mt: 3 }}>
   <Typography variant="h6" gutterBottom>Uploaded Reports</Typography>

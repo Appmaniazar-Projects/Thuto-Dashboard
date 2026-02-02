@@ -34,7 +34,7 @@ const safeDate = (value) => {
 const formatLastUpdated = (value) => {
   const d = safeDate(value);
   if (!d) return 'Last updated: —';
-  return `Last updated: ${format(d, 'dd MMM yyyy, HH:mm')}`;
+  return `Last updated: ${format(d, 'dd/MM/yyyy, HH:mm')}`;
 };
 
 const normalizeTeacherId = (teacherId) => {
