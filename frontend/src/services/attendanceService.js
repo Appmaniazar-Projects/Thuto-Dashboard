@@ -116,7 +116,7 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
  */
 export const getAttendanceHistory = async (gradeId) => {
   try {
-    const response = await api.get(`/attendance/grades/${gradeId}/history`);
+    const response = await api.get(`/attendance/${gradeId}/history`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch attendance history for grade ${gradeId}:`, error);
@@ -192,17 +192,49 @@ export const getAttendanceByGrade = async (gradeId) => {
 // ==================== PARENT ATTENDANCE ====================
 
 /**
- * Fetches attendance records for a specific child
- * @param {string} studentId - The ID of the student
- * @returns {Promise<Object>} Attendance data
+ * Fetches attendance records for a specific child within a date range.
+ *
+ * NOTE: Backend requires startDate and endDate query params.
+ *
+ * @param {string|number} studentId - The ID of the student
+ * @param {Date} startDate - Start date (inclusive)
+ * @param {Date} endDate - End date (inclusive)
+ * @returns {Promise<{summary?: object, details: Array}>} Normalized attendance data
  */
-export const getChildAttendance = async (studentId) => {
+export const getChildAttendance = async (studentId, startDate, endDate) => {
   try {
-    const response = await api.get(`/attendance/student/${studentId}`);
-    return response.data || {};
+    if (!studentId) {
+      throw new Error('Missing studentId for attendance fetch');
+    }
+    if (!(startDate instanceof Date) || Number.isNaN(startDate.getTime())) {
+      throw new Error('Missing/invalid startDate for attendance fetch');
+    }
+    if (!(endDate instanceof Date) || Number.isNaN(endDate.getTime())) {
+      throw new Error('Missing/invalid endDate for attendance fetch');
+    }
+
+    const response = await api.get(`/attendance/student/${studentId}`, {
+      params: {
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
+      }
+    });
+
+    const rawData = response.data;
+
+    // Backend currently returns List<Attendance>. Normalize to { details }.
+    if (Array.isArray(rawData)) {
+      return { details: rawData };
+    }
+
+    if (rawData && Array.isArray(rawData.details)) {
+      return { details: rawData.details, summary: rawData.summary };
+    }
+
+    return { details: [] };
   } catch (error) {
     console.error(`Failed to fetch attendance for student ${studentId}:`, error);
-    throw new Error('Failed to load attendance records.');
+    throw error;
   }
 };
 
@@ -268,23 +300,7 @@ export const getAttendanceSubmissions = async () => {
  */
 export const updateAttendanceSubmission = async (submissionId, updateData) => {
   try {
-    const storedUser = localStorage.getItem('user');
-    const userData = storedUser ? JSON.parse(storedUser) : null;
-    const schoolId =
-      localStorage.getItem('schoolId') ||
-      userData?.school?.id ||
-      userData?.schoolId ||
-      null;
-    const adminEmail = userData?.email || null;
-
-    const params = {
-      ...(schoolId ? { schoolId } : {}),
-      ...(adminEmail ? { adminEmail } : {})
-    };
-
-    const response = await api.put(`/attendance/${submissionId}`, updateData, {
-      params: Object.keys(params).length > 0 ? params : undefined
-    });
+    const response = await api.put(`/attendance/${submissionId}`, updateData);
     return response.data;
   } catch (error) {
     console.error('Failed to update attendance submission:', error);

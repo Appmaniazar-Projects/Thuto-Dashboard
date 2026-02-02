@@ -2,8 +2,9 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box, Paper, Typography, Grid, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Chip, FormControl, InputLabel, Select, MenuItem,
-  Card, CardContent, Divider, CircularProgress, Alert, Button, IconButton
+  Divider, CircularProgress, Alert, Button, TextField
 } from '@mui/material';
+
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as PresentIcon,
@@ -23,10 +24,22 @@ const ParentAttendance = () => {
   const [children, setChildren] = useState([]);
   const [attendanceData, setAttendanceData] = useState({});
   const [selectedChildId, setSelectedChildId] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [rangeError, setRangeError] = useState('');
+
+  const defaultRange = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    };
+  };
+
+  const [startDate, setStartDate] = useState(() => defaultRange().startDate);
+  const [endDate, setEndDate] = useState(() => defaultRange().endDate);
 
   const queryStudentId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -43,18 +56,48 @@ const ParentAttendance = () => {
   const fetchAttendanceForChild = useCallback(async (childId) => {
     if (!childId) return;
 
-    const startDate = new Date(selectedYear, selectedMonth, 1);
-    const endDate = new Date(selectedYear, selectedMonth + 1, 0);
+    setRangeError('');
+
+    if (!startDate || !endDate) {
+      setRangeError('Please select a start date and end date.');
+      setAttendanceData((prev) => ({
+        ...prev,
+        [childId]: []
+      }));
+      return;
+    }
+
+    const startDt = new Date(startDate);
+    const endDt = new Date(endDate);
+
+    if (Number.isNaN(startDt.getTime()) || Number.isNaN(endDt.getTime())) {
+      setRangeError('Please select a valid date range.');
+      setAttendanceData((prev) => ({
+        ...prev,
+        [childId]: []
+      }));
+      return;
+    }
+
+    if (startDt.getTime() > endDt.getTime()) {
+      setRangeError('Start date must be before end date.');
+      setAttendanceData((prev) => ({
+        ...prev,
+        [childId]: []
+      }));
+      return;
+    }
 
     const data = await parentService.getChildAttendance(childId, { startDate, endDate });
     setAttendanceData(prev => ({
       ...prev,
       [childId]: Array.isArray(data) ? data : []
     }));
-  }, [selectedMonth, selectedYear]);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     const loadInitialData = async () => {
+
       console.log('ParentReportsPage - Parent object:', parent);
       console.log('ParentReportsPage - Phone number:', parent?.phoneNumber);
       
@@ -89,7 +132,6 @@ const ParentAttendance = () => {
           const initialChildId = queryExists ? queryId : childProfiles[0].id;
 
           setSelectedChildId(initialChildId);
-          await fetchAttendanceForChild(initialChildId);
         } else {
           setError('No children are linked to your profile.');
         }
@@ -103,45 +145,23 @@ const ParentAttendance = () => {
     };
 
     loadInitialData();
-  }, [parent, queryStudentId, fetchAttendanceForChild]);
+  }, [parent, queryStudentId]);
 
   useEffect(() => {
     if (!selectedChildId) return;
     fetchAttendanceForChild(selectedChildId);
-  }, [selectedChildId, fetchAttendanceForChild]);
+  }, [selectedChildId, startDate, endDate, fetchAttendanceForChild]);
 
   const handleChildChange = (event) => {
     setSelectedChildId(event.target.value);
   };
 
-  const handleMonthChange = (event) => {
-    setSelectedMonth(event.target.value);
+  const handleStartDateChange = (event) => {
+    setStartDate(event.target.value);
   };
 
-  const handleYearChange = (event) => {
-    setSelectedYear(event.target.value);
-  };
-
-  // Generate all 12 months of the year
-  const generateMonthOptions = () => {
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return monthNames.map((name, index) => ({
-      value: index,
-      label: name
-    }));
-  };
-
-  // Generate year options (current year and past 5 years)
-  const generateYearOptions = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [];
-    for (let i = 0; i < 6; i++) {
-      years.push(currentYear - i);
-    }
-    return years;
+  const handleEndDateChange = (event) => {
+    setEndDate(event.target.value);
   };
 
   const getStatusColor = (status) => {
@@ -162,15 +182,22 @@ const ParentAttendance = () => {
     }
   };
 
-  // Filter attendance data by selected month and year
   const currentChildData = useMemo(() => {
     const allData = attendanceData[selectedChildId] || [];
-    return allData.filter(record => {
+    if (!startDate || !endDate) return allData;
+    const from = new Date(startDate);
+    const to = new Date(endDate);
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return allData;
+    const fromTime = from.getTime();
+    const toTime = to.getTime();
+
+    return allData.filter((record) => {
       const recordDate = new Date(record.date);
-      return recordDate.getMonth() === selectedMonth && 
-             recordDate.getFullYear() === selectedYear;
+      if (Number.isNaN(recordDate.getTime())) return false;
+      const t = recordDate.getTime();
+      return t >= fromTime && t <= toTime;
     });
-  }, [attendanceData, selectedChildId, selectedMonth, selectedYear]);
+  }, [attendanceData, selectedChildId, startDate, endDate]);
 
   const selectedChildInfo = children.find(child => child.id === selectedChildId);
 
@@ -247,35 +274,12 @@ const ParentAttendance = () => {
             Track your children's daily attendance records and view attendance statistics.
           </Typography>
         </Paper>
-
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell>Student Name</TableCell>
-                <TableCell>Grade</TableCell>
-                <TableCell>Present</TableCell>
-                <TableCell>Absent</TableCell>
-                <TableCell>Late</TableCell>
-                <TableCell>Total</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    0
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
-  if (children.length === 0 && !loading) {
+  if (children.length === 0) {
     return <Alert severity="info" sx={{ m: 3 }}>No children have been assigned to your profile yet.</Alert>;
   }
 
@@ -289,7 +293,7 @@ const ParentAttendance = () => {
         <Typography variant="body1" color="text.secondary" paragraph>
           Track your children's daily attendance records and view attendance statistics.
         </Typography>
-        
+
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={4}>
             <FormControl fullWidth>
@@ -300,7 +304,7 @@ const ParentAttendance = () => {
                 label="Select Child"
                 onChange={handleChildChange}
               >
-                {children.map(child => (
+                {children.map((child) => (
                   <MenuItem key={child.id} value={child.id}>
                     {child.name}
                   </MenuItem>
@@ -308,40 +312,31 @@ const ParentAttendance = () => {
               </Select>
             </FormControl>
           </Grid>
+
           <Grid item xs={12} md={3}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="month-select-label">Month</InputLabel>
-              <Select
-                labelId="month-select-label"
-                value={selectedMonth}
-                label="Month"
-                onChange={handleMonthChange}
-              >
-                {generateMonthOptions().map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField
+              fullWidth
+              size="small"
+              label="Start"
+              type="date"
+              value={startDate}
+              onChange={handleStartDateChange}
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
+
           <Grid item xs={12} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel id="year-select-label">Year</InputLabel>
-              <Select
-                labelId="year-select-label"
-                value={selectedYear}
-                label="Year"
-                onChange={handleYearChange}
-              >
-                {generateYearOptions().map((year) => (
-                  <MenuItem key={year} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField
+              fullWidth
+              size="small"
+              label="End"
+              type="date"
+              value={endDate}
+              onChange={handleEndDateChange}
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
+
           <Grid item xs={12} md={3}>
             <Button
               variant="outlined"
@@ -353,10 +348,15 @@ const ParentAttendance = () => {
             </Button>
           </Grid>
         </Grid>
+
+        {rangeError && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            {rangeError}
+          </Alert>
+        )}
       </Paper>
 
       <Grid container spacing={3}>
-        {/* Left Column: Attendance Records */}
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
@@ -377,9 +377,7 @@ const ParentAttendance = () => {
                   {currentChildData.length > 0 ? (
                     currentChildData.map((record, index) => (
                       <TableRow key={index}>
-                        <TableCell>
-                          {formatDisplayDate(record.date)}
-                        </TableCell>
+                        <TableCell>{formatDisplayDate(record.date)}</TableCell>
                         <TableCell>
                           <Chip
                             icon={getStatusIcon(record.status)}
@@ -396,7 +394,7 @@ const ParentAttendance = () => {
                     <TableRow>
                       <TableCell colSpan={4} align="center">
                         <Typography sx={{ p: 3, color: 'text.secondary' }}>
-                          No attendance records found for this month.
+                          No attendance records found for the selected date range.
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -407,7 +405,6 @@ const ParentAttendance = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Attendance Summary */}
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
@@ -436,7 +433,9 @@ const ParentAttendance = () => {
               </Box>
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Total School Days:</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  Total School Days:
+                </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
                   {attendanceSummary.Total}
                 </Typography>
