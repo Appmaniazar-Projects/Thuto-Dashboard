@@ -28,6 +28,7 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import SchoolIcon from '@mui/icons-material/School';
 import SubjectIcon from '@mui/icons-material/Subject';
 import SchoolLogo from '../common/SchoolLogo';
@@ -76,6 +77,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
         { path: '/teacher/attendance', icon: <AssignmentIcon />, text: 'Attendance' },
         { path: '/teacher/resources', icon: <FolderIcon />, text: 'Resources' },
         { path: '/teacher/upload-report', icon: <CloudUploadIcon />, text: 'Upload Report' },
+        { path: '/teacher/notes', icon: <NoteAltIcon />, text: 'Notes' },
       ],
       parent: [
         { path: '/parent/children', icon: <PeopleIcon />, text: 'My Children' },

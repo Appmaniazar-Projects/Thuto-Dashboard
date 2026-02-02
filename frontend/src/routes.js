@@ -30,6 +30,7 @@ const ParentResources = lazy(() => import('./pages/parent/Resources'));
 const AttendanceRegisterPage = lazy(() => import('./pages/teacher/AttendanceRegisterPage'));
 const UploadReportPage = lazy(() => import('./pages/teacher/UploadReportPage'));
 const UploadedResources = lazy(() => import('./components/dashboard/teacher/Resources'));
+const TeacherNotesPage = lazy(() => import('./pages/teacher/TeacherNotesPage'));
 
 const UserManagementPage = lazy(() => import('./pages/admin/Users'));
 const AdminReportsPage = lazy(() => 
@@ -108,6 +109,7 @@ const protectedRoutes = [
   { path: '/teacher/attendance', element: <AttendanceRegisterPage /> },
   { path: '/teacher/resources', element: <UploadedResources /> },
   { path: '/teacher/upload-report', element: <UploadReportPage /> },
+  { path: '/teacher/notes', element: <TeacherNotesPage /> },
   
 
   // Admin

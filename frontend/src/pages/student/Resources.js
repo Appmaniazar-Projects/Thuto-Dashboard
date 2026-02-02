@@ -100,8 +100,15 @@ const Resources = () => {
 
     result = result.filter((r) => {
       const visibility = (r.visibilityType || '').toString().toUpperCase();
-      if (!visibility || visibility === 'PUBLIC') return true;
-      if (visibility !== 'GRADE_SUBJECT') return true;
+
+      // Enforce school scoping when backend includes it on the resource
+      if (user?.schoolId && r?.schoolId && String(r.schoolId) !== String(user.schoolId)) {
+        return false;
+      }
+
+      // Students should only see resources linked to Grade + Subject
+      if (!visibility || visibility === 'PUBLIC') return false;
+      if (visibility !== 'GRADE_SUBJECT') return false;
 
       const resourceGradeIds = Array.isArray(r.gradeIds)
         ? r.gradeIds

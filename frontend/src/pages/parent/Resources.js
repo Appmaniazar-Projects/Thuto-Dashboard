@@ -78,6 +78,20 @@ const ParentResources = () => {
   useEffect(() => {
     let result = [...resources];
 
+    // Parents should only see resources linked to Grade + Subject.
+    // Also enforce school scoping when backend includes schoolId on resource objects.
+    const parentInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const parentSchoolId = parentInfo?.schoolId;
+
+    result = result.filter((r) => {
+      if (parentSchoolId && r?.schoolId && String(r.schoolId) !== String(parentSchoolId)) {
+        return false;
+      }
+
+      const visibility = (r?.visibilityType || '').toString().toUpperCase();
+      return visibility === 'GRADE_SUBJECT';
+    });
+
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       result = result.filter((r) => {
