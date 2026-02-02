@@ -79,7 +79,9 @@ const LandingPage = () => {
         flexDirection: 'column',
         p: 0,
         m: 0,
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
         '&::before': {
           content: '""',
           position: 'fixed',
