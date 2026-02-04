@@ -1,6 +1,6 @@
 import api from './api';
 
-const API_BASE = '/teacher/notes';
+const API_BASE = '/teacher/student-notes';
 
 const coerceNotesArray = (data) => {
   if (Array.isArray(data)) return data;
@@ -10,7 +10,7 @@ const coerceNotesArray = (data) => {
 };
 
 export const getTeacherNotes = async ({ studentId, teacherId }) => {
-  const response = await api.get(API_BASE, {
+  const response = await api.get(`${API_BASE}/student/notes`, {
     params: {
       studentId,
       teacherId,
@@ -20,7 +20,7 @@ export const getTeacherNotes = async ({ studentId, teacherId }) => {
 };
 
 export const createTeacherNote = async ({ studentId, teacherId, content }) => {
-  const response = await api.post(API_BASE, {
+  const response = await api.post(`${API_BASE}/create`, {
     studentId,
     teacherId,
     content,
@@ -29,11 +29,9 @@ export const createTeacherNote = async ({ studentId, teacherId, content }) => {
 };
 
 export const updateTeacherNote = async ({ noteId, content }) => {
-  const response = await api.put(`${API_BASE}/${noteId}`, { content });
-  return response.data;
+  throw new Error('Updating notes is not supported by the current backend endpoints.');
 };
 
 export const deleteTeacherNote = async ({ noteId }) => {
-  const response = await api.delete(`${API_BASE}/${noteId}`);
-  return response.data;
+  throw new Error('Deleting notes is not supported by the current backend endpoints.');
 };

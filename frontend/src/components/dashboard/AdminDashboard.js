@@ -20,7 +20,7 @@ import adminService from '../../services/adminService';
 import { fetchAllAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
-import CalendarPanel from './admin/CalendarPanel';
+import EventsPanel from './admin/EventsPanel';
 import StatCard from '../common/StatCard';
 import { getDefaultNumber, getUserDisplayName, formatPercentage, getDefaultError } from '../../utils/appText';
 
@@ -394,7 +394,7 @@ const AdminDashboard = () => {
               </Button>
             </List>
           </Paper>
-          <CalendarPanel />
+          <EventsPanel />
         </Grid>
       </Grid>
     </Box>

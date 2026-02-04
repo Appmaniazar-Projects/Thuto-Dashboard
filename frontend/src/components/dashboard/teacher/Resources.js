@@ -12,7 +12,7 @@ import {
   uploadResource,
   deleteResource
 } from '../../../services/teacherService';
-import { getSchoolResources } from '../../../services/resourceService';
+import { getResourcesByGrade, getSchoolResources } from '../../../services/resourceService';
 import { formatDisplayDateTime } from '../../../utils/date';
 import subjectService from '../../../services/subjectService';
 import gradeService from '../../../services/gradeService';
@@ -111,12 +111,9 @@ const TeacherResources = () => {
         setError('');
         const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
         const teacherId = userInfo.id;
+        const schoolId = userInfo?.schoolId || localStorage.getItem('schoolId');
 
-        const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getSchoolResources().catch(err => {
-            console.error('Error fetching resources:', err);
-            return [];
-          }),
+        const [subjectsData, gradesData] = await Promise.all([
           subjectService.getSchoolSubjects().catch(err => {
             console.error('Error fetching subjects:', err);
             return [];
@@ -131,6 +128,30 @@ const TeacherResources = () => {
           teacherId ? subjectService.getSubjectsByTeacher(teacherId).catch(() => []) : Promise.resolve([]),
           teacherId ? gradeService.getGradesByTeacher(teacherId).catch(() => []) : Promise.resolve([])
         ]);
+
+        let resourcesData = [];
+        const teacherGradeIds = Array.isArray(teacherGradesData)
+          ? teacherGradesData.map((g) => g?.id).filter(Boolean)
+          : [];
+
+        if (teacherGradeIds.length) {
+          const results = await Promise.allSettled(
+            teacherGradeIds.map((gid) => getResourcesByGrade(gid, schoolId))
+          );
+          const merged = results.flatMap((r) => (r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : (r.value?.data || r.value?.resources || [])) : []));
+          const seen = new Set();
+          resourcesData = merged.filter((r) => {
+            const key = r?.id ?? `${r?.fileUrl ?? ''}-${r?.fileName ?? ''}-${r?.title ?? ''}`;
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        } else {
+          resourcesData = await getSchoolResources().catch(err => {
+            console.error('Error fetching resources:', err);
+            return [];
+          });
+        }
 
         const normalizedResources = Array.isArray(resourcesData)
           ? resourcesData

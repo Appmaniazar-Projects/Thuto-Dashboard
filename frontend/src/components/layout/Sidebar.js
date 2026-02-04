@@ -57,7 +57,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
 
     const commonItems = [
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
-            { path: '/calendar', icon: <EventIcon />, text: 'Events' },
+            { path: '/events', icon: <EventIcon />, text: 'Events' },
             { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
     ];
 

@@ -1,6 +1,6 @@
 import api from './api';
 import fileUploadService from './fileUploadService';
-import { getMyResources } from './resourceService';
+import { getResourcesByGrade, getSchoolResources } from './resourceService';
 
 /**
  * Fetches the students assigned to the logged-in teacher.
@@ -22,8 +22,39 @@ export const getMyStudents = async () => {
  */
 export const getTeacherResources = async () => {
   try {
-    // Reuse generic resource service so all roles hit the same endpoint
-    return await getMyResources();
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = userInfo?.schoolId || localStorage.getItem('schoolId');
+
+    const gradeIds = Array.isArray(userInfo?.gradeIds)
+      ? userInfo.gradeIds.filter(Boolean)
+      : userInfo?.gradeId
+      ? [userInfo.gradeId]
+      : [];
+
+    if (!gradeIds.length) {
+      return await getSchoolResources(schoolId).catch(() => []);
+    }
+
+    const results = await Promise.allSettled(
+      gradeIds.map((gid) => getResourcesByGrade(gid, schoolId))
+    );
+
+    const merged = results.flatMap((r) => {
+      if (r.status !== 'fulfilled') return [];
+      const value = r.value;
+      if (Array.isArray(value)) return value;
+      if (Array.isArray(value?.data)) return value.data;
+      if (Array.isArray(value?.resources)) return value.resources;
+      return [];
+    });
+
+    const seen = new Set();
+    return merged.filter((res) => {
+      const key = res?.id ?? `${res?.fileUrl ?? ''}-${res?.fileName ?? ''}-${res?.title ?? ''}`;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   } catch (error) {
     console.error('Failed to fetch teacher resources:', error);
     throw error;

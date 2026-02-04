@@ -10,7 +10,7 @@ const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
 const LandingPage = lazy(() => import('./components/auth/LandingPage'));
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const EventsPage = lazy(() => import('./pages/EventsPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -83,12 +83,12 @@ export const publicRoutes = [
 const protectedRoutes = [
   { path: '/', element: <Navigate to="/dashboard" replace /> },
   { path: '/dashboard', element: <DashboardPage /> },
-  { path: '/calendar', element: <CalendarPage /> },
+  { path: '/events', element: <EventsPage /> },
   { path: '/messages', element: <MessagesPage /> },
   { path: '/profile', element: <ProfilePage /> },
   { path: '/settings', element: <SettingsPage /> },
   { path: '/events/create', element: <CreateEventPage /> },
-  { path: '/calendar/event/new', element: <CreateEventPage /> },
+  { path: '/calendar/event/new', element: <Navigate to="/events/create" replace /> },
   { path: '/announcements', element: <AnnouncementsPage /> },
   { path: '/announcements/create', element: <CreateAnnouncementPage /> },
 
@@ -135,7 +135,10 @@ const protectedRoutes = [
   { path: '/resources', element: <Navigate to="/teacher/resources" replace /> },
   { path: '/users', element: <Navigate to="/admin/users" replace /> },
   { path: '/reports', element: <Navigate to="/admin/reports" replace /> },
-  { path: '/system', element: <Navigate to="/admin/settings" replace /> }
+  { path: '/system', element: <Navigate to="/admin/settings" replace /> },
+
+  // Backward-compatible legacy routes
+  { path: '/calendar', element: <Navigate to="/events" replace /> }
 ];
 
 // Create route elements with proper layout and suspense

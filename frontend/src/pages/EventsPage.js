@@ -46,6 +46,7 @@ import PageTitle from '../components/common/PageTitle';
 import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   cancelEventSignup,
   createEvent,
@@ -54,7 +55,7 @@ import {
   setTeacherAttendanceStatus,
   signUpForEventRole,
   updateEvent,
-} from '../services/calendarService';
+} from '../services/eventService';
 import { useSnackbar } from 'notistack';
 
 const locales = {
@@ -117,17 +118,20 @@ const getHasParentSignup = (event) => {
   );
 };
 
-const CalendarPage = () => {
+const EventsPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { currentUser } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const role = (currentUser?.role ?? '').toString().toLowerCase();
   const isAdmin = role === 'admin' || role === 'administrator';
   const isParent = role === 'parent';
   const isTeacher = role === 'teacher';
   const isStudent = role === 'student';
+  const canCreateEvents = isAdmin || isTeacher;
 
   const [viewMode, setViewMode] = useState(isMobile ? 'agenda' : 'month');
   const [anchorDate, setAnchorDate] = useState(() => new Date());
@@ -191,6 +195,27 @@ const CalendarPage = () => {
       loadEvents();
     }
   }, [apiFailed, loadEvents]);
+
+  useEffect(() => {
+    const shouldOpen = searchParams.get('create') === '1';
+    if (!shouldOpen) return;
+    if (!canCreateEvents) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('create');
+        return next;
+      }, { replace: true });
+      return;
+    }
+
+    openCreate(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('create');
+      return next;
+    }, { replace: true });
+    navigate('/events', { replace: true });
+  }, [canCreateEvents, navigate, openCreate, searchParams, setSearchParams]);
 
   const rbcEvents = useMemo(() => {
     return (events || [])
@@ -290,7 +315,7 @@ const CalendarPage = () => {
 
   const submitEvent = async () => {
     try {
-      if (!isAdmin) return;
+      if (!canCreateEvents) return;
 
       const start = formData.startDate ? new Date(formData.startDate) : null;
       const end = formData.endDate ? new Date(formData.endDate) : null;
@@ -450,7 +475,7 @@ const CalendarPage = () => {
           </ToggleButton>
         </ToggleButtonGroup>
 
-        {isAdmin && (
+        {canCreateEvents && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -538,9 +563,9 @@ const CalendarPage = () => {
             view="month"
             date={anchorDate}
             onNavigate={(d) => setAnchorDate(d)}
-            selectable={isAdmin}
+            selectable={canCreateEvents}
             onSelectEvent={(ev) => openDetails(ev)}
-            onSelectSlot={(slotInfo) => isAdmin && openCreate(slotInfo)}
+            onSelectSlot={(slotInfo) => canCreateEvents && openCreate(slotInfo)}
             popup
           />
         </Box>
@@ -679,9 +704,9 @@ const CalendarPage = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          {!isAdmin ? (
+          {!canCreateEvents ? (
             <Typography variant="body2" color="text.secondary">
-              Only admins can create or edit events.
+              Only admins and teachers can create or edit events.
             </Typography>
           ) : (
             <Box sx={{ pt: 1 }}>
@@ -811,7 +836,7 @@ const CalendarPage = () => {
             <Button
               variant="contained"
               onClick={submitEvent}
-              disabled={!isAdmin}
+              disabled={!canCreateEvents}
               sx={{ minHeight: 44, ml: 'auto' }}
             >
               Save
@@ -823,4 +848,4 @@ const CalendarPage = () => {
   );
 };
 
-export default CalendarPage;
+export default EventsPage;

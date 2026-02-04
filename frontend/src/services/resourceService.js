@@ -22,7 +22,26 @@ const getCurrentUserId = () => {
  * Helper function to get current school ID from localStorage
  */
 const getCurrentSchoolId = () => {
-  const schoolId = localStorage.getItem('schoolId');
+  const storedUser = localStorage.getItem('user');
+  const storedSuperAdmin = localStorage.getItem('superAdmin');
+  let schoolId = localStorage.getItem('schoolId');
+
+  try {
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    if (userInfo?.schoolId) schoolId = userInfo.schoolId;
+  } catch (e) {
+    // ignore
+  }
+
+  if (!schoolId) {
+    try {
+      const superAdminInfo = storedSuperAdmin ? JSON.parse(storedSuperAdmin) : null;
+      if (superAdminInfo?.schoolId) schoolId = superAdminInfo.schoolId;
+    } catch (e) {
+      // ignore
+    }
+  }
+
   if (!schoolId) {
     throw new Error('School ID not found. Please log in again.');
   }
@@ -40,18 +59,47 @@ const getCurrentSchoolId = () => {
  */
 export const getMyResources = async () => {
   try {
-    const response = await api.get('/resources/my-resources', {
-      params: {
-        userId: getCurrentUserId(), // Pass as query param if backend needs it
-      }
-    });
-    return response.data;
+    // Ensure we have a logged-in user context
+    getCurrentUserId();
+
+    const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = getCurrentSchoolId();
+
+    const gradeId = userInfo?.gradeId ?? userInfo?.grade?.id ?? userInfo?.grade ?? null;
+    const subjectIds = Array.isArray(userInfo?.subjectIds)
+      ? userInfo.subjectIds.filter(Boolean)
+      : Array.isArray(userInfo?.subjects)
+      ? userInfo.subjects.map((s) => s?.id).filter(Boolean)
+      : [];
+
+    if (gradeId && subjectIds.length) {
+      const results = await Promise.allSettled(
+        subjectIds.map((sid) => getResourcesBySubjectAndGrade(sid, gradeId, schoolId))
+      );
+      const merged = results.flatMap((r) => (r.status === 'fulfilled' ? (Array.isArray(r.value) ? r.value : (r.value?.data || r.value?.resources || [])) : []));
+      const seen = new Set();
+      return merged.filter((res) => {
+        const key = res?.id ?? `${res?.fileUrl ?? ''}-${res?.fileName ?? ''}-${res?.title ?? ''}`;
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    if (gradeId) {
+      return await getResourcesByGrade(gradeId, schoolId);
+    }
+
+    if (subjectIds.length) {
+      return await getResourcesBySubject(subjectIds[0], schoolId);
+    }
+
+    return [];
   } catch (error) {
     console.error('Failed to fetch my resources:', error);
     throw error;
   }
 };
-
 
 /**
  * Get all resources for a specific school
@@ -66,6 +114,61 @@ export const getSchoolResources = async (schoolId = null) => {
     return response.data;
   } catch (error) {
     console.error('Failed to fetch school resources:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get resources by subject for a school
+ * Matches: GET /api/resources/subject/{subjectId}?schoolId={schoolId}
+ */
+export const getResourcesBySubject = async (subjectId, schoolId = null) => {
+  try {
+    if (!subjectId) throw new Error('subjectId is required');
+    const targetSchoolId = schoolId || getCurrentSchoolId();
+    const response = await api.get(`/resources/subject/${subjectId}`, {
+      params: { schoolId: targetSchoolId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch resources by subject:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get resources by grade for a school
+ * Matches: GET /api/resources/grade/{gradeId}?schoolId={schoolId}
+ */
+export const getResourcesByGrade = async (gradeId, schoolId = null) => {
+  try {
+    if (!gradeId) throw new Error('gradeId is required');
+    const targetSchoolId = schoolId || getCurrentSchoolId();
+    const response = await api.get(`/resources/grade/${gradeId}`, {
+      params: { schoolId: targetSchoolId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch resources by grade:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get resources by subject + grade for a school
+ * Matches: GET /api/resources/subject/{subjectId}/grade/{gradeId}?schoolId={schoolId}
+ */
+export const getResourcesBySubjectAndGrade = async (subjectId, gradeId, schoolId = null) => {
+  try {
+    if (!subjectId) throw new Error('subjectId is required');
+    if (!gradeId) throw new Error('gradeId is required');
+    const targetSchoolId = schoolId || getCurrentSchoolId();
+    const response = await api.get(`/resources/subject/${subjectId}/grade/${gradeId}`, {
+      params: { schoolId: targetSchoolId },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch resources by subject and grade:', error);
     throw error;
   }
 };
@@ -234,6 +337,9 @@ const resourceService = {
   // Backend API operations
   getMyResources,
   getSchoolResources,
+  getResourcesBySubject,
+  getResourcesByGrade,
+  getResourcesBySubjectAndGrade,
   uploadResource,
   
   // Combined operations (Backend + Firebase)

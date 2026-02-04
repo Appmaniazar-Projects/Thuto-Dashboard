@@ -543,7 +543,7 @@ const ParentDashboard = () => {
               <Button 
                 size="small" 
                 endIcon={<ChevronRightIcon />}
-                onClick={() => navigate('/calendar')}
+                onClick={() => navigate('/events')}
               >
                 View All
               </Button>

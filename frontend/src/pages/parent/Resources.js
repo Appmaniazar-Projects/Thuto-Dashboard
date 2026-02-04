@@ -25,7 +25,12 @@ import {
   FindInPage as FindInPageIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import { downloadResource, getMyResources } from '../../services/resourceService';
+import {
+  downloadResource,
+  getResourcesByGrade,
+  getResourcesBySubject,
+  getResourcesBySubjectAndGrade,
+} from '../../services/resourceService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import { formatDisplayDate } from '../../utils/date';
@@ -41,27 +46,24 @@ const ParentResources = () => {
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
 
+  const normalizeResources = (resourcesData) => {
+    if (Array.isArray(resourcesData)) return resourcesData;
+    if (Array.isArray(resourcesData?.data)) return resourcesData.data;
+    if (Array.isArray(resourcesData?.resources)) return resourcesData.resources;
+    return [];
+  };
+
   useEffect(() => {
-    const fetchResources = async () => {
+    const fetchMeta = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getMyResources().catch(() => []),
+        const [subjectsData, gradesData] = await Promise.all([
           subjectService.getSchoolSubjects().catch(() => []),
           gradeService.getSchoolGrades().catch(() => []),
         ]);
 
-        const normalizedResources = Array.isArray(resourcesData)
-          ? resourcesData
-          : Array.isArray(resourcesData?.data)
-          ? resourcesData.data
-          : Array.isArray(resourcesData?.resources)
-          ? resourcesData.resources
-          : [];
-
-        setResources(normalizedResources);
         setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
         setGrades(Array.isArray(gradesData) ? gradesData : []);
       } catch (err) {
@@ -72,8 +74,56 @@ const ParentResources = () => {
       }
     };
 
-    fetchResources();
+    fetchMeta();
   }, []);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const parentInfo = JSON.parse(localStorage.getItem('user') || '{}');
+        const schoolId = parentInfo?.schoolId || localStorage.getItem('schoolId');
+
+        let resourcesData = [];
+        if (selectedSubject !== 'all' && selectedGrade !== 'all') {
+          resourcesData = await getResourcesBySubjectAndGrade(selectedSubject, selectedGrade, schoolId);
+        } else if (selectedSubject !== 'all') {
+          resourcesData = await getResourcesBySubject(selectedSubject, schoolId);
+        } else if (selectedGrade !== 'all') {
+          resourcesData = await getResourcesByGrade(selectedGrade, schoolId);
+        } else {
+          const gradeIds = (grades || []).map((g) => g?.id).filter(Boolean);
+          if (!gradeIds.length) {
+            resourcesData = [];
+          } else {
+            const results = await Promise.allSettled(
+              gradeIds.map((gid) => getResourcesByGrade(gid, schoolId))
+            );
+            const merged = results.flatMap((r) => (r.status === 'fulfilled' ? normalizeResources(r.value) : []));
+            const seen = new Set();
+            resourcesData = merged.filter((r) => {
+              const key = r?.id ?? `${r?.fileUrl ?? ''}-${r?.fileName ?? ''}-${r?.title ?? ''}`;
+              if (!key || seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+        }
+
+        setResources(normalizeResources(resourcesData));
+      } catch (err) {
+        console.error('Failed to fetch parent resources:', err);
+        setResources([]);
+        setError('Failed to load resources. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchResources();
+  }, [grades, selectedGrade, selectedSubject]);
 
   useEffect(() => {
     let result = [...resources];

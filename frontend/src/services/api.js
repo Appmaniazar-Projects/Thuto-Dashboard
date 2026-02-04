@@ -136,7 +136,9 @@ export const fetchAllStaff = () =>
     data: response.data || []
   }));
 
-export const fetchCalendarEvents = () => api.get("/admin/calendar");
+export const fetchEvents = () => api.get("/admin/calendar");
+
+export const fetchCalendarEvents = fetchEvents;
 
 export const fetchMessages = () => api.get("/admin/messages");
 

@@ -28,7 +28,12 @@ import {
   Clear as ClearIcon,
   FindInPage as FindInPageIcon,
 } from '@mui/icons-material';
-import { getMyResources, downloadResource } from '../../services/resourceService';
+import {
+  downloadResource,
+  getResourcesByGrade,
+  getResourcesBySubject,
+  getResourcesBySubjectAndGrade,
+} from '../../services/resourceService';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
 import { formatDisplayDate } from '../../utils/date';
@@ -46,25 +51,21 @@ const Resources = () => {
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
 
+  const normalizeResources = (resourcesData) => {
+    if (Array.isArray(resourcesData)) return resourcesData;
+    if (Array.isArray(resourcesData?.data)) return resourcesData.data;
+    if (Array.isArray(resourcesData?.resources)) return resourcesData.resources;
+    return [];
+  };
+
   useEffect(() => {
-    const fetchResources = async () => {
+    const fetchMeta = async () => {
       try {
         setIsLoading(true);
-        const [resourcesData, subjectsData, gradesData] = await Promise.all([
-          getMyResources().catch(() => []),
+        const [subjectsData, gradesData] = await Promise.all([
           subjectService.getSchoolSubjects().catch(() => []),
-          gradeService.getSchoolGrades().catch(() => [])
+          gradeService.getSchoolGrades().catch(() => []),
         ]);
-
-        const normalizedResources = Array.isArray(resourcesData)
-          ? resourcesData
-          : Array.isArray(resourcesData?.data)
-            ? resourcesData.data
-            : Array.isArray(resourcesData?.resources)
-              ? resourcesData.resources
-              : [];
-
-        setResources(normalizedResources);
         setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
         setGrades(Array.isArray(gradesData) ? gradesData : []);
       } catch (err) {
@@ -85,8 +86,57 @@ const Resources = () => {
       }
     };
 
-    fetchResources();
+    fetchMeta();
   }, []);
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const schoolId = user?.schoolId || localStorage.getItem('schoolId');
+        const studentGradeId = user?.gradeId ?? user?.grade?.id ?? user?.grade ?? null;
+        const studentSubjectIds = Array.isArray(user?.subjectIds)
+          ? user.subjectIds
+          : Array.isArray(user?.subjects)
+          ? user.subjects.map((s) => s?.id).filter(Boolean)
+          : [];
+
+        let resourcesData = [];
+
+        if (selectedSubject !== 'all' && selectedGrade !== 'all') {
+          resourcesData = await getResourcesBySubjectAndGrade(selectedSubject, selectedGrade, schoolId);
+        } else if (selectedSubject !== 'all') {
+          resourcesData = await getResourcesBySubject(selectedSubject, schoolId);
+        } else if (selectedGrade !== 'all') {
+          resourcesData = await getResourcesByGrade(selectedGrade, schoolId);
+        } else if (studentGradeId) {
+          resourcesData = await getResourcesByGrade(studentGradeId, schoolId);
+        } else if (studentSubjectIds.length) {
+          resourcesData = await getResourcesBySubject(studentSubjectIds[0], schoolId);
+        } else {
+          resourcesData = [];
+        }
+
+        setResources(normalizeResources(resourcesData));
+      } catch (err) {
+        console.error('Failed to fetch resources:', err);
+        if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {
+          setError('Unable to connect to the server. Please check your connection and try again.');
+        } else if (err.response?.status === 404) {
+          setResources([]);
+          setError('');
+        } else {
+          setError('Failed to load resources. Please try again later.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchResources();
+  }, [selectedGrade, selectedSubject, user]);
 
   useEffect(() => {
     let result = [...resources];

@@ -20,7 +20,7 @@ import { Link } from 'react-router-dom';
 import { formatDisplayDate } from '../../utils/date';
 import { getAttendanceStats } from '../../services/attendanceService';
 import { getMyProfile } from '../../services/studentService';
-import { getMyResources } from '../../services/resourceService';
+import { getResourcesByGrade } from '../../services/resourceService';
 import StatCard from '../common/StatCard';
 
 const StudentDashboard = () => {
@@ -50,10 +50,17 @@ const StudentDashboard = () => {
         setLoading(true);
         
         // Fetch all data in parallel
+        const schoolId = user?.schoolId || localStorage.getItem('schoolId');
+        const studentGradeId = user?.gradeId ?? user?.grade?.id ?? user?.grade ?? null;
+
+        const resourcesPromise = studentGradeId
+          ? getResourcesByGrade(studentGradeId, schoolId).catch(e => { console.error('Resources fetch failed:', e); return []; })
+          : Promise.resolve([]);
+
         const [profileData, attendanceData, resourcesData] = await Promise.all([
           getMyProfile(user.phoneNumber).catch(e => { console.error('Profile fetch failed:', e); return null; }),
           getAttendanceStats().catch(e => { console.error('Attendance fetch failed:', e); return { percentage: 0 }; }),
-          getMyResources().catch(e => { console.error('Resources fetch failed:', e); return []; })
+          resourcesPromise
         ]);
 
         if (profileData) {
@@ -62,7 +69,7 @@ const StudentDashboard = () => {
         
         setStats({
           attendance: attendanceData.percentage || 0,
-          resources: resourcesData.length || 0,
+          resources: (Array.isArray(resourcesData) ? resourcesData : (resourcesData?.data || resourcesData?.resources || [])).length || 0,
           upcomingEvents: 0, // Placeholder
           unreadMessages: 0  // Placeholder
         });

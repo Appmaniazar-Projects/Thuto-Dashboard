@@ -334,6 +334,16 @@ const filteredResources = useMemo(() => {
             </Button>
             <Button
               fullWidth
+              variant="contained"
+              startIcon={<EventIcon />}
+              component={RouterLink}
+              to="/events/create"
+              sx={{ mb: 2 }}
+            >
+              Create Event
+            </Button>
+            <Button
+              fullWidth
               variant="outlined"
               startIcon={<CloudUploadIcon />}
               component={RouterLink}

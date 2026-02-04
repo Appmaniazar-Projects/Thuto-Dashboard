@@ -9,7 +9,7 @@ const CreateEventPage = () => {
 
   useEffect(() => {
     enqueueSnackbar('Create events from the Events page.', { variant: 'info' });
-    navigate('/calendar', { replace: true });
+    navigate('/events?create=1', { replace: true });
   }, [enqueueSnackbar, navigate]);
 
   return <Box sx={{ height: 1 }} />;
