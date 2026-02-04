@@ -1,12 +1,6 @@
 import api from './api';
 
 const EVENTS_BASE = '/events';
-const LEGACY_BASE = '/calendar';
-
-const shouldFallbackToLegacy = (error) => {
-  const status = error?.response?.status;
-  return status === 404 || status === 405;
-};
 
 const getCurrentSchoolId = () => {
   const storedUser = localStorage.getItem('user');
@@ -175,14 +169,8 @@ export const deleteEvent = async (eventId, schoolIdOverride = null) => {
 // Get event types (if they're dynamic)
 export const getEventTypes = async () => {
   try {
-    try {
-      const response = await api.get(`${EVENTS_BASE}/event-types`);
-      return response.data;
-    } catch (error) {
-      if (!shouldFallbackToLegacy(error)) throw error;
-      const response = await api.get(`${LEGACY_BASE}/event-types`);
-      return response.data;
-    }
+    const response = await api.get(`${EVENTS_BASE}/event-types`);
+    return response.data;
   } catch (error) {
     console.error('Error fetching event types:', error);
     return []; // Return default event types if API fails
@@ -192,14 +180,8 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
-    try {
-      const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
-      return response.data;
-    } catch (error) {
-      if (!shouldFallbackToLegacy(error)) throw error;
-      const response = await api.post(`${LEGACY_BASE}/${eventId}/roles/${roleId}/signup`);
-      return response.data;
-    }
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
+    return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
     throw error;
@@ -208,14 +190,8 @@ export const signUpForEventRole = async (eventId, roleId) => {
 
 export const cancelEventSignup = async (eventId) => {
   try {
-    try {
-      const response = await api.post(`${EVENTS_BASE}/${eventId}/signup/cancel`);
-      return response.data;
-    } catch (error) {
-      if (!shouldFallbackToLegacy(error)) throw error;
-      const response = await api.post(`${LEGACY_BASE}/${eventId}/signup/cancel`);
-      return response.data;
-    }
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/signup/cancel`);
+    return response.data;
   } catch (error) {
     console.error('Error cancelling event signup:', error);
     throw error;
@@ -225,14 +201,8 @@ export const cancelEventSignup = async (eventId) => {
 // Teacher attendance status
 export const setTeacherAttendanceStatus = async (eventId, status) => {
   try {
-    try {
-      const response = await api.put(`${EVENTS_BASE}/${eventId}/teacher-attendance`, { status });
-      return response.data;
-    } catch (error) {
-      if (!shouldFallbackToLegacy(error)) throw error;
-      const response = await api.put(`${LEGACY_BASE}/${eventId}/teacher-attendance`, { status });
-      return response.data;
-    }
+    const response = await api.put(`${EVENTS_BASE}/${eventId}/teacher-attendance`, { status });
+    return response.data;
   } catch (error) {
     console.error('Error updating teacher attendance:', error);
     throw error;

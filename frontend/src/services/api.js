@@ -136,7 +136,23 @@ export const fetchAllStaff = () =>
     data: response.data || []
   }));
 
-export const fetchEvents = () => api.get("/admin/calendar");
+export const fetchEvents = () => {
+  const storedUser = localStorage.getItem('user');
+  let schoolId = localStorage.getItem('schoolId');
+
+  try {
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    if (userInfo?.schoolId) schoolId = userInfo.schoolId;
+  } catch (e) {
+    // ignore
+  }
+
+  if (!schoolId) {
+    throw new Error('School ID not found. Please log in again.');
+  }
+
+  return api.get(`/events/${schoolId}`);
+};
 
 export const fetchCalendarEvents = fetchEvents;
 
