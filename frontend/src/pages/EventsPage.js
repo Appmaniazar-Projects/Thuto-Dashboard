@@ -256,7 +256,7 @@ const EventsPage = () => {
     setSelectedEvent(null);
   };
 
-  const openCreate = (slotInfo) => {
+  function openCreate(slotInfo) {
     setEditMode('create');
     setFormData({
       id: null,
@@ -269,7 +269,7 @@ const EventsPage = () => {
       roles: [],
     });
     setEditOpen(true);
-  };
+  }
 
   const openEdit = (ev) => {
     setEditMode('edit');
