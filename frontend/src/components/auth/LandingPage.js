@@ -33,7 +33,7 @@ const LandingPage = () => {
   const userTypes = [
     {
       title: isMobile ? 'Students, Parents & Teachers' : 'Students, Parents & Teachers',
-      description: 'Access your personalized educational dashboard',
+      description: 'Access your personalized school dashboard',
       features: ['View Attendance', 'Track Progress', 'Access Resources', 'View Reports'],
       icon: (
         <Box sx={{
@@ -79,9 +79,7 @@ const LandingPage = () => {
         flexDirection: 'column',
         p: 0,
         m: 0,
-        overflowX: 'hidden',
-        overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch',
+        overflow: 'hidden',
         '&::before': {
           content: '""',
           position: 'fixed',
@@ -187,7 +185,7 @@ const LandingPage = () => {
               lineHeight: 1.4
             }}
           >
-            Educational Management Platform
+            School Management System
           </Typography>
           
           <Box
@@ -447,7 +445,7 @@ const LandingPage = () => {
                 letterSpacing: '0.5px'
               }}
             >
-              2025 Thuto Educational Management System
+              2025 Thuto School Management System
             </Typography>
           </Box>
         </Box>
