@@ -13,6 +13,7 @@ import {
   Divider,
   Grid,
   IconButton,
+  MenuItem,
   Stack,
   TextField,
   ToggleButton,
@@ -26,6 +27,8 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import {
   addDays,
@@ -40,6 +43,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
+import enGB from 'date-fns/locale/en-GB';
 import enUS from 'date-fns/locale/en-US';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import PageTitle from '../components/common/PageTitle';
@@ -49,6 +53,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   cancelEventSignup,
+  cancelEvent as cancelEventById,
   createEvent,
   deleteEvent,
   getEvents,
@@ -80,6 +85,30 @@ const toDateTimeLocalInputValue = (date) => {
   if (!d) return '';
   const pad = (n) => `${n}`.padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const toBackendDateTime = (value) => {
+  if (!value) return '';
+  const s = String(value);
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
+  return s;
+};
+
+const buildRoleDraft = (role = {}) => {
+  const getClientId = () => {
+    if (role.clientId) return role.clientId;
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random()}`;
+  };
+
+  return {
+    clientId: getClientId(),
+    id: role.id ?? undefined,
+    roleName: role.roleName || '',
+    slotLimit: role.slotLimit ?? 1,
+  };
 };
 
 const deriveStatus = (event) => {
@@ -155,6 +184,19 @@ const EventsPage = () => {
     status: '',
     roles: [],
   });
+
+  const derivedFormStatus = useMemo(() => {
+    const manual = (formData.status ?? '').toString().trim().toLowerCase();
+    if (manual === 'cancelled') return 'Cancelled';
+
+    const start = formData.startDate ? new Date(formData.startDate) : null;
+    const end = formData.endDate ? new Date(formData.endDate) : null;
+    if (!start || !end || !isValid(start) || !isValid(end)) return 'Upcoming';
+
+    const now = new Date();
+    if (isAfter(now, end)) return 'Past';
+    return 'Upcoming';
+  }, [formData.endDate, formData.startDate, formData.status]);
 
   const range = useMemo(() => {
     if (viewMode === 'agenda') {
@@ -281,7 +323,7 @@ const EventsPage = () => {
       endDate: toDateTimeLocalInputValue(ev.endDate),
       location: ev.location || '',
       status: ev.status || '',
-      roles: Array.isArray(ev.roles) ? ev.roles.map(r => ({ id: r.id, roleName: r.roleName || '', slotLimit: r.slotLimit ?? 0 })) : [],
+      roles: Array.isArray(ev.roles) ? ev.roles.map((r) => buildRoleDraft({ id: r.id, roleName: r.roleName || '', slotLimit: r.slotLimit ?? 0 })) : [],
     });
     setEditOpen(true);
   };
@@ -301,7 +343,7 @@ const EventsPage = () => {
   const addRoleRow = () => {
     setFormData((prev) => ({
       ...prev,
-      roles: [...(prev.roles || []), { id: undefined, roleName: '', slotLimit: 1 }],
+      roles: [...(prev.roles || []), buildRoleDraft()],
     }));
   };
 
@@ -316,6 +358,15 @@ const EventsPage = () => {
   const submitEvent = async () => {
     try {
       if (!canCreateEvents) return;
+
+      if (editMode === 'edit' && derivedFormStatus.toLowerCase() === 'cancelled') {
+        if (!formData.id) return;
+        await cancelEventById(formData.id);
+        enqueueSnackbar('Event cancelled', { variant: 'success' });
+        closeEdit();
+        await loadEvents();
+        return;
+      }
 
       const start = formData.startDate ? new Date(formData.startDate) : null;
       const end = formData.endDate ? new Date(formData.endDate) : null;
@@ -335,15 +386,17 @@ const EventsPage = () => {
       const payload = {
         title: formData.title.trim(),
         description: formData.description || '',
-        startDate: start.toISOString(),
-        endDate: end.toISOString(),
+        startDate: toBackendDateTime(formData.startDate),
+        endDate: toBackendDateTime(formData.endDate),
         location: formData.location || '',
-        status: (formData.status || '').trim(),
-        roles: (formData.roles || []).map(r => ({
-          id: r.id,
-          roleName: (r.roleName || '').trim(),
-          slotLimit: Number(r.slotLimit) || 0,
-        })),
+        status: derivedFormStatus,
+        roles: (formData.roles || [])
+          .map((r) => ({
+            id: r.id,
+            roleName: (r.roleName || '').trim(),
+            slotLimit: Number(r.slotLimit) || 0,
+          }))
+          .filter((r) => r.roleName),
       };
 
       if (editMode === 'create') {
@@ -732,25 +785,31 @@ const EventsPage = () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Start"
-                    type="datetime-local"
-                    InputLabelProps={{ shrink: true }}
-                    value={formData.startDate}
-                    onChange={(e) => setFormData((p) => ({ ...p, startDate: e.target.value }))}
-                  />
+                  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={enGB}>
+                    <DateTimePicker
+                      label="Start"
+                      value={formData.startDate ? new Date(formData.startDate) : null}
+                      onChange={(value) =>
+                        setFormData((p) => ({ ...p, startDate: value ? toDateTimeLocalInputValue(value) : '' }))
+                      }
+                      format="dd/MM/yyyy HH:mm"
+                      slotProps={{ textField: { fullWidth: true } }}
+                    />
+                  </LocalizationProvider>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="End"
-                    type="datetime-local"
-                    InputLabelProps={{ shrink: true }}
-                    value={formData.endDate}
-                    onChange={(e) => setFormData((p) => ({ ...p, endDate: e.target.value }))}
-                  />
+                  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={enGB}>
+                    <DateTimePicker
+                      label="End"
+                      value={formData.endDate ? new Date(formData.endDate) : null}
+                      onChange={(value) =>
+                        setFormData((p) => ({ ...p, endDate: value ? toDateTimeLocalInputValue(value) : '' }))
+                      }
+                      format="dd/MM/yyyy HH:mm"
+                      slotProps={{ textField: { fullWidth: true } }}
+                    />
+                  </LocalizationProvider>
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
@@ -765,11 +824,17 @@ const EventsPage = () => {
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="Status (optional)"
-                    placeholder="Upcoming / Cancelled / Past"
-                    value={formData.status}
+                    label="Status"
+                    select
+                    value={(formData.status ?? '').toString().trim().toLowerCase() === 'cancelled' ? 'Cancelled' : ''}
                     onChange={(e) => setFormData((p) => ({ ...p, status: e.target.value }))}
-                  />
+                    helperText={`Auto: ${derivedFormStatus}`}
+                  >
+                    <MenuItem value="">Auto (Upcoming/Past)</MenuItem>
+                    <MenuItem value="Cancelled" disabled={editMode === 'create'}>
+                      Cancelled
+                    </MenuItem>
+                  </TextField>
                 </Grid>
 
                 <Grid item xs={12}>
@@ -790,7 +855,7 @@ const EventsPage = () => {
                       </Typography>
                     ) : (
                       (formData.roles || []).map((r, idx) => (
-                        <Card key={`${idx}-${r.id || r.roleName || 'role'}`} variant="outlined">
+                        <Card key={r.clientId ?? `${idx}-${r.id ?? 'role'}`} variant="outlined">
                           <CardContent>
                             <Grid container spacing={2} alignItems="center">
                               <Grid item xs={12} sm={7}>

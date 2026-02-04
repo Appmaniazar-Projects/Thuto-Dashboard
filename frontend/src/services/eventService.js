@@ -37,14 +37,17 @@ const normalizeEventPayload = (eventData) => {
 
   const payload = { ...eventData };
 
+  const normalizeDateString = (value) => {
+    if (!value) return value;
+    const s = String(value);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
+    return s;
+  };
+
   if (payload.startDate instanceof Date) payload.startDate = payload.startDate.toISOString();
   if (payload.endDate instanceof Date) payload.endDate = payload.endDate.toISOString();
-  if (typeof payload.startDate === 'string' && payload.startDate) {
-    payload.startDate = new Date(payload.startDate).toISOString();
-  }
-  if (typeof payload.endDate === 'string' && payload.endDate) {
-    payload.endDate = new Date(payload.endDate).toISOString();
-  }
+  if (typeof payload.startDate === 'string') payload.startDate = normalizeDateString(payload.startDate);
+  if (typeof payload.endDate === 'string') payload.endDate = normalizeDateString(payload.endDate);
 
   if (!Array.isArray(payload.roles)) {
     delete payload.roles;
@@ -118,6 +121,10 @@ export const createEvent = async (eventData) => {
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
+    const status = error?.response?.status;
+    if (status >= 500) {
+      console.error('Error creating event (server error). Payload sent:', eventData);
+    }
     console.error('Error creating event:', error);
     throw error;
   }
