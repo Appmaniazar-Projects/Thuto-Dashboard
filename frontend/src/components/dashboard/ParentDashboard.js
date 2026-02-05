@@ -145,8 +145,11 @@ const ParentDashboard = () => {
   // Apply filters to attendance data
   const filteredAttendance = useMemo(() => {
     return attendance.filter(record => {
-      const matchesChild = !filters.childId || record.studentId === filters.childId;
-      const matchesStatus = !filters.status || record.status === filters.status;
+      const recordStudentId = record?.studentId ?? record?.student?.id;
+      const matchesChild = !filters.childId || String(recordStudentId) === String(filters.childId);
+
+      const recordStatus = (record?.status || '').toString().toLowerCase();
+      const matchesStatus = !filters.status || recordStatus === String(filters.status).toLowerCase();
       
       const recordDate = new Date(record.date);
       const matchesMonth = recordDate.getMonth() + 1 === parseInt(filters.month);
@@ -159,8 +162,8 @@ const ParentDashboard = () => {
   // Calculate stats based on filtered data
   const stats = useMemo(() => {
     const totalDays = filteredAttendance.length;
-    const presentDays = filteredAttendance.filter(a => a.status === 'present').length;
-    const absentDays = filteredAttendance.filter(a => a.status === 'absent').length;
+    const presentDays = filteredAttendance.filter(a => (a?.status || '').toString().toLowerCase() === 'present').length;
+    const absentDays = filteredAttendance.filter(a => (a?.status || '').toString().toLowerCase() === 'absent').length;
     const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
 
     return {
@@ -192,6 +195,8 @@ const ParentDashboard = () => {
         return <PresentIcon color="success" fontSize="small" />;
       case 'absent':
         return <AbsentIcon color="error" fontSize="small" />;
+      case 'late':
+        return <UnknownIcon color="warning" fontSize="small" />;
       default:
         return <UnknownIcon color="disabled" fontSize="small" />;
     }
@@ -456,8 +461,9 @@ const ParentDashboard = () => {
                               size="small"
                               sx={{ 
                                 ml: 1,
-                                bgcolor: record.status === 'present' ? 'success.light' : 
-                                        record.status === 'absent' ? 'error.light' : 'grey.300',
+                                bgcolor: (record.status || '').toString().toLowerCase() === 'present' ? 'success.light' : 
+                                        (record.status || '').toString().toLowerCase() === 'absent' ? 'error.light' : 
+                                        (record.status || '').toString().toLowerCase() === 'late' ? 'warning.light' : 'grey.300',
                                 color: 'white',
                                 fontWeight: 'medium'
                               }}
@@ -570,7 +576,7 @@ const ParentDashboard = () => {
                     }}
                     button
                     component={Link}
-                    to={`/event/${event.id}`}
+                    to="/events"
                   >
                     <ListItemIcon>
                       <EventIcon color="primary" />

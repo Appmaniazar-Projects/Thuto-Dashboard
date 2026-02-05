@@ -167,7 +167,7 @@ export const updateEvent = async (eventId, eventData) => {
       }
     }
 
-    const response = await api.post(`${EVENTS_BASE}/create`, payload);
+     const response = await api.put(`${EVENTS_BASE}/update/${eventId}`, payload);
     return response.data;
   } catch (error) {
     console.error('Error updating event:', error);
@@ -187,9 +187,9 @@ export const cancelEvent = async (eventId, schoolIdOverride = null) => {
 };
 
 // Delete an event (mapped to cancel endpoint)
-export const deleteEvent = async (eventId, schoolIdOverride = null) => {
+export const deleteEvent = async (eventId) => {
   try {
-    await cancelEvent(eventId, schoolIdOverride);
+    await api.delete(`${EVENTS_BASE}/remove/${eventId}`);
     return eventId;
   } catch (error) {
     console.error('Error deleting event:', error);

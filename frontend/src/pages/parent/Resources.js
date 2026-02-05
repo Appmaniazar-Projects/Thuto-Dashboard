@@ -138,7 +138,12 @@ const ParentResources = () => {
         return false;
       }
 
-      const visibility = (r?.visibilityType || '').toString().toUpperCase();
+      const visibilityRaw = r?.visibilityType;
+      if (visibilityRaw === null || visibilityRaw === undefined || `${visibilityRaw}`.trim() === '') {
+        return true;
+      }
+
+      const visibility = visibilityRaw.toString().toUpperCase();
       return visibility === 'GRADE_SUBJECT';
     });
 

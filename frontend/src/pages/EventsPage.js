@@ -56,6 +56,7 @@ import {
   cancelEvent as cancelEventById,
   createEvent,
   deleteEvent,
+  getEventById,
   getEvents,
   setTeacherAttendanceStatus,
   signUpForEventRole,
@@ -291,6 +292,22 @@ const EventsPage = () => {
   const openDetails = (ev) => {
     setSelectedEvent(ev);
     setDetailsOpen(true);
+
+    const eventId = ev?.id;
+    if (!eventId) return;
+
+    (async () => {
+      try {
+        const details = await getEventById(eventId);
+        if (!details) return;
+        setSelectedEvent((prev) => {
+          if (!prev || String(prev.id) !== String(eventId)) return prev;
+          return { ...prev, ...details };
+        });
+      } catch (e) {
+        // Ignore detail load failures so the dialog still works with list data
+      }
+    })();
   };
 
   const closeDetails = () => {
@@ -459,7 +476,30 @@ const EventsPage = () => {
   };
 
   const renderEventRoles = (ev) => {
-    const roles = Array.isArray(ev?.roles) ? ev.roles : [];
+    const rolesRaw =
+      (Array.isArray(ev?.roles) && ev.roles) ||
+      (Array.isArray(ev?.eventRoles) && ev.eventRoles) ||
+      (Array.isArray(ev?.roleSlots) && ev.roleSlots) ||
+      (Array.isArray(ev?.requiredRoles) && ev.requiredRoles) ||
+      [];
+
+    const roles = rolesRaw
+      .filter(Boolean)
+      .map((r) => {
+        const slotLimit = r?.slotLimit ?? r?.slots ?? r?.limit ?? r?.capacity;
+        const roleName = r?.roleName ?? r?.name ?? r?.role ?? r?.title;
+        const takenByList = Array.isArray(r?.signups) ? r.signups.length : undefined;
+        const takenSlots = r?.takenSlots ?? r?.signupsCount ?? r?.filledSlots ?? r?.taken ?? takenByList;
+        const id = r?.id ?? r?.roleId ?? r?.eventRoleId;
+
+        return {
+          ...r,
+          id,
+          roleName,
+          slotLimit,
+          takenSlots,
+        };
+      });
     const hasParentSignup = getHasParentSignup(ev);
     if (!roles.length) {
       return (
@@ -472,10 +512,11 @@ const EventsPage = () => {
     return (
       <Stack spacing={1}>
         {roles.map((r) => {
+          const roleId = r?.id;
           const slotLimit = Number(r.slotLimit) || 0;
           const taken = Number(r.takenSlots ?? r.signupsCount ?? r.filledSlots ?? 0) || 0;
           const available = Math.max(0, slotLimit - taken);
-          const canClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0;
+          const canClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
 
           return (
             <Card key={r.id || r.roleName} variant="outlined">
@@ -492,7 +533,7 @@ const EventsPage = () => {
                     <Button
                       variant="contained"
                       startIcon={<PersonAddAltIcon />}
-                      onClick={() => parentSignup(ev, r.id)}
+                      onClick={() => parentSignup(ev, roleId)}
                       disabled={!canClick}
                       sx={{ minHeight: 44 }}
                     >

@@ -32,19 +32,44 @@ const parentService = {
         ...(schoolId ? { schoolId } : {})
       };
 
+      const normalizeChildren = (items) => {
+        const list = Array.isArray(items) ? items : [];
+        return list
+          .map((c) => {
+            const id = c?.id ?? c?.studentId ?? c?.childId ?? c?.student?.id ?? null;
+            const name =
+              c?.name ||
+              [c?.firstName, c?.lastName].filter(Boolean).join(' ') ||
+              [c?.student?.firstName, c?.student?.lastName].filter(Boolean).join(' ') ||
+              '';
+            const grade = c?.grade ?? c?.gradeName ?? c?.student?.grade ?? c?.student?.gradeName ?? c?.student?.gradeId ?? '';
+            const className = c?.class ?? c?.className ?? c?.student?.class ?? c?.student?.className ?? '';
+            const schoolName = c?.school ?? c?.schoolName ?? c?.student?.school ?? c?.student?.schoolName ?? '';
+            return {
+              ...c,
+              id,
+              name,
+              grade,
+              class: className,
+              school: schoolName,
+            };
+          })
+          .filter((c) => c?.id !== null && c?.id !== undefined);
+      };
+
       // Prefer token-based endpoint (most common + avoids role/phone mismatch issues)
       try {
         const response = await api.get('/parent/children', {
           params: Object.keys(params).length > 0 ? params : undefined
         });
-        return response.data || [];
+        return normalizeChildren(response.data);
       } catch (primaryError) {
         // Fallback to legacy phone-in-path endpoint if backend requires it.
         if (!encodedPhone) throw primaryError;
         const response = await api.get(`/parent/${encodedPhone}/children`, {
           params: Object.keys(params).length > 0 ? params : undefined
         });
-        return response.data || [];
+        return normalizeChildren(response.data);
       }
     } catch (error) {
       console.error('Failed to fetch children:', error);
@@ -75,12 +100,56 @@ const parentService = {
    */
   getUpcomingEvents: async (childId) => {
     try {
-      const url = childId 
+      const storedUser = localStorage.getItem('user');
+      const userData = storedUser ? JSON.parse(storedUser) : null;
+      const schoolId =
+        localStorage.getItem('schoolId') ||
+        userData?.school?.id ||
+        userData?.schoolId ||
+        null;
+
+      const coerceEventsArray = (data) => {
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.events)) return data.events;
+        return [];
+      };
+
+      const normalizeEvent = (ev) => {
+        if (!ev || typeof ev !== 'object') return ev;
+        const startDate = ev.startDate ?? ev.date ?? ev.start ?? null;
+        const endDate = ev.endDate ?? ev.end ?? null;
+        return {
+          ...ev,
+          startDate,
+          endDate,
+          date: startDate ?? ev.date,
+        };
+      };
+
+      const isUpcoming = (ev) => {
+        const start = new Date(ev?.startDate ?? ev?.date);
+        const end = new Date(ev?.endDate ?? ev?.startDate ?? ev?.date);
+        const now = new Date();
+        if (!Number.isNaN(end.getTime()) && end.getTime() >= now.getTime()) return true;
+        if (!Number.isNaN(start.getTime()) && start.getTime() >= now.getTime()) return true;
+        return false;
+      };
+
+      if (schoolId) {
+        try {
+          const response = await api.get(`/events/${schoolId}`);
+          return coerceEventsArray(response.data).map(normalizeEvent).filter(isUpcoming);
+        } catch (e) {
+          // fall through to parent endpoints
+        }
+      }
+
+      const url = childId
         ? `/parent/children/${childId}/events/upcoming`
         : '/parent/events/upcoming';
-      
+
       const response = await api.get(url);
-      return response.data?.events || [];
+      return coerceEventsArray(response.data).map(normalizeEvent);
     } catch (error) {
       console.error('Failed to fetch upcoming events:', error);
       return []; // Return empty array instead of throwing to prevent UI breakage
@@ -155,12 +224,26 @@ const parentService = {
       });
       const data = response.data;
 
+      const normalizeRecords = (records) => {
+        const list = Array.isArray(records) ? records : [];
+        return list
+          .map((r) => {
+            if (!r || typeof r !== 'object') return r;
+            const sid = r.studentId ?? r.student?.id ?? studentId;
+            return {
+              ...r,
+              studentId: sid,
+            };
+          })
+          .filter(Boolean);
+      };
+
       if (Array.isArray(data)) {
-        return data;
+        return normalizeRecords(data);
       }
 
       if (data && Array.isArray(data.details)) {
-        return data.details;
+        return normalizeRecords(data.details);
       }
 
       return [];
