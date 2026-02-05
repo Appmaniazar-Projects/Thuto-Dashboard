@@ -2,6 +2,21 @@ import api from './api';
 
 const EVENTS_BASE = '/events';
 
+const getCurrentUserId = () => {
+  const storedUser = localStorage.getItem('user');
+
+  try {
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    const id = userInfo?.id ?? userInfo?.userId ?? userInfo?.phoneNumber ?? null;
+    if (!id) {
+      throw new Error('User ID not found. Please log in again.');
+    }
+    return id;
+  } catch (e) {
+    throw new Error('User ID not found. Please log in again.');
+  }
+};
+
 const getCurrentSchoolId = () => {
   const storedUser = localStorage.getItem('user');
   let schoolId = localStorage.getItem('schoolId');
@@ -112,6 +127,14 @@ export const createEvent = async (eventData) => {
       }
     }
 
+    if (payload && typeof payload === 'object' && !payload.userId) {
+      try {
+        payload.userId = getCurrentUserId();
+      } catch (e) {
+        // ignore
+      }
+    }
+
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
@@ -131,6 +154,14 @@ export const updateEvent = async (eventId, eventData) => {
     if (payload && typeof payload === 'object' && !payload.schoolId) {
       try {
         payload.schoolId = getCurrentSchoolId();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    if (payload && typeof payload === 'object' && !payload.userId) {
+      try {
+        payload.userId = getCurrentUserId();
       } catch (e) {
         // ignore
       }
