@@ -424,8 +424,8 @@ const EventsPage = () => {
         enqueueSnackbar('Event updated', { variant: 'success' });
       }
 
-      closeEdit();
       await loadEvents();
+      closeEdit();
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to save event', { variant: 'error' });
     }

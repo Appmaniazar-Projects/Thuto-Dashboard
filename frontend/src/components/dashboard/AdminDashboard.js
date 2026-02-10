@@ -20,6 +20,7 @@ import adminService from '../../services/adminService';
 import { fetchAllAttendance } from '../../services/attendanceService';
 import gradeService from '../../services/gradeService';
 import GenderBreakdown from './admin/GenderBreakdown';
+import EnrollmentTrends from '../admin/reports/EnrollmentTrends';
 import EventsPanel from './admin/EventsPanel';
 import StatCard from '../common/StatCard';
 import { getDefaultNumber, getUserDisplayName, formatPercentage, getDefaultError } from '../../utils/appText';
@@ -361,12 +362,10 @@ const AdminDashboard = () => {
         <Grid item xs={12} md={8}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <GenderBreakdown students={filteredStudents} />
+              <GenderBreakdown students={students} />
             </Grid>
             <Grid item xs={12}>
-              <Paper sx={{ p: 2, height: 300, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="h6" color="text.secondary">Enrollment Trends</Typography>
-              </Paper>
+              <EnrollmentTrends />
             </Grid>
           </Grid>
         </Grid>

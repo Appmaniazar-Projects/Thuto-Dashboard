@@ -116,7 +116,9 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
  */
 export const getAttendanceHistory = async (gradeId) => {
   try {
-    const response = await api.get(`/attendance/${gradeId}/history`);
+    const response = await api.get(`/attendance/${gradeId}/history`, {
+      params: { gradeId }
+    });
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch attendance history for grade ${gradeId}:`, error);
