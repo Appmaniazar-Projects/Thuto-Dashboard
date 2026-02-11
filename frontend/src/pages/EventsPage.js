@@ -853,7 +853,10 @@ const EventsPage = () => {
                         setFormData((p) => ({ ...p, startDate: value ? toDateTimeLocalInputValue(value) : '' }))
                       }
                       format="dd/MM/yyyy HH:mm"
-                      slotProps={{ textField: { fullWidth: true } }}
+                      slotProps={{
+                        textField: { fullWidth: true },
+                        popper: { disablePortal: true },
+                      }}
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -867,7 +870,10 @@ const EventsPage = () => {
                         setFormData((p) => ({ ...p, endDate: value ? toDateTimeLocalInputValue(value) : '' }))
                       }
                       format="dd/MM/yyyy HH:mm"
-                      slotProps={{ textField: { fullWidth: true } }}
+                      slotProps={{
+                        textField: { fullWidth: true },
+                        popper: { disablePortal: true },
+                      }}
                     />
                   </LocalizationProvider>
                 </Grid>

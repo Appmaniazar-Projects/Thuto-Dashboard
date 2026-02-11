@@ -41,6 +41,21 @@ const coerceEventsArray = (data) => {
   return [];
 };
 
+const normalizeEventDates = (event) => {
+  if (!event) return event;
+  
+  // If backend returns separate LocalDate and LocalTime fields, combine them
+  if (event.startDate && event.startTime && !event.startDate.includes('T')) {
+    return {
+      ...event,
+      startDate: `${event.startDate}T${event.startTime}`,
+      endDate: `${event.endDate}T${event.endTime}`,
+    };
+  }
+  
+  return event;
+};
+
 const normalizeEventPayload = (eventData) => {
   if (!eventData || typeof eventData !== 'object') return eventData;
 
@@ -80,15 +95,21 @@ export const getEvents = async (startDate, endDate) => {
     const schoolId = getCurrentSchoolId();
     const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
     const events = coerceEventsArray(response.data);
+    console.log('Raw events from backend:', response.data);
+    console.log('Coerced events:', events);
+    
+    // Normalize dates if backend returns separate LocalDate/LocalTime
+    const normalizedEvents = events.map(normalizeEventDates);
+    console.log('Normalized events:', normalizedEvents);
 
-    if (!startDate && !endDate) return events;
+    if (!startDate && !endDate) return normalizedEvents;
 
     const from = startDate ? new Date(startDate) : null;
     const to = endDate ? new Date(endDate) : null;
     const fromTime = from && !Number.isNaN(from.getTime()) ? from.getTime() : null;
     const toTime = to && !Number.isNaN(to.getTime()) ? to.getTime() : null;
 
-    return events.filter((ev) => {
+    return normalizedEvents.filter((ev) => {
       const start = new Date(ev?.startDate);
       const end = new Date(ev?.endDate);
       if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
@@ -169,7 +190,13 @@ export const updateEvent = async (eventId, eventData) => {
 
     const response = await api.put(`/events/update/${eventId}`, payload);
     console.log('Update event request successful:', response.status);
-    return response.data;
+    console.log('Updated event data from backend:', response.data);
+    
+    // Normalize dates if backend returns separate LocalDate/LocalTime
+    const normalizedEvent = normalizeEventDates(response.data);
+    console.log('Normalized updated event:', normalizedEvent);
+    
+    return normalizedEvent;
   } catch (error) {
     console.error('Error updating event:', error.response || error);
     throw error;

@@ -71,7 +71,7 @@ const UserStatistics = () => {
     setError(null);
     
     try {
-      const usersResponse = await getAllUsers();
+      const usersResponse = await adminService.getAllUsers();
       setAllUsers(Array.isArray(usersResponse) ? usersResponse : []);
     } catch (err) {
       console.error('Failed to fetch user data:', err);
