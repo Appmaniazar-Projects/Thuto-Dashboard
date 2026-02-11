@@ -95,6 +95,20 @@ const toBackendDateTime = (value) => {
   return s;
 };
 
+const toBackendDateOnly = (value) => {
+  if (!value) return '';
+  const d = toSafeDate(value);
+  if (!d) return '';
+  return format(d, 'yyyy-MM-dd');
+};
+
+const toBackendTimeOnly = (value) => {
+  if (!value) return null;
+  const d = toSafeDate(value);
+  if (!d) return null;
+  return format(d, 'HH:mm:ss');
+};
+
 const buildRoleDraft = (role = {}) => {
   const getClientId = () => {
     if (role.clientId) return role.clientId;
@@ -403,8 +417,10 @@ const EventsPage = () => {
       const payload = {
         title: formData.title.trim(),
         description: formData.description || '',
-        startDate: toBackendDateTime(formData.startDate),
-        endDate: toBackendDateTime(formData.endDate),
+        startDate: toBackendDateOnly(formData.startDate),
+        startTime: toBackendTimeOnly(formData.startDate),
+        endDate: toBackendDateOnly(formData.endDate),
+        endTime: toBackendTimeOnly(formData.endDate),
         location: formData.location || '',
         status: derivedFormStatus,
         roles: (formData.roles || [])
@@ -417,10 +433,13 @@ const EventsPage = () => {
       };
 
       if (editMode === 'create') {
-        await createEvent(payload);
+        const response = await createEvent(payload);
+        console.log('Event created response:', response);
         enqueueSnackbar('Event created', { variant: 'success' });
       } else {
-        await updateEvent(formData.id, payload);
+        console.log('Updating event with payload:', payload);
+        const response = await updateEvent(formData.id, payload);
+        console.log('Event updated response:', response);
         enqueueSnackbar('Event updated', { variant: 'success' });
       }
 

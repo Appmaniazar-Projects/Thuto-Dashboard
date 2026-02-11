@@ -167,10 +167,11 @@ export const updateEvent = async (eventId, eventData) => {
       }
     }
 
-    const response = await api.put(`${EVENTS_BASE}/update/${eventId}`, payload);
+    const response = await api.put(`/events/update/${eventId}`, payload);
+    console.log('Update event request successful:', response.status);
     return response.data;
   } catch (error) {
-    console.error('Error updating event:', error);
+    console.error('Error updating event:', error.response || error);
     throw error;
   }
 };
