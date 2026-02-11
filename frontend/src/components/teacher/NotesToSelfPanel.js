@@ -83,7 +83,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
       setNotes(Array.isArray(data) ? data : []);
     } catch (e) {
       setNotes([]);
-      setWarning('Notes are temporarily unavailable. You can still view the panel.');
+      setWarning('');
     } finally {
       setLoading(false);
     }

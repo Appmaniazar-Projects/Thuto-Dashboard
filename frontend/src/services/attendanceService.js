@@ -262,28 +262,35 @@ export const getAttendanceSubmissions = async () => {
       ...(adminEmail ? { adminEmail } : {})
     };
 
-    const response = await api.get('/attendance', {
+    const response = await api.get('/attendance/submission', {
       params: Object.keys(params).length > 0 ? params : undefined
     });
 
     const rows = Array.isArray(response.data) ? response.data : [];
     return rows.map((record) => {
-      const teacherName = record?.teacher?.name || record?.teacherName || 'Unknown';
+      const teacherName =
+        record?.teacher?.name ||
+        record?.teacherName ||
+        record?.teacher?.fullName ||
+        'Unknown';
       const gradeLabel =
         record?.grade?.name ||
         record?.grade?.id ||
         record?.grade ||
+        record?.gradeId ||
         'N/A';
       const subjectLabel = record?.subject?.name || record?.subject || 'N/A';
-      const status = record?.status || 'UNKNOWN';
+      const status = record?.status || record?.approvalStatus || 'UNKNOWN';
 
       return {
-        id: record?.id,
+        id: record?.id ?? record?.submissionId,
         date: record?.date,
         teacherName,
         grade: gradeLabel,
         subject: subjectLabel,
-        status
+        status,
+        submittedAt: record?.submittedAt ?? record?.createdAt ?? null,
+        raw: record,
       };
     });
   } catch (error) {

@@ -258,114 +258,12 @@ const ParentDashboard = () => {
         <Typography variant="h4" fontWeight="bold" gutterBottom>
           Parent Dashboard
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          {formatDisplayDate(new Date())}
-        </Typography>
 
         {children.length > 0 && attendanceWarning && (
           <Alert severity="warning" sx={{ mt: 2 }}>
             {attendanceWarning}
           </Alert>
         )}
-
-        {/* Filter Section */}
-        <Paper sx={{ p: 2, mt: 3, mb: 3 }}>
-          <Box display="flex" alignItems="center" mb={2}>
-            <FilterIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Filters</Typography>
-          </Box>
-          
-          <Grid container spacing={2}>
-            {children.length > 1 && (
-              <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Child"
-                  name="childId"
-                  value={filters.childId}
-                  onChange={handleFilterChange}
-                  size="small"
-                >
-                  {children.map(child => (
-                    <MenuItem key={child.id} value={child.id}>
-                      {child.name}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              </Grid>
-            )}
-            
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                fullWidth
-                select
-                label="Month"
-                name="month"
-                value={filters.month}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                {monthOptions.map(month => (
-                  <MenuItem key={month.value} value={month.value}>
-                    {month.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={2}>
-              <TextField
-                fullWidth
-                select
-                label="Year"
-                name="year"
-                value={filters.year}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                {yearOptions.map(year => (
-                  <MenuItem key={year.value} value={year.value}>
-                    {year.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                select
-                label="Status"
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-                size="small"
-              >
-                <MenuItem value="">All Statuses</MenuItem>
-                <MenuItem value="present">Present</MenuItem>
-                <MenuItem value="absent">Absent</MenuItem>
-                <MenuItem value="late">Late</MenuItem>
-              </TextField>
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={2}>
-              <Button 
-                variant="outlined" 
-                fullWidth 
-                sx={{ height: '40px' }}
-                onClick={() => setFilters({
-                  childId: children[0]?.id || '',
-                  month: new Date().getMonth() + 1,
-                  year: new Date().getFullYear(),
-                  status: ''
-                })}
-              >
-                Reset Filters
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
       </Box>
 
       {/* Stats Overview */}

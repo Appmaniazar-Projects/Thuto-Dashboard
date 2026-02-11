@@ -10,19 +10,29 @@ const coerceNotesArray = (data) => {
 };
 
 export const getTeacherNotes = async ({ studentId, teacherId }) => {
+  const toId = (value) => {
+    if (value === null || value === undefined || value === '') return value;
+    const n = Number(value);
+    return Number.isNaN(n) ? value : n;
+  };
   const response = await api.get(`${API_BASE}/student/notes`, {
     params: {
-      studentId,
-      teacherId,
+      studentId: toId(studentId),
+      teacherId: toId(teacherId),
     },
   });
   return coerceNotesArray(response.data);
 };
 
 export const createTeacherNote = async ({ studentId, teacherId, content }) => {
+  const toId = (value) => {
+    if (value === null || value === undefined || value === '') return value;
+    const n = Number(value);
+    return Number.isNaN(n) ? value : n;
+  };
   const response = await api.post(`${API_BASE}/create`, {
-    studentId,
-    teacherId,
+    studentId: toId(studentId),
+    teacherId: toId(teacherId),
     content,
   });
   return response.data;
