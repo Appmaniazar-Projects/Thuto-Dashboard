@@ -38,6 +38,11 @@ const getCurrentSchoolId = () => {
 const coerceEventsArray = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.events)) return data.events;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.result)) return data.result;
+  if (Array.isArray(data?.items)) return data.items;
+  // Add more potential response formats as needed
+  console.log('Unable to extract events array from response:', data);
   return [];
 };
 
