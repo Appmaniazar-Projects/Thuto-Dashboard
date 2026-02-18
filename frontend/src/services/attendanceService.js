@@ -295,9 +295,11 @@ export const getAttendanceSubmissions = async () => {
     });
   } catch (error) {
     console.error('Error fetching attendance submissions:', error);
+    const apiMessage = error?.response?.data?.message || error?.response?.data || error.message;
     if (error.response?.status === 404) {
       return [];
     }
+    error.message = `Failed to fetch submissions: ${apiMessage}`;
     throw error;
   }
 };

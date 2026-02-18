@@ -673,7 +673,7 @@ const EventsPage = () => {
             startAccessor="start"
             endAccessor="end"
             views={['month']}
-            view="month"
+            defaultView="month"
             date={anchorDate}
             onNavigate={(d) => setAnchorDate(d)}
             selectable={canCreateEvents}

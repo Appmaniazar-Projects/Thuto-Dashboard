@@ -10,8 +10,11 @@ export const useStudentsData = () => {
     const loadStudents = async () => {
       try {
         const allUsers = await getAllUsers();
-        // Filter for students only
-        const students = allUsers.filter(user => user.role === 'student');
+        // Filter for students only - case-insensitive and handling potential ROLE_ prefix
+        const students = allUsers.filter(user => {
+          const role = (user.role || '').toLowerCase();
+          return role === 'student' || role === 'role_student';
+        });
         setStudents(students || []);
       } catch (err) {
         setError('Failed to load students');

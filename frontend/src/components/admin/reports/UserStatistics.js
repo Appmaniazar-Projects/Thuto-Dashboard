@@ -39,7 +39,7 @@ const UserStatistics = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeFilter, setTimeFilter] = useState('30');
+  const [timeFilter, setTimeFilter] = useState('7');
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -58,7 +58,6 @@ const UserStatistics = () => {
     }
     if (typeof user?.enabled === 'boolean') return user.enabled;
     if (typeof user?.isActive === 'boolean') return user.isActive;
-    // If backend does not provide a status, treat users as active by default.
     return true;
   };
 
@@ -74,7 +73,6 @@ const UserStatistics = () => {
       const usersResponse = await adminService.getAllUsers();
       setAllUsers(Array.isArray(usersResponse) ? usersResponse : []);
     } catch (err) {
-      console.error('Failed to fetch user data:', err);
       setError('Unable to load user statistics. Please try again later.');
       setAllUsers([]);
     } finally {
@@ -83,26 +81,43 @@ const UserStatistics = () => {
   };
 
   const getRegistrationTrends = () => {
-    const days = parseInt(timeFilter);
     const now = new Date();
     const trends = [];
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const registrations = allUsers.filter(user => {
-        const createdAt = getUserCreatedAt(user);
-        if (!createdAt) return false;
-        const userDate = createdAt.toISOString().split('T')[0];
-        return userDate === dateStr;
-      }).length;
-      
-      trends.push({
-        date: formatDisplayDate(date),
-        registrations
-      });
+
+    if (timeFilter === 'monthly') {
+      // Last 6 months
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthLabel = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        
+        const registrations = allUsers.filter(user => {
+          const createdAt = getUserCreatedAt(user);
+          if (!createdAt) return false;
+          return createdAt.getMonth() === d.getMonth() && createdAt.getFullYear() === d.getFullYear();
+        }).length;
+
+        trends.push({ date: monthLabel, registrations });
+      }
+    } else {
+      // Daily trends for specified days
+      const days = parseInt(timeFilter) || 7;
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const registrations = allUsers.filter(user => {
+          const createdAt = getUserCreatedAt(user);
+          if (!createdAt) return false;
+          const userDate = createdAt.toISOString().split('T')[0];
+          return userDate === dateStr;
+        }).length;
+        
+        trends.push({
+          date: i === 0 ? 'Today' : date.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
+          registrations
+        });
+      }
     }
     
     return trends;
@@ -245,8 +260,7 @@ const UserStatistics = () => {
                     onChange={(e) => setTimeFilter(e.target.value)}
                   >
                     <MenuItem value="7">Last 7 days</MenuItem>
-                    <MenuItem value="30">Last 30 days</MenuItem>
-                    <MenuItem value="90">Last 90 days</MenuItem>
+                    <MenuItem value="monthly">Monthly</MenuItem>
                   </Select>
                 </FormControl>
               </Box>
