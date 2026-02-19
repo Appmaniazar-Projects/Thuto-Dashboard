@@ -18,7 +18,7 @@ import NotesToSelfPanel from '../../components/teacher/NotesToSelfPanel';
 
 const TeacherNotesPage = () => {
   const { user } = useAuth();
-  const teacherId = user?.id || user?.phoneNumber || '';
+  const teacherId = user?.id || '';
 
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -66,6 +66,19 @@ const TeacherNotesPage = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '80vh' }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!teacherId) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Notes
+        </Typography>
+        <Alert severity="error">
+          Unable to load teacher notes because your teacher profile ID is missing. Please log out and log in again.
+        </Alert>
       </Box>
     );
   }
