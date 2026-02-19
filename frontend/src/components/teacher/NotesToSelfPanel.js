@@ -95,7 +95,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
 
   const startEdit = (note) => {
     setEditingId(note.id);
-    setContent(note.content || '');
+    setContent(note.note || note.content || '');
   };
 
   const cancelEdit = () => {
@@ -109,10 +109,21 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
 
     try {
       if (editingId) {
-        await updateTeacherNote({ noteId: editingId, content: trimmedContent });
+        await updateTeacherNote({
+          id: editingId,
+          note: trimmedContent,
+          noteDate: new Date(),
+          teacherId: stableTeacherId,
+          studentId: stableStudentId,
+        });
         enqueueSnackbar('Note updated', { variant: 'success' });
       } else {
-        await createTeacherNote({ studentId: stableStudentId, teacherId: stableTeacherId, content: trimmedContent });
+        await createTeacherNote({
+          studentId: stableStudentId,
+          teacherId: stableTeacherId,
+          note: trimmedContent,
+          noteDate: new Date(),
+        });
         enqueueSnackbar('Note saved', { variant: 'success' });
       }
 
@@ -129,7 +140,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
     if (!ok) return;
 
     try {
-      await deleteTeacherNote({ noteId: note.id });
+      await deleteTeacherNote({ id: note.id });
       enqueueSnackbar('Note deleted', { variant: 'info' });
 
       if (editingId === note.id) {
@@ -250,7 +261,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
                         </Stack>
 
                         <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                          {note.content || ''}
+                          {note.note || note.content || ''}
                         </Typography>
                       </Stack>
                     </CardContent>
