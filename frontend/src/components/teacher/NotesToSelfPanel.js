@@ -82,8 +82,8 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
       const data = await getTeacherNotes({ studentId: stableStudentId, teacherId: stableTeacherId });
       setNotes(Array.isArray(data) ? data : []);
     } catch (e) {
-      setNotes([]);
-      setWarning('');
+      const apiMessage = e?.response?.data?.message || e?.response?.data || e?.message;
+      setWarning(`Notes could not be loaded. ${apiMessage ? `(${apiMessage})` : ''}`.trim());
     } finally {
       setLoading(false);
     }
