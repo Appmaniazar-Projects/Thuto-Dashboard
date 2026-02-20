@@ -15,11 +15,19 @@ export const getTeacherNotes = async ({ studentId, teacherId }) => {
     const n = Number(value);
     return Number.isNaN(n) ? value : n;
   };
-  const response = await api.get(`${API_BASE}/student/notes`, {
-    params: {
-      studentId: toId(studentId),
-      teacherId: toId(teacherId),
-    },
+  const schoolId = (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return localStorage.getItem('schoolId') || user?.school?.id || user?.schoolId || null;
+    } catch {
+      return localStorage.getItem('schoolId') || null;
+    }
+  })();
+
+  const response = await api.post(`${API_BASE}/student/notes`, {
+    teacherId: toId(teacherId),
+    studentId: toId(studentId),
+    schoolId: toId(schoolId),
   });
   return coerceNotesArray(response.data);
 };
