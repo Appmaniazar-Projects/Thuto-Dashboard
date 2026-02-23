@@ -24,7 +24,7 @@ export const getTeacherNotes = async ({ studentId, teacherId }) => {
     }
   })();
 
-  const response = await api.get(`/teacher/student-notes/student/notes`, {
+  const response = await api.post(`${API_BASE}/student/notes`, {
     teacherId: toId(teacherId),
     studentId: toId(studentId),
     schoolId: toId(schoolId),
