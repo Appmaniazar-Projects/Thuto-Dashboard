@@ -5,10 +5,13 @@ import api from './api';
  * Fetches all administrators across all schools
  * @param {string} createdBy - Email of the superadmin making the request
  */
-export const getAllAdmins = async (role = 'admin', createdBy) => {
+export const getAllAdmins = async (role = 'admin', createdBy, queryString) => {
   try {
+    const params = new URLSearchParams(queryString);
+    params.append('createdBy', createdBy);
+    
     const response = await api.get(`/superadmins/admins/allRoleSpecificUsers/role/${role}`, {
-      params: { createdBy }
+      params
     });
     return response.data;
   } catch (error) {
@@ -21,10 +24,13 @@ export const getAllAdmins = async (role = 'admin', createdBy) => {
  * Fetches all schools in the system
  * @param {string} createdBy - Email of the superadmin making the request
  */
-export const getAllSchools = async (createdBy) => {
+export const getAllSchools = async (createdBy, queryString) => {
   try {
+    const params = new URLSearchParams(queryString);
+    params.append('createdBy', createdBy);
+
     const response = await api.get('/superadmins/admins/schools/allSchools', {
-      params: { createdBy }
+      params
     });
     return response.data;
   } catch (error) {

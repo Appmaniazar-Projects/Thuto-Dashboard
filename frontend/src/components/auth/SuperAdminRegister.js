@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Paper, 
@@ -11,10 +11,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormHelperText
+  FormHelperText,
+  CircularProgress
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import regionService from '../../services/regionService';
 import Logo from '../../assets/Logo.png';
 
 const SuperAdminRegister = () => {
@@ -26,33 +28,68 @@ const SuperAdminRegister = () => {
     password: '',
     confirmPassword: '',
     role: '',
-    province: ''
+    province: '',
+    region: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [provinces, setProvinces] = useState([]);
+  const [regions, setRegions] = useState([]);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingRegions, setLoadingRegions] = useState(false);
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
 
-  // South African provinces
-  const provinces = [
-    'Eastern Cape',
-    'Free State',
-    'Gauteng',
-    'KwaZulu-Natal',
-    'Limpopo',
-    'Mpumalanga',
-    'Northern Cape',
-    'North West',
-    'Western Cape'
-  ];
+  useEffect(() => {
+    loadProvinces();
+  }, []);
+
+  useEffect(() => {
+    if (formData.province) {
+      loadRegionsForProvince(formData.province);
+    } else {
+      setRegions([]);
+    }
+  }, [formData.province]);
+
+  const loadProvinces = async () => {
+    try {
+      setLoadingProvinces(true);
+      const data = await regionService.getAllProvinces();
+      setProvinces(data || []);
+    } catch (err) {
+      console.error('Failed to load provinces:', err);
+      // Fallback to hardcoded provinces
+      setProvinces([
+        'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
+        'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'
+      ]);
+    } finally {
+      setLoadingProvinces(false);
+    }
+  };
+
+  const loadRegionsForProvince = async (provinceId) => {
+    try {
+      setLoadingRegions(true);
+      const data = await regionService.getRegionsByProvinceId(provinceId);
+      setRegions(data || []);
+    } catch (err) {
+      console.error('Failed to load regions:', err);
+      setRegions([]);
+    } finally {
+      setLoadingRegions(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'role' && value === 'SUPERADMIN_NATIONAL' ? { province: '' } : {})
+      ...(name === 'role' && value === 'SUPERADMIN_NATIONAL' ? { province: '', region: '' } : {}),
+      ...(name === 'province' ? { region: '' } : {})
     }));
     if (error) setError('');
     if (success) setSuccess('');
@@ -78,6 +115,11 @@ const SuperAdminRegister = () => {
 
     if (formData.role === 'SUPERADMIN_PROVINCIAL' && !formData.province) {
       setError('Province is required for Provincial Super Admin');
+      return false;
+    }
+
+    if (formData.role === 'REGIONAL' && (!formData.province || !formData.region)) {
+      setError('Province and Region are required for Regional Admin');
       return false;
     }
 
@@ -117,7 +159,8 @@ const SuperAdminRegister = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        ...(formData.role === 'SUPERADMIN_PROVINCIAL' && { province: formData.province })
+        ...(formData.role === 'SUPERADMIN_PROVINCIAL' && { province: formData.province }),
+        ...(formData.role === 'REGIONAL' && { province: formData.province, region: formData.region })
       };
 
       const response = await authService.superAdminRegister(registrationData);
@@ -132,7 +175,8 @@ const SuperAdminRegister = () => {
         password: '',
         confirmPassword: '',
         role: '',
-        province: ''
+        province: '',
+        region: ''
       });
 
       // Redirect to login after 2 seconds
@@ -271,9 +315,10 @@ const SuperAdminRegister = () => {
             >
               <MenuItem value="SUPERADMIN_NATIONAL">National Super Admin</MenuItem>
               <MenuItem value="SUPERADMIN_PROVINCIAL">Provincial Super Admin</MenuItem>
+              <MenuItem value="REGIONAL">Regional Admin</MenuItem>
             </Select>
             <FormHelperText>
-              National admins have access to all provinces, Provincial admins are restricted to one province
+              National admins have access to all provinces, Provincial admins are restricted to one province, Regional admins are restricted to a region within a province
             </FormHelperText>
           </FormControl>
 
@@ -284,16 +329,91 @@ const SuperAdminRegister = () => {
                 name="province"
                 value={formData.province}
                 onChange={handleChange}
-                disabled={loading}
+                disabled={loading || loadingProvinces}
                 label="Province"
               >
-                {provinces.map((province) => (
-                  <MenuItem key={province} value={province}>
-                    {province}
+                {loadingProvinces ? (
+                  <MenuItem disabled>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Loading provinces...
                   </MenuItem>
-                ))}
+                ) : (
+                  provinces.map((province) => {
+                    const value = typeof province === 'object' ? province.id || province.name : province;
+                    const label = typeof province === 'object' ? province.name : province;
+                    return (
+                      <MenuItem key={value} value={value}>
+                        {label}
+                      </MenuItem>
+                    );
+                  })
+                )}
               </Select>
             </FormControl>
+          )}
+
+          {formData.role === 'REGIONAL' && (
+            <>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Province</InputLabel>
+                <Select
+                  name="province"
+                  value={formData.province}
+                  onChange={handleChange}
+                  disabled={loading || loadingProvinces}
+                  label="Province"
+                >
+                  {loadingProvinces ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading provinces...
+                    </MenuItem>
+                  ) : (
+                    provinces.map((province) => {
+                      const value = typeof province === 'object' ? province.id || province.name : province;
+                      const label = typeof province === 'object' ? province.name : province;
+                      return (
+                        <MenuItem key={value} value={value}>
+                          {label}
+                        </MenuItem>
+                      );
+                    })
+                  )}
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel>Region</InputLabel>
+                <Select
+                  name="region"
+                  value={formData.region}
+                  onChange={handleChange}
+                  disabled={loading || loadingRegions || !formData.province}
+                  label="Region"
+                >
+                  {loadingRegions ? (
+                    <MenuItem disabled>
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                      Loading regions...
+                    </MenuItem>
+                  ) : regions.length === 0 && formData.province ? (
+                    <MenuItem disabled>
+                      No regions found for this province
+                    </MenuItem>
+                  ) : (
+                    regions.map((region) => {
+                      const value = typeof region === 'object' ? region.id || region.name : region;
+                      const label = typeof region === 'object' ? region.name : region;
+                      return (
+                        <MenuItem key={value} value={value}>
+                          {label}
+                        </MenuItem>
+                      );
+                    })
+                  )}
+                </Select>
+              </FormControl>
+            </>
           )}
 
           <TextField

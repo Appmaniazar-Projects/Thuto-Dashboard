@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   
     localStorage.setItem('token', token);
   
-    if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(user.role)) {
+    if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(user.role)) {
       localStorage.setItem('superAdmin', JSON.stringify(user));
     } else {
       localStorage.setItem('user', JSON.stringify(user));
@@ -32,10 +32,16 @@ export const AuthProvider = ({ children }) => {
   
     localStorage.setItem('userRole', user.role);
   
-    if (user.province && ['superadmin_provincial', 'superadmin_national'].includes(user.role)) {
+    if (user.province && ['superadmin_provincial', 'superadmin_regional', 'superadmin_national'].includes(user.role)) {
       localStorage.setItem('userProvince', user.province);
     } else {
       localStorage.removeItem('userProvince');
+    }
+
+    if (user.region && ['superadmin_regional', 'superadmin_national'].includes(user.role)) {
+      localStorage.setItem('userRegion', user.region);
+    } else {
+      localStorage.removeItem('userRegion');
     }
   
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -130,6 +136,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('superAdmin');
       localStorage.removeItem('userRole');
       localStorage.removeItem('userProvince');
+      localStorage.removeItem('userRegion');
       delete api.defaults.headers.common['Authorization'];
   
       setCurrentUser(null);
@@ -138,7 +145,7 @@ export const AuthProvider = ({ children }) => {
       // Determine redirect path: send most users to the Landing page.
       // Keep superadmin redirected to their dedicated login.
       let redirectPath = '/landing';
-      if (['superadmin', 'superadmin_national', 'superadmin_provincial'].includes(userRole)) {
+      if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(userRole)) {
         redirectPath = '/superadmin/login';
       }
   
@@ -192,7 +199,9 @@ export const AuthProvider = ({ children }) => {
 
   const isMaster = () => currentUser?.level === 'master';
   const isSuperAdmin = () => currentUser?.role === 'superadmin';
-  const isProvincialSuperAdmin = () => currentUser?.level === 'provincial';
+  const isNationalSuperAdmin = () => currentUser?.level === 'national' || currentUser?.role === 'superadmin_national';
+  const isRegionalSuperAdmin = () => currentUser?.level === 'regional' || currentUser?.role === 'superadmin_regional';
+  const isProvincialSuperAdmin = () => currentUser?.level === 'provincial' || currentUser?.role === 'superadmin_provincial';
 
   const value = {
     user: currentUser,
@@ -206,6 +215,8 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!currentUser,
     isMaster,
     isSuperAdmin,
+    isNationalSuperAdmin,
+    isRegionalSuperAdmin,
     isProvincialSuperAdmin
   };
 

@@ -100,8 +100,6 @@ export const getEvents = async (startDate, endDate) => {
     const schoolId = getCurrentSchoolId();
     const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
     const events = coerceEventsArray(response.data);
-    console.log('Raw events from backend:', response.data);
-    console.log('Coerced events:', events);
     
     // Normalize dates if backend returns separate LocalDate/LocalTime
     const normalizedEvents = events.map(normalizeEventDates);
