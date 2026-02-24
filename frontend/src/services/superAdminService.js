@@ -20,6 +20,30 @@ export const getAllAdmins = async (role = 'admin', createdBy, queryString) => {
   }
 };
 
+export const getRegionalAdmins = async (createdBy, regionId) => {
+  try {
+    const response = await api.get('/superadmins/admins/regional/admins', {
+      params: { createdBy, regionId }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch regional admins:', error);
+    throw error;
+  }
+};
+
+export const getRegionalSchools = async (createdBy, regionId) => {
+  try {
+    const response = await api.get('/superadmins/admins/schools', {
+      params: { createdBy, regionId }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch regional schools:', error);
+    throw error;
+  }
+};
+
 /**
  * Fetches all schools in the system
  * @param {string} createdBy - Email of the superadmin making the request

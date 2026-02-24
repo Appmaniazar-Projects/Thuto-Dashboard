@@ -9,7 +9,7 @@ import PageTitle from '../../components/common/PageTitle';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
 import RegionFilter from '../../components/filters/RegionFilter';
 import { useAuth } from '../../context/AuthContext';
-import { getAllSchools, createSchool, updateSchool, deleteSchool, getAllAdmins, createAdmin, updateAdmin, deleteAdmin } from '../../services/superAdminService';
+import { getAllSchools, getRegionalSchools, createSchool, updateSchool, deleteSchool, getAllAdmins, getRegionalAdmins, createAdmin, updateAdmin, deleteAdmin } from '../../services/superAdminService';
 import gradeService from '../../services/gradeService';
 
 const PROVINCES = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'];
@@ -132,8 +132,8 @@ const SuperAdminDashboard = () => {
       const queryString = queryParams.toString();
 
       const [schoolsData, adminsData, gradesData] = await Promise.all([
-        getAllSchools(createdBy, queryString),
-        getAllAdmins('admin', createdBy, queryString),
+        isRegionalSuperAdmin() ? getRegionalSchools(createdBy, currentUser?.region) : getAllSchools(createdBy, queryString),
+        isRegionalSuperAdmin() ? getRegionalAdmins(createdBy, currentUser?.region) : getAllAdmins('admin', createdBy, queryString),
         gradeService.getAllGrades()
       ]);
 
