@@ -152,15 +152,15 @@ const SuperAdminRegister = () => {
     setLoading(true);
 
     try {
+      const roleToSubmit = formData.role === 'REGIONAL' ? 'SUPERADMIN_REGIONAL' : formData.role;
       const registrationData = {
         phoneNumber: formData.phoneNumber,
         name: formData.name,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
-        ...(formData.role === 'SUPERADMIN_PROVINCIAL' && { province: formData.province }),
-        ...(formData.role === 'REGIONAL' && { province: formData.province, region: formData.region })
+        role: roleToSubmit,
+        ...(roleToSubmit === 'SUPERADMIN_PROVINCIAL' && { province: formData.province })
       };
 
       const response = await authService.superAdminRegister(registrationData);
