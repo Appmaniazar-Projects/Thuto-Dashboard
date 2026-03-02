@@ -7,9 +7,9 @@ import {
 } from '@mui/icons-material';
 import PageTitle from '../../components/common/PageTitle';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
-import RegionFilter from '../../components/filters/RegionFilter';
 import { useAuth } from '../../context/AuthContext';
-import { getAllSchools, getRegionalSchools, createSchool, updateSchool, deleteSchool, getAllAdmins, getRegionalAdmins, createAdmin, updateAdmin, deleteAdmin } from '../../services/superAdminService';
+import { getAllSchools, getRegionalSchools, getAllRoleSpecificUsers, createSchool, updateSchool, deleteSchool, getAllAdmins, getRegionalAdmins, createAdmin, updateAdmin, deleteAdmin } from '../../services/superAdminService';
+import regionService from '../../services/regionService';
 
 const PROVINCES = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'];
 
@@ -25,6 +25,10 @@ const SuperAdminDashboard = () => {
   // Regional filtering state
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
+
+  const [provinceOptions, setProvinceOptions] = useState([]);
+  const [regionOptions, setRegionOptions] = useState([]);
+  const [loadingRegions, setLoadingRegions] = useState(false);
 
   // Dialog states
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
@@ -56,8 +60,39 @@ const SuperAdminDashboard = () => {
   });
 
   useEffect(() => {
+    const initFilters = async () => {
+      try {
+        const provinces = await regionService.getAllProvinces();
+        setProvinceOptions(Array.isArray(provinces) ? provinces : []);
+      } catch (e) {
+        setProvinceOptions(PROVINCES);
+      }
+    };
+
+    initFilters();
     fetchData();
   }, [selectedRegion, selectedProvince]);
+
+  useEffect(() => {
+    const loadRegions = async () => {
+      if (!selectedProvince) {
+        setRegionOptions([]);
+        return;
+      }
+
+      setLoadingRegions(true);
+      try {
+        const regions = await regionService.getRegionsByProvinceId(selectedProvince);
+        setRegionOptions(Array.isArray(regions) ? regions : []);
+      } catch (e) {
+        setRegionOptions([]);
+      } finally {
+        setLoadingRegions(false);
+      }
+    };
+
+    loadRegions();
+  }, [selectedProvince]);
 
   const fetchData = async () => {
 
@@ -92,7 +127,9 @@ const SuperAdminDashboard = () => {
       const queryString = queryParams.toString();
 
       const [schoolsData, adminsData] = await Promise.all([
-        isRegionalSuperAdmin() ? getRegionalSchools(createdBy, currentUser?.region) : getAllSchools(createdBy, queryString),
+        isRegionalSuperAdmin()
+          ? getRegionalSchools(createdBy, currentUser?.region)
+          : getAllRoleSpecificUsers('school', createdBy, queryString),
         isRegionalSuperAdmin() ? getRegionalAdmins(createdBy, currentUser?.region) : getAllAdmins('admin', createdBy, queryString)
       ]);
 
@@ -101,7 +138,13 @@ const SuperAdminDashboard = () => {
 
     } catch (err) {
 
-      setError('Failed to load data');
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to load data';
+
+      setError(message);
 
       console.error(err);
 
@@ -112,10 +155,6 @@ const SuperAdminDashboard = () => {
     }
 
   };
-
-
-  const loadSubjects = async () => {};
-
 
 
   // School Handlers
@@ -203,10 +242,6 @@ const SuperAdminDashboard = () => {
         formDataToSubmit.region = currentUser?.region;
 
       }
-
-      delete formDataToSubmit.subjects;
-
-      delete formDataToSubmit.grades;
 
   
 
@@ -788,18 +823,61 @@ const SuperAdminDashboard = () => {
 
 
 
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <FormControl size="small" sx={{ minWidth: 220 }} disabled={loading || isProvincialSuperAdmin() || isRegionalSuperAdmin()}>
+          <InputLabel>Province</InputLabel>
+          <Select
+            value={selectedProvince}
+            label="Province"
+            onChange={(e) => {
+              setSelectedProvince(e.target.value);
+              setSelectedRegion('');
+            }}
+          >
+            <MenuItem value="">All Provinces</MenuItem>
+            {(provinceOptions.length ? provinceOptions : PROVINCES).map((province) => {
+              const value = typeof province === 'object' ? (province.id ?? province.name) : province;
+              const label = typeof province === 'object' ? (province.name ?? String(value)) : province;
+              return (
+                <MenuItem key={String(value)} value={value}>
+                  {label}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
 
-        <RegionFilter
+        <FormControl size="small" sx={{ minWidth: 260 }} disabled={loading || !selectedProvince || isRegionalSuperAdmin() || loadingRegions}>
+          <InputLabel>Region</InputLabel>
+          <Select
+            value={selectedRegion}
+            label="Region"
+            onChange={(e) => setSelectedRegion(e.target.value)}
+          >
+            <MenuItem value="">All Regions</MenuItem>
+            {regionOptions.map((region) => {
+              const value = typeof region === 'object' ? (region.id ?? region.name) : region;
+              const label = typeof region === 'object' ? (region.name ?? String(value)) : region;
+              return (
+                <MenuItem key={String(value)} value={value}>
+                  {label}
+                </MenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
 
-          onRegionChange={(region) => setSelectedRegion(region)}
-
-          onProvinceChange={(province) => setSelectedProvince(province)}
-
-          disabled={loading}
-
-        />
-
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={loading || (!selectedProvince && !selectedRegion)}
+          onClick={() => {
+            setSelectedProvince('');
+            setSelectedRegion('');
+          }}
+        >
+          Clear
+        </Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
