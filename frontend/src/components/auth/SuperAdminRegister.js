@@ -318,9 +318,6 @@ const SuperAdminRegister = () => {
               <MenuItem value="SUPERADMIN_PROVINCIAL">Provincial Super Admin</MenuItem>
               <MenuItem value="REGIONAL">Regional Admin</MenuItem>
             </Select>
-            <FormHelperText>
-              National admins have access to all provinces, Provincial admins are restricted to one province, Regional admins are restricted to a region within a province
-            </FormHelperText>
           </FormControl>
 
           {formData.role === 'SUPERADMIN_PROVINCIAL' && (

@@ -10,7 +10,6 @@ import SuperadminManagement from '../../components/superadmin/SuperadminManageme
 import RegionFilter from '../../components/filters/RegionFilter';
 import { useAuth } from '../../context/AuthContext';
 import { getAllSchools, getRegionalSchools, createSchool, updateSchool, deleteSchool, getAllAdmins, getRegionalAdmins, createAdmin, updateAdmin, deleteAdmin } from '../../services/superAdminService';
-import gradeService from '../../services/gradeService';
 
 const PROVINCES = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'];
 
@@ -18,100 +17,61 @@ const SuperAdminDashboard = () => {
   const { isMaster, isNationalSuperAdmin, isRegionalSuperAdmin, isProvincialSuperAdmin, currentUser } = useAuth();
   const [schools, setSchools] = useState([]);
   const [admins, setAdmins] = useState([]);
-  const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schools');
   const [submitting, setSubmitting] = useState(false);
 
-  
-
   // Regional filtering state
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
 
-
   // Dialog states
-
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
   const [editingAdmin, setEditingAdmin] = useState(null);
 
   // Form states
-
   const [schoolForm, setSchoolForm] = useState({
-
     name: '',
-
     address: '',
-
     phoneNumber: '',
-
     email: '',
-
     principalName: '',
-
     province: '',
-
     region: '',
-
     logo: ''
-
   });
-
-  
 
   const [adminForm, setAdminForm] = useState({
-
     name: '',
-
     lastName: '',
-
     email: '',
-
     phoneNumber: '',
-
     province:'',
-
     region: '',
-
     schoolId: '',
-
     password: ''
-
   });
 
-
-
   useEffect(() => {
-
     fetchData();
-
-    loadGrades();
-
-  }, [selectedRegion, selectedProvince]); 
-
-
+  }, [selectedRegion, selectedProvince]);
 
   const fetchData = async () => {
 
     try {
 
       setLoading(true);
-
       setError(null);
 
 
 
       const createdBy = currentUser?.email;
-
       if (!createdBy) {
-
       setError('Unable to identify user. Please log in again.');
-
       return;
-
        }
 
       
@@ -131,15 +91,13 @@ const SuperAdminDashboard = () => {
 
       const queryString = queryParams.toString();
 
-      const [schoolsData, adminsData, gradesData] = await Promise.all([
+      const [schoolsData, adminsData] = await Promise.all([
         isRegionalSuperAdmin() ? getRegionalSchools(createdBy, currentUser?.region) : getAllSchools(createdBy, queryString),
-        isRegionalSuperAdmin() ? getRegionalAdmins(createdBy, currentUser?.region) : getAllAdmins('admin', createdBy, queryString),
-        gradeService.getAllGrades()
+        isRegionalSuperAdmin() ? getRegionalAdmins(createdBy, currentUser?.region) : getAllAdmins('admin', createdBy, queryString)
       ]);
 
       setSchools(schoolsData || []);
       setAdmins(adminsData || []);
-      setGrades(gradesData || []);
 
     } catch (err) {
 
@@ -154,45 +112,6 @@ const SuperAdminDashboard = () => {
     }
 
   };
-
-
-
-  const loadGrades = async () => {
-
-    try {
-
-      // For superadmins, try to get all grades first, fall back to school grades if needed
-
-      try {
-
-        const gradesData = await gradeService.getAllGrades();
-
-        setGrades(gradesData);
-
-      } catch (allGradesError) {
-
-        // If getAllGrades fails, try getSchoolGrades as fallback
-
-        console.warn('getAllGrades failed, trying getSchoolGrades:', allGradesError);
-
-        const gradesData = await gradeService.getSchoolGrades();
-
-        setGrades(gradesData);
-
-      }
-
-    } catch (error) {
-
-      console.error('Error loading grades:', error);
-
-      // Set empty array as fallback
-
-      setGrades([]);
-
-    }
-
-  };
-
 
 
   const loadSubjects = async () => {};
@@ -989,33 +908,7 @@ const SuperAdminDashboard = () => {
 
                   <Typography variant="h4">{admins.length}</Typography>
 
-                  <Typography color="text.secondary">Total Admins</Typography>
-
-                </Box>
-
-              </Box>
-
-            </CardContent>
-
-          </Card>
-
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4}>
-
-          <Card>
-
-            <CardContent>
-
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-
-                <PeopleIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-
-                <Box>
-
-                  <Typography variant="h4">{grades.length}</Typography>
-
-                  <Typography color="text.secondary">Total Grades</Typography>
+                  <Typography color="text.secondary">Total Administrators</Typography>
 
                 </Box>
 
