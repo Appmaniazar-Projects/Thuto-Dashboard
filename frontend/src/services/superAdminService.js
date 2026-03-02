@@ -44,6 +44,21 @@ export const getRegionalSchools = async (createdBy, regionId) => {
   }
 };
 
+export const getAllRoleSpecificUsers = async (role, createdBy, queryString) => {
+  try {
+    const params = new URLSearchParams(queryString);
+    params.append('createdBy', createdBy);
+
+    const response = await api.get(`/superadmins/admins/allRoleSpecificUsers/role/${role}`, {
+      params
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch role-specific users for role "${role}":`, error);
+    throw error;
+  }
+};
+
 /**
  * Fetches all schools in the system
  * @param {string} createdBy - Email of the superadmin making the request
