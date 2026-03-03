@@ -39,6 +39,7 @@ api.interceptors.request.use(
     const excludedPaths = [
       '/auth/',
       '/superadmin/',
+      '/superadmins/',
       '/master/',
       '/attendance/',
       '/resources/',
@@ -46,13 +47,15 @@ api.interceptors.request.use(
       '/teacher/',
       '/admin/',
       '/parent/',
+      '/api/parent/',
       '/users/',
       '/subjects/',
       '/student/'
 
     ];
 
-    const shouldExcludeSchoolId = excludedPaths.some(path => config.url.includes(path));
+    const requestUrl = (config.url || '').toString();
+    const shouldExcludeSchoolId = excludedPaths.some(path => requestUrl.includes(path));
 
     if (userData?.schoolId && !shouldExcludeSchoolId) {
       // Add schoolId as query parameter
