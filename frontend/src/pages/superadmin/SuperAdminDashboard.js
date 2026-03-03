@@ -176,7 +176,7 @@ const SuperAdminDashboard = () => {
       const [schoolsData, adminsData] = await Promise.all([
         isRegionalSuperAdmin()
           ? getRegionalSchools(createdBy, currentUser?.region)
-          : getAllRoleSpecificUsers('school', createdBy, queryString),
+          : getAllSchools(createdBy, queryString),
         isRegionalSuperAdmin() ? getRegionalAdmins(createdBy, currentUser?.region) : getAllAdmins('admin', createdBy, queryString)
       ]);
 

@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Paper, Typography, TextField, Button, Box, Alert } from '@mui/material';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { Paper, Typography, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
 import Logo from '../../assets/Logo.png';
 
-const auth = getAuth();
-
 const SuperAdminLogin = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const navigate    = useNavigate();
   const { setAuthData } = useAuth();
 
   const handleChange = (e) => {
@@ -34,26 +28,26 @@ const SuperAdminLogin = () => {
       setAuthData(user, token);
       navigate('/superadmin/dashboard');
     } catch (err) {
-      // Handle specific error responses from backend
-      if (err.response?.data) {
-        const { status, message } = err.response.data;
-        
-        switch (status) {
-          case 401:
-            setError('Invalid email or password. Please try again.');
-            break;
-          case 404:
-            setError('Account not found. Please check your email address.');
-            break;
-          case 500:
-            setError('Server error occurred. Please try again later.');
-            break;
-          default:
-            setError(message || 'Login failed. Please try again.');
-        }
-      } else {
-        // Fallback for network errors or unexpected format
-        setError(err.message || 'Failed to log in.');
+      // HTTP status lives on err.response.status, not inside the response body
+      const httpStatus = err.response?.status;
+      const bodyMessage = err.response?.data?.message;
+
+      switch (httpStatus) {
+        case 401:
+          setError('Invalid email or password. Please try again.');
+          break;
+        case 403:
+          setError('Access denied. You do not have super admin permissions.');
+          break;
+        case 404:
+          setError('Account not found. Please check your email address.');
+          break;
+        case 500:
+          setError('Server error. Please try again later or contact support.');
+          break;
+        default:
+          // Use backend message if available, otherwise fall back to a generic message
+          setError(bodyMessage || err.message || 'Login failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -70,23 +64,34 @@ const SuperAdminLogin = () => {
         width: '100%'
       }}
     >
-      <Paper elevation={3} sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 400 }}>
-         <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
-           <img 
-             src={Logo} 
-             alt="Thuto Dashboard" 
-             style={{ 
-               height: '80px', 
-               width: 'auto',
-               objectFit: 'contain'
-             }} 
+      <Paper
+        elevation={3}
+        sx={{
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+          maxWidth: 400
+        }}
+      >
+        <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'center' }}>
+          <img
+            src={Logo}
+            alt="Thuto Logo"
+            style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
           />
         </Box>
+
         <Typography variant="h4" align="center" color="text.secondary" sx={{ mb: 1.5 }}>
           Super Admin Login
         </Typography>
 
-        {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+            {error}
+          </Alert>
+        )}
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, width: '100%' }}>
           <TextField
@@ -94,6 +99,8 @@ const SuperAdminLogin = () => {
             fullWidth
             label="Email"
             name="email"
+            type="email"
+            autoComplete="email"
             value={formData.email}
             onChange={handleChange}
             margin="normal"
@@ -106,6 +113,7 @@ const SuperAdminLogin = () => {
             label="Password"
             type="password"
             name="password"
+            autoComplete="current-password"
             value={formData.password}
             onChange={handleChange}
             margin="normal"
@@ -118,12 +126,16 @@ const SuperAdminLogin = () => {
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
+            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : null}
           >
             {loading ? 'Signing in...' : 'Login'}
           </Button>
 
           <Box sx={{ textAlign: 'right', mb: 2 }}>
-            <Link to="/superadmin/forgot-password" style={{ textDecoration: 'none', color: '#1976d2', fontSize: '0.875rem' }}>
+            <Link
+              to="/superadmin/forgot-password"
+              style={{ textDecoration: 'none', color: '#1976d2', fontSize: '0.875rem' }}
+            >
               Forgot Password?
             </Link>
           </Box>
@@ -131,7 +143,10 @@ const SuperAdminLogin = () => {
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Don't have an account?{' '}
-              <Link to="/superadmin/register" style={{ textDecoration: 'none', color: '#1976d2' }}>
+              <Link
+                to="/superadmin/register"
+                style={{ textDecoration: 'none', color: '#1976d2' }}
+              >
                 Register here
               </Link>
             </Typography>
