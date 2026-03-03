@@ -48,6 +48,12 @@ const SuperAdminDashboard = () => {
     logo: ''
   });
 
+  // School form regions state
+  const [schoolFormRegions, setSchoolFormRegions] = useState([]);
+  const [loadingSchoolFormRegions, setLoadingSchoolFormRegions] = useState(false);
+  const [schoolFormProvinces, setSchoolFormProvinces] = useState([]);
+  const [loadingSchoolFormProvinces, setLoadingSchoolFormProvinces] = useState(false);
+
   const [adminForm, setAdminForm] = useState({
     name: '',
     lastName: '',
@@ -93,6 +99,47 @@ const SuperAdminDashboard = () => {
 
     loadRegions();
   }, [selectedProvince]);
+
+  // Load regions for school form when province changes
+  useEffect(() => {
+    const loadSchoolFormRegions = async () => {
+      if (!schoolForm.province) {
+        setSchoolFormRegions([]);
+        return;
+      }
+
+      setLoadingSchoolFormRegions(true);
+      try {
+        const regions = await regionService.getRegionsByProvinceId(schoolForm.province);
+        setSchoolFormRegions(Array.isArray(regions) ? regions : []);
+      } catch (e) {
+        setSchoolFormRegions([]);
+      } finally {
+        setLoadingSchoolFormRegions(false);
+      }
+    };
+
+    loadSchoolFormRegions();
+  }, [schoolForm.province]);
+
+  // Load provinces for school form when dialog opens
+  useEffect(() => {
+    const loadSchoolFormProvinces = async () => {
+      if (!schoolDialogOpen) return;
+      
+      setLoadingSchoolFormProvinces(true);
+      try {
+        const provinces = await regionService.getAllProvinces();
+        setSchoolFormProvinces(Array.isArray(provinces) ? provinces : []);
+      } catch (e) {
+        setSchoolFormProvinces(PROVINCES);
+      } finally {
+        setLoadingSchoolFormProvinces(false);
+      }
+    };
+
+    loadSchoolFormProvinces();
+  }, [schoolDialogOpen]);
 
   const fetchData = async () => {
 
@@ -170,8 +217,12 @@ const SuperAdminDashboard = () => {
   
 
       // Validate required fields
-
       const requiredFields = ['name', 'address', 'phoneNumber', 'email', 'principalName', 'province'];
+      
+      // Add region to required fields for National and Provincial SuperAdmins
+      if (isNationalSuperAdmin() || isProvincialSuperAdmin()) {
+        requiredFields.push('region');
+      }
 
       const missingFields = requiredFields.filter(field => !schoolForm[field]?.trim());
 
@@ -430,13 +481,16 @@ const SuperAdminDashboard = () => {
 
         principalName: '', 
 
-        province: isProvincialSuperAdmin() ? currentUser?.province : '',
+        province: isProvincialSuperAdmin() ? currentUser?.province : (isRegionalSuperAdmin() ? currentUser?.province : ''),
 
         region: isRegionalSuperAdmin() ? currentUser?.region : '',
 
         logo: ''
 
       });
+
+      // Reset school form regions when opening dialog
+      setSchoolFormRegions([]);
 
     }
 
@@ -1292,7 +1346,38 @@ const SuperAdminDashboard = () => {
 
           <TextField label="Principal Name" fullWidth margin="dense" value={schoolForm.principalName} onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} />
 
-          {(isNationalSuperAdmin() || isRegionalSuperAdmin()) && (
+          {/* Province field - only shown for National SuperAdmins */}
+          {isNationalSuperAdmin() && (
+            <TextField
+              select
+              fullWidth
+              margin="normal"
+              label="Province"
+              name="province"
+              value={schoolForm.province}
+              onChange={(e) => {
+                setSchoolForm({ ...schoolForm, province: e.target.value, region: '' });
+              }}
+              required
+              disabled={loadingSchoolFormProvinces}
+            >
+              <MenuItem value="">
+                <em>Select Province</em>
+              </MenuItem>
+              {(schoolFormProvinces.length ? schoolFormProvinces : PROVINCES).map((province) => {
+                const value = typeof province === 'object' ? (province.id ?? province.name) : province;
+                const label = typeof province === 'object' ? (province.name ?? String(value)) : province;
+                return (
+                  <MenuItem key={String(value)} value={value}>
+                    {label}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          )}
+
+          {/* Region field - shown for National and Provincial SuperAdmins */}
+          {(isNationalSuperAdmin() || isProvincialSuperAdmin()) && (
             <TextField
               select
               fullWidth
@@ -1302,52 +1387,41 @@ const SuperAdminDashboard = () => {
               value={schoolForm.region}
               onChange={(e) => setSchoolForm({ ...schoolForm, region: e.target.value })}
               required={isNationalSuperAdmin()}
-              disabled={isRegionalSuperAdmin()}
+              disabled={loadingSchoolFormRegions || (!schoolForm.province && isNationalSuperAdmin())}
             >
               <MenuItem value="">
-                <em>Select Region</em>
+                <em>
+                  {isNationalSuperAdmin() 
+                    ? (!schoolForm.province ? 'Select Province First' : 'Select Region')
+                    : 'Select Region'
+                  }
+                </em>
               </MenuItem>
-              <MenuItem value="Northern Region">Northern Region</MenuItem>
-              <MenuItem value="Eastern Region">Eastern Region</MenuItem>
-              <MenuItem value="Central Region">Central Region</MenuItem>
-              <MenuItem value="Western Region">Western Region</MenuItem>
+              {schoolFormRegions.map((region) => {
+                const value = typeof region === 'object' ? (region.id ?? region.name) : region;
+                const label = typeof region === 'object' ? (region.name ?? String(value)) : region;
+                return (
+                  <MenuItem key={String(value)} value={value}>
+                    {label}
+                  </MenuItem>
+                );
+              })}
             </TextField>
           )}
 
-          <TextField
-            select
+          {/* Hidden field for Regional SuperAdmins - shows their assigned region */}
+          {isRegionalSuperAdmin() && (
+            <TextField
+              fullWidth
+              margin="normal"
+              label="Region"
+              value={currentUser?.region || ''}
+              disabled
+              helperText="Region is set based on your assigned region"
+            />
+          )}
 
-            fullWidth
-
-            margin="normal"
-
-            label="Province"
-
-            name="province"
-
-            value={schoolForm.province}
-
-            onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value })}
-
-            required
-
-          >
-
-            {PROVINCES.map((province) => (
-
-              <MenuItem key={province} value={province}>
-
-                {province}
-
-              </MenuItem>
-
-            ))}
-
-          </TextField>
-
-
-
-        </DialogContent>
+          </DialogContent>
 
         <DialogActions>
 
