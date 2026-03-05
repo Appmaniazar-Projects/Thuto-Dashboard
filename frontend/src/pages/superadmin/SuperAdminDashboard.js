@@ -26,7 +26,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip
+  Chip,
+  Grid
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, School as SchoolIcon, AdminPanelSettings as AdminIcon, People as PeopleIcon, SupervisorAccount as MasterIcon
@@ -55,6 +56,29 @@ const SuperAdminDashboard = () => {
   const [provinceOptions, setProvinceOptions] = useState([]);
   const [regionOptions, setRegionOptions] = useState([]);
   const [loadingRegions, setLoadingRegions] = useState(false);
+
+  // School status helper
+  const getSchoolStatus = (school) => {
+    // A school is "adopted" if it has an admin assigned
+    const hasAdmin = admins.some(admin => admin.schoolId === school.id);
+    return hasAdmin ? 'adopted' : 'pre-populated';
+  };
+
+  const getSchoolStatusColor = (status) => {
+    switch (status) {
+      case 'adopted': return 'success';
+      case 'pre-populated': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getSchoolStatusText = (status) => {
+    switch (status) {
+      case 'adopted': return 'Adopted';
+      case 'pre-populated': return 'Pre-populated';
+      default: return 'Unknown';
+    }
+  };
 
   // Dialog states
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
@@ -330,6 +354,17 @@ const SuperAdminDashboard = () => {
 
         return;
 
+      }
+
+      // Check for duplicate schools
+      const duplicates = checkDuplicateSchool(schoolForm.name, schoolForm.address);
+      if (duplicates.length > 0 && !editingSchool) {
+        const duplicateNames = duplicates.map(d => d.name).join(', ');
+        const confirmMessage = `Potential duplicate schools found: ${duplicateNames}\n\nDo you want to continue creating this school?`;
+        
+        if (!window.confirm(confirmMessage)) {
+          return;
+        }
       }
 
   
@@ -632,6 +667,12 @@ const SuperAdminDashboard = () => {
           if (!school.email) rowErrors.push('Email is required');
           if (!school.principalname) rowErrors.push('Principal name is required');
           if (!school.province) rowErrors.push('Province is required');
+          
+          // Check for duplicates in bulk upload
+          const duplicates = checkDuplicateSchool(school.name, school.address);
+          if (duplicates.length > 0) {
+            rowErrors.push(`Potential duplicate: ${duplicates.map(d => d.name).join(', ')}`);
+          }
           
           if (rowErrors.length > 0) {
             errors.push({ row: i + 1, errors: rowErrors, data: school });
@@ -1351,9 +1392,11 @@ const SuperAdminDashboard = () => {
                       <TableCell>{school.principalName}</TableCell>
 
                       <TableCell>
-
-                        <Chip label={school.status || 'Active'} color={school.status === 'Active' ? 'success' : 'default'} size="small" />
-
+                        <Chip 
+                          label={getSchoolStatusText(getSchoolStatus(school))} 
+                          color={getSchoolStatusColor(getSchoolStatus(school))} 
+                          size="small" 
+                        />
                       </TableCell>
 
                       <TableCell align="right">
