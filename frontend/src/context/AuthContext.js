@@ -24,28 +24,31 @@ export const AuthProvider = ({ children }) => {
   
     localStorage.setItem('token', token);
   
-    if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(user.role)) {
-      localStorage.setItem('superAdmin', JSON.stringify(user));
+    // Normalize role to lowercase before storing
+    const normalizedUser = { ...user, role: user.role.toLowerCase() };
+
+    if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(normalizedUser.role)) {
+      localStorage.setItem('superAdmin', JSON.stringify(normalizedUser));
     } else {
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
     }
   
-    localStorage.setItem('userRole', user.role);
+    localStorage.setItem('userRole', normalizedUser.role);
   
-    if (user.province && ['superadmin_provincial', 'superadmin_regional', 'superadmin_national'].includes(user.role)) {
-      localStorage.setItem('userProvince', user.province);
+    if (normalizedUser.province && ['superadmin_provincial', 'superadmin_regional', 'superadmin_national'].includes(normalizedUser.role)) {
+      localStorage.setItem('userProvince', normalizedUser.province);
     } else {
       localStorage.removeItem('userProvince');
     }
 
-    if (user.region && ['superadmin_regional', 'superadmin_national'].includes(user.role)) {
-      localStorage.setItem('userRegion', user.region);
+    if (normalizedUser.region && ['superadmin_regional', 'superadmin_national'].includes(normalizedUser.role)) {
+      localStorage.setItem('userRegion', normalizedUser.region);
     } else {
       localStorage.removeItem('userRegion');
     }
   
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setCurrentUser(user);
+    setCurrentUser(normalizedUser);
   };
   
 
@@ -77,12 +80,16 @@ export const AuthProvider = ({ children }) => {
               id: userData.id || null,
               email: userData.email || null,
               role: userData.role.toLowerCase(), // enforce lowercase
-              level: userData.level || null,
+              level: userData.level?.toLowerCase() || null, // enforce lowercase on level too
               province: userData.province || null,
-              schoolId: userData.schoolId || userData.school_id || null, // Add schoolId support
+              region: userData.region || null,
+              schoolId: userData.schoolId || userData.school_id || null,
               displayName: userData.name || userData.displayName || 'User',
               phoneNumber: userData.phoneNumber || null,
-              ...userData
+              ...userData,
+              // Re-apply normalized values so spread doesn't overwrite them
+              role: userData.role.toLowerCase(),
+              level: userData.level ? userData.level.toLowerCase() : null,
             };
             setCurrentUser(userData);
           } else {
@@ -97,6 +104,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('superAdmin');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userProvince');
+        localStorage.removeItem('userRegion');
         delete api.defaults.headers.common['Authorization'];
         setCurrentUser(null);
       } finally {
@@ -142,8 +150,7 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(null);
       setError('');
   
-      // Determine redirect path: send most users to the Landing page.
-      // Keep superadmin redirected to their dedicated login.
+      // Determine redirect path
       let redirectPath = '/landing';
       if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(userRole)) {
         redirectPath = '/superadmin/login';
@@ -187,8 +194,9 @@ export const AuthProvider = ({ children }) => {
         id: userData.id,
         email: userData.email,
         role: userData.role?.toLowerCase() || 'student',
-        level: userData.level || null,
+        level: userData.level?.toLowerCase() || null,
         province: userData.province || null,
+        region: userData.region || null,
         displayName: userData.name || userData.displayName || 'User',
         phoneNumber: userData.phoneNumber
       });
@@ -197,11 +205,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const isMaster = () => currentUser?.level === 'master';
-  const isSuperAdmin = () => currentUser?.role === 'superadmin';
-  const isNationalSuperAdmin = () => currentUser?.level === 'national' || currentUser?.role === 'superadmin_national';
-  const isRegionalSuperAdmin = () => currentUser?.level === 'regional' || currentUser?.role === 'superadmin_regional';
-  const isProvincialSuperAdmin = () => currentUser?.level === 'provincial' || currentUser?.role === 'superadmin_provincial';
+  // All role checks use toLowerCase() to handle backend returning uppercase roles
+  // e.g. "SUPERADMIN_NATIONAL" from JWT vs "superadmin_national" stored in localStorage
+  const isMaster = () => currentUser?.level?.toLowerCase() === 'master';
+  
+  const isSuperAdmin = () =>
+    ['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial']
+      .includes(currentUser?.role?.toLowerCase());
+
+  const isNationalSuperAdmin = () =>
+    currentUser?.level?.toLowerCase() === 'national' ||
+    currentUser?.role?.toLowerCase() === 'superadmin_national';
+
+  const isRegionalSuperAdmin = () =>
+    currentUser?.level?.toLowerCase() === 'regional' ||
+    currentUser?.role?.toLowerCase() === 'superadmin_regional';
+
+  const isProvincialSuperAdmin = () =>
+    currentUser?.level?.toLowerCase() === 'provincial' ||
+    currentUser?.role?.toLowerCase() === 'superadmin_provincial';
 
   const value = {
     user: currentUser,

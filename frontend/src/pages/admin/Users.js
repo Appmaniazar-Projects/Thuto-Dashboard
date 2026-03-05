@@ -37,11 +37,13 @@ import {
   AdminPanelSettings as AdminIcon,
   School as TeacherIcon,
   Download as DownloadIcon,
-  UploadFile as UploadFileIcon
+  UploadFile as UploadFileIcon,
+  Note as NoteIcon
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
+import studentService from '../../services/studentService';
 import PageTitle from '../../components/common/PageTitle';
 
 const Users = () => {
@@ -452,6 +454,36 @@ const Users = () => {
         }
     };
 
+    const handleExportStudentNotes = async (student) => {
+        try {
+            // Get student's notes from the backend
+            const notes = await studentService.getStudentNotes(student.id);
+            
+            // Create CSV content
+            const csvContent = [
+                ['Student Name', 'Date', 'Note', 'Teacher', 'Subject'],
+                ...notes.map(note => [
+                    `${student.name} ${student.lastName || ''}`,
+                    note.date || new Date().toISOString().split('T')[0],
+                    note.content || '',
+                    note.teacherName || '',
+                    note.subjectName || ''
+                ])
+            ];
+
+            // Convert to CSV string
+            const csvString = Papa.unparse(csvContent);
+            
+            // Create blob and download
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            saveAs(blob, `student_notes_${student.name}_${student.lastName || ''}_${new Date().toISOString().split('T')[0]}.csv`);
+            
+        } catch (error) {
+            console.error('Failed to export student notes:', error);
+            setError('Failed to export student notes. Please try again.');
+        }
+    };
+
     const openDialog = (user = null) => {
         if (user) {
             setEditingUser(user);
@@ -774,6 +806,11 @@ const Users = () => {
                                                 <TableCell>{studentGradeName}</TableCell>
                                             )}
                                             <TableCell align="right">
+                                                {title === 'Students' && (
+                                                    <IconButton onClick={() => handleExportStudentNotes(user)} title="Export Notes">
+                                                        <NoteIcon />
+                                                    </IconButton>
+                                                )}
                                                 <IconButton onClick={() => openDialog(user)}>
                                                     <EditIcon />
                                                 </IconButton>
