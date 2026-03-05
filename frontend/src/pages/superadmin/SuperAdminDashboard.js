@@ -1,6 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Grid, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Chip, Alert, CircularProgress, FormControl, InputLabel, Select, Checkbox, ListItemText, Input
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+  Alert,
+  CircularProgress,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Chip
 } from '@mui/material';
 import {
   Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, School as SchoolIcon, AdminPanelSettings as AdminIcon, People as PeopleIcon, SupervisorAccount as MasterIcon
@@ -33,6 +59,7 @@ const SuperAdminDashboard = () => {
   // Dialog states
   const [schoolDialogOpen, setSchoolDialogOpen] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
   const [editingAdmin, setEditingAdmin] = useState(null);
 
@@ -64,6 +91,11 @@ const SuperAdminDashboard = () => {
     schoolId: '',
     password: ''
   });
+
+  // Bulk upload state
+  const [bulkUploadFile, setBulkUploadFile] = useState(null);
+  const [bulkUploadPreview, setBulkUploadPreview] = useState([]);
+  const [bulkUploadErrors, setBulkUploadErrors] = useState([]);
 
   useEffect(() => {
     const initFilters = async () => {
@@ -205,6 +237,70 @@ const SuperAdminDashboard = () => {
 
 
   // School Handlers
+
+  const checkDuplicateSchool = (schoolName, address) => {
+    if (!schoolName || !schools.length) return [];
+    
+    const searchName = schoolName.toLowerCase().trim();
+    const searchAddress = (address || '').toLowerCase().trim();
+    
+    const duplicates = schools.filter(school => {
+      const existingName = (school.name || '').toLowerCase();
+      const existingAddress = (school.address || '').toLowerCase();
+      
+      // Fuzzy matching for names (contains or very similar)
+      const nameMatch = existingName.includes(searchName) || 
+                       searchName.includes(existingName) ||
+                       calculateSimilarity(searchName, existingName) > 0.8;
+      
+      // Address matching if provided
+      const addressMatch = !searchAddress || 
+                          existingAddress.includes(searchAddress) ||
+                          searchAddress.includes(existingAddress);
+      
+      return nameMatch && addressMatch;
+    });
+    
+    return duplicates;
+  };
+
+  const calculateSimilarity = (str1, str2) => {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const editDistance = levenshteinDistance(longer, shorter);
+    return (longer.length - editDistance) / longer.length;
+  };
+
+  const levenshteinDistance = (str1, str2) => {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  };
 
   const handleSchoolSubmit = async () => {
 
@@ -499,6 +595,135 @@ const SuperAdminDashboard = () => {
   };
 
   
+
+  // Bulk Upload Handlers
+  const handleBulkUploadFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setBulkUploadFile(file);
+      parseBulkUploadFile(file);
+    }
+  };
+
+  const parseBulkUploadFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target.result;
+        const rows = data.split('\n').filter(row => row.trim());
+        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+        
+        const schools = [];
+        const errors = [];
+        
+        for (let i = 1; i < rows.length; i++) {
+          const values = rows[i].split(',').map(v => v.trim());
+          const school = {};
+          
+          headers.forEach((header, index) => {
+            school[header] = values[index] || '';
+          });
+          
+          // Validation
+          const rowErrors = [];
+          if (!school.name) rowErrors.push('Name is required');
+          if (!school.address) rowErrors.push('Address is required');
+          if (!school.phoneNumber) rowErrors.push('Phone number is required');
+          if (!school.email) rowErrors.push('Email is required');
+          if (!school.principalname) rowErrors.push('Principal name is required');
+          if (!school.province) rowErrors.push('Province is required');
+          
+          if (rowErrors.length > 0) {
+            errors.push({ row: i + 1, errors: rowErrors, data: school });
+          } else {
+            schools.push({
+              ...school,
+              principalName: school.principalname, // Normalize field name
+              region: school.region || ''
+            });
+          }
+        }
+        
+        setBulkUploadPreview(schools);
+        setBulkUploadErrors(errors);
+      } catch (error) {
+        setError('Failed to parse file. Please ensure it is a valid CSV file.');
+        console.error('Parse error:', error);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleBulkUploadSubmit = async () => {
+    if (!bulkUploadFile || bulkUploadPreview.length === 0) {
+      setError('No valid schools to upload');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const createdBy = currentUser?.email;
+      if (!createdBy) {
+        setError('Unable to identify creator. Please log in again.');
+        return;
+      }
+
+      // Upload schools one by one
+      const results = [];
+      for (const school of bulkUploadPreview) {
+        try {
+          await createSchool({ ...school, createdBy });
+          results.push({ success: true, name: school.name });
+        } catch (error) {
+          results.push({ 
+            success: false, 
+            name: school.name, 
+            error: error.response?.data?.message || error.message 
+          });
+        }
+      }
+
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success);
+
+      alert(`Bulk upload completed:\n✅ ${successful} schools created successfully\n❌ ${failed.length} schools failed`);
+      
+      if (failed.length > 0) {
+        console.error('Failed uploads:', failed);
+      }
+
+      setBulkUploadDialogOpen(false);
+      setBulkUploadFile(null);
+      setBulkUploadPreview([]);
+      setBulkUploadErrors([]);
+      fetchData();
+    } catch (error) {
+      setError(error.message || 'Bulk upload failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const downloadBulkUploadTemplate = () => {
+    const template = [
+      ['name', 'address', 'phoneNumber', 'email', 'principalName', 'province', 'region'],
+      ['Example Primary School', '123 Main Street, Cape Town', '0211234567', 'info@example.edu.za', 'Mrs. Smith', 'Western Cape', 'Northern Region'],
+      ['Sample High School', '456 Oak Avenue, Johannesburg', '0119876543', 'admin@sample.edu.za', 'Mr. Johnson', 'Gauteng', 'Central Region']
+    ];
+
+    const csvContent = template.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'school_bulk_upload_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Admin Handlers
 
@@ -1068,11 +1293,16 @@ const SuperAdminDashboard = () => {
 
               <Typography variant="h6">School Management</Typography>
 
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => openSchoolDialog()}>
-
-                Add School
-
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {isNationalSuperAdmin() && (
+                  <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBulkUploadDialogOpen(true)}>
+                    Bulk Upload Schools
+                  </Button>
+                )}
+                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openSchoolDialog()}>
+                  Add School
+                </Button>
+              </Box>
 
             </Box>
 
@@ -1449,6 +1679,157 @@ const SuperAdminDashboard = () => {
 
         </DialogActions>
 
+      </Dialog>
+
+
+
+      {/* Bulk Upload Dialog */}
+
+      <Dialog open={bulkUploadDialogOpen} onClose={() => !submitting && setBulkUploadDialogOpen(false)} maxWidth="md" fullWidth>
+
+        <DialogTitle>Bulk Upload Schools</DialogTitle>
+
+        <DialogContent>
+
+          {error && (
+
+            <Alert severity="error" sx={{ mb: 2 }}>
+
+              {error}
+
+            </Alert>
+
+          )}
+
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Upload a CSV file with the following columns: name, address, phoneNumber, email, principalName, province, region (optional)
+          </Typography>
+
+          <Box sx={{ mb: 2 }}>
+            <Button variant="outlined" size="small" onClick={downloadBulkUploadTemplate}>
+              Download Template
+            </Button>
+          </Box>
+
+          <TextField
+
+            type="file"
+
+            accept=".csv"
+
+            fullWidth
+
+            margin="normal"
+
+            onChange={handleBulkUploadFileChange}
+
+            helperText="Select a CSV file containing school data"
+
+          />
+
+          {bulkUploadPreview.length > 0 && (
+
+            <Box sx={{ mt: 2 }}>
+
+              <Typography variant="h6" sx={{ mb: 1 }}>Preview ({bulkUploadPreview.length} schools)</Typography>
+
+              <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
+
+                <Table size="small">
+
+                  <TableHead>
+
+                    <TableRow>
+
+                      <TableCell>Name</TableCell>
+
+                      <TableCell>Address</TableCell>
+
+                      <TableCell>Contact</TableCell>
+
+                      <TableCell>Province</TableCell>
+
+                      <TableCell>Region</TableCell>
+
+                    </TableRow>
+
+                  </TableHead>
+
+                  <TableBody>
+
+                    {bulkUploadPreview.slice(0, 10).map((school, index) => (
+
+                      <TableRow key={index}>
+
+                        <TableCell>{school.name}</TableCell>
+
+                        <TableCell>{school.address}</TableCell>
+
+                        <TableCell>{school.phoneNumber}</TableCell>
+
+                        <TableCell>{school.province}</TableCell>
+
+                        <TableCell>{school.region || '-'}</TableCell>
+
+                      </TableRow>
+
+                    ))}
+
+                  </TableBody>
+
+                </Table>
+
+              </TableContainer>
+
+              {bulkUploadPreview.length > 10 && (
+
+                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
+
+                  ... and {bulkUploadPreview.length - 10} more schools
+
+                </Typography>
+
+              )}
+
+            </Box>
+
+          )}
+
+          {bulkUploadErrors.length > 0 && (
+
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1, color: 'error.main' }}>Validation Errors ({bulkUploadErrors.length})</Typography>
+              {bulkUploadErrors.slice(0, 5).map((error, index) => (
+                <Alert key={index} severity="error" sx={{ mb: 1 }}>
+                  Row {error.row}: {error.errors.join(', ')}
+                </Alert>
+              ))}
+
+              {bulkUploadErrors.length > 5 && (
+
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+
+                  ... and {bulkUploadErrors.length - 5} more errors
+
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setBulkUploadDialogOpen(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleBulkUploadSubmit} 
+            variant="contained" 
+            disabled={submitting || bulkUploadPreview.length === 0}
+            startIcon={submitting ? <CircularProgress size={20} /> : null}
+          >
+            {submitting ? 'Uploading...' : `Upload ${bulkUploadPreview.length} Schools`}
+          </Button>
+        </DialogActions>
       </Dialog>
 
 
