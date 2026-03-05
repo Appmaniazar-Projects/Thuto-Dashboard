@@ -26,13 +26,15 @@ import {
   Mail as MailIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
-  MarkChatRead as MarkChatReadIcon
+  MarkChatRead as MarkChatReadIcon,
+  BugReport as BugIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import SchoolLogo from '../common/SchoolLogo';
+import BugReport from '../testing/BugReport';
 
 const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick, logoAsImage = false }) => {
   const theme = useTheme();
@@ -44,6 +46,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
   const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
 
   // Fetch notifications for admin user
   useEffect(() => {
@@ -207,6 +210,21 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
               </IconButton>
             </Tooltip>
           )}
+          
+          {/* Bug Report Button */}
+          <Tooltip title="Report a Bug">
+            <IconButton
+              color="inherit"
+              onClick={() => setBugReportOpen(true)}
+              sx={{ 
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              <BugIcon />
+            </IconButton>
+          </Tooltip>
           
           {/* User Profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>
@@ -398,6 +416,13 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           <ListItemText>Logout</ListItemText>
         </MenuItem>
       </Menu>
+      
+      {/* Bug Report Dialog */}
+      <BugReport 
+        open={bugReportOpen} 
+        onClose={() => setBugReportOpen(false)} 
+        user={user} 
+      />
     </AppBar>
   );
 };
