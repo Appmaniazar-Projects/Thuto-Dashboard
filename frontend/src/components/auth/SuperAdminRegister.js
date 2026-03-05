@@ -311,10 +311,7 @@ const SuperAdminRegister = () => {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              disabled={loading}
-              label="Role"
             >
-              <MenuItem value="SUPERADMIN_NATIONAL">National Super Admin</MenuItem>
               <MenuItem value="SUPERADMIN_PROVINCIAL">Provincial Super Admin</MenuItem>
               <MenuItem value="REGIONAL">Regional Admin</MenuItem>
             </Select>
