@@ -182,6 +182,29 @@ export const getSchoolDocuments = async (filters = {}) => {
   }
 };
 
+// ==================== STUDENT NOTES ====================
+
+/**
+ * Retrieves all notes for a specific student
+ * 
+ * @param {string|number} studentId - The student's ID
+ * @returns {Promise<Array>} Promise resolving to array of student notes
+ * @throws {Error} Throws error if notes cannot be fetched
+ * 
+ * @example
+ * const notes = await getStudentNotes('123');
+ * console.log(notes); // [{ date: '2023-01-01', content: 'Good work', teacherName: 'Mr. Smith', subjectName: 'Math' }]
+ */
+export const getStudentNotes = async (studentId) => {
+  try {
+    const response = await api.get(`/student/${studentId}/notes`);
+    return response.data || [];
+  } catch (error) {
+    console.error('Failed to fetch student notes:', error);
+    throw error;
+  }
+};
+
 // Export all functions as default object
 const studentService = {
   // Profile
@@ -194,7 +217,10 @@ const studentService = {
   downloadReportFromStorage,
   
   // Documents
-  getSchoolDocuments
+  getSchoolDocuments,
+  
+  // Notes
+  getStudentNotes
 };
 
 export default studentService;
