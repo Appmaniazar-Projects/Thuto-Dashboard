@@ -344,7 +344,14 @@ const SuperAdminDashboard = () => {
         requiredFields.push('region');
       }
 
-      const missingFields = requiredFields.filter(field => !schoolForm[field]?.trim());
+      const missingFields = requiredFields.filter(field => {
+    const value = schoolForm[field];
+    if (typeof value === 'object' && value !== null) {
+      // Handle object values (like province/region with id/name)
+      return !value.name && !value.id;
+    }
+    return !value?.toString().trim();
+  });
 
       
 
