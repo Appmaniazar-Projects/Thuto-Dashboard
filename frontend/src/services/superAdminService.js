@@ -108,7 +108,7 @@ export const createSchool = async (schoolData) => {
   try {
     const response = await api.post('/superadmins/admins/school/createSchool/create', {
       ...schoolData,
-     
+      regionalId: schoolData.regionalId ? Number(schoolData.regionalId) : null, // ← add this
     });
     return response.data;
   } catch (error) {

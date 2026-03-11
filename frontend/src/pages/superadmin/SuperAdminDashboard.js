@@ -95,7 +95,7 @@ const SuperAdminDashboard = () => {
     email: '',
     principalName: '',
     province: '',
-    region: '',
+    regionalId: null, 
     logo: ''
   });
 
@@ -111,7 +111,7 @@ const SuperAdminDashboard = () => {
     email: '',
     phoneNumber: '',
     province:'',
-    region: '',
+    regionalId: '',
     schoolId: '',
     password: ''
   });
@@ -490,25 +490,15 @@ const SuperAdminDashboard = () => {
       setEditingSchool(null);
 
       setSchoolForm({
-
         name: '',
-
         address: '',
-
         phoneNumber: '',
-
         email: '',
-
         principalName: '',
-
         province: isProvincialSuperAdmin() ? currentUser?.province : '',
-
-        region: isRegionalSuperAdmin() ? currentUser?.region : '',
-
+        regionalId: null,  
         logo: ''
-
       });
-
       fetchData();
 
     } catch (err) {
@@ -592,11 +582,8 @@ const SuperAdminDashboard = () => {
       setEditingSchool(school);
 
       setSchoolForm({
-
         ...school,
-
         phoneNumber: school.phoneNumber || '',
-
         logo: school.logo || ''
 
       });
@@ -607,24 +594,15 @@ const SuperAdminDashboard = () => {
 
       
 
-      setSchoolForm({ 
-
-        name: '', 
-
-        address: '', 
-
-        phoneNumber: '', 
-
-        email: '', 
-
-        principalName: '', 
-
-        province: isProvincialSuperAdmin() ? currentUser?.province : (isRegionalSuperAdmin() ? currentUser?.province : ''),
-
-        region: isRegionalSuperAdmin() ? currentUser?.region : '',
-
+      setSchoolForm({
+        name: '',
+        address: '',
+        phoneNumber: '',
+        email: '',
+        principalName: '',
+        province: isProvincialSuperAdmin() ? currentUser?.province : '',
+        regionalId: isRegionalSuperAdmin() ? currentUser?.regionId : null, 
         logo: ''
-
       });
 
       // Reset school form regions when opening dialog
@@ -1660,14 +1638,9 @@ const SuperAdminDashboard = () => {
           {(isNationalSuperAdmin() || isProvincialSuperAdmin()) && (
             <TextField
               select
-              fullWidth
-              margin="normal"
               label="Region"
-              name="region"
-              value={schoolForm.region}
-              onChange={(e) => setSchoolForm({ ...schoolForm, region: e.target.value })}
-              required={isNationalSuperAdmin()}
-              disabled={loadingSchoolFormRegions || (!schoolForm.province && isNationalSuperAdmin())}
+              value={schoolForm.regionalId || ''}
+              onChange={(e) => setSchoolForm({ ...schoolForm, regionalId: Number(e.target.value) })}
             >
               <MenuItem value="">
                 <em>
@@ -1677,15 +1650,11 @@ const SuperAdminDashboard = () => {
                   }
                 </em>
               </MenuItem>
-              {schoolFormRegions.map((region) => {
-                const value = typeof region === 'object' ? (region.id ?? region.name) : region;
-                const label = typeof region === 'object' ? (region.name ?? String(value)) : region;
-                return (
-                  <MenuItem key={String(value)} value={value}>
-                    {label}
-                  </MenuItem>
-                );
-              })}
+              {schoolFormRegions.map((region) => (
+                <MenuItem key={region.id} value={region.id}>
+                  {region.name}
+                </MenuItem>
+              ))}
             </TextField>
           )}
 
