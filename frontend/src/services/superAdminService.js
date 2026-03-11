@@ -65,13 +65,35 @@ export const getAllRoleSpecificUsers = async (role, createdBy, queryString) => {
  */
 export const getAllSchools = async (createdBy, queryString) => {
   try {
-    const params = new URLSearchParams(queryString);
-    params.append('createdBy', createdBy);
+    const params = {};
+    
+    if (createdBy) {
+      params.createdBy = createdBy;
+    }
+    
+    if (queryString) {
+      const urlParams = new URLSearchParams(queryString);
+      urlParams.forEach((value, key) => {
+        params[key] = value;
+      });
+    }
 
-    const response = await api.get('/superadmins/admins/schools/allSchools', {
-      params
-    });
-    return response.data;
+    // Try the correct endpoint for all schools first
+    try {
+      const response = await api.get('/superadmins/admins/schools/allSchools', {
+        params
+      });
+      return response.data;
+    } catch (firstError) {
+      console.log('Primary endpoint failed, trying alternative...');
+      
+      // If primary fails, try without region-specific endpoint
+      // This might work for National SuperAdmins who don't have a region
+      const response = await api.get('/superadmins/admins/schools', {
+        params
+      });
+      return response.data;
+    }
   } catch (error) {
     console.error('Failed to fetch schools:', error);
     throw error;
