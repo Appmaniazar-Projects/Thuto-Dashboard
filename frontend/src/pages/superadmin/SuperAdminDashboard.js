@@ -377,9 +377,7 @@ const SuperAdminDashboard = () => {
       // Enforce province for provincial superadmins
 
       if (isProvincialSuperAdmin() && schoolForm.province !== currentUser?.province) {
-
         setError(`You can only create schools in your assigned province (${currentUser?.province})`);
-
         return;
 
       }
@@ -565,43 +563,39 @@ const SuperAdminDashboard = () => {
 
 
   const openSchoolDialog = (school = null) => {
+    console.log('Opening school dialog for:', school);
+    console.log('Available regions:', schoolFormRegions);
+    console.log('Current user:', currentUser);
 
     setError(null);
-
     setSubmitting(false);
-
-    
-
+    setEditingSchool(!!school);
     if (school) {
-
-      setEditingSchool(school);
-
+      // Editing existing school
+      console.log('Editing school data:', school);
       setSchoolForm({
-        ...school,
+        name: school.name || '',
+        address: school.address || '',
         phoneNumber: school.phoneNumber || '',
-        logo: school.logo || ''
-
+        email: school.email || '',
+        principalName: school.principalName || '',
+        province: school.province || '',
+        regionalId: school.regionalId || school.regionId || '',
+        region: school.region || ''
       });
-
     } else {
-
-      setEditingSchool(null);
-
-      
-
+      // Creating new school
+      console.log('Creating new school');
       setSchoolForm({
         name: '',
         address: '',
         phoneNumber: '',
         email: '',
         principalName: '',
-        province: isProvincialSuperAdmin() ? currentUser?.province : '',
-        regionalId: isRegionalSuperAdmin() ? currentUser?.regionId : null, 
-        logo: ''
+        province: isProvincialSuperAdmin() || isRegionalSuperAdmin() ? currentUser?.province || '' : '',
+        regionalId: '',
+        region: ''
       });
-
-      // Reset school form regions when opening dialog
-      setSchoolFormRegions([]);
 
     }
 
