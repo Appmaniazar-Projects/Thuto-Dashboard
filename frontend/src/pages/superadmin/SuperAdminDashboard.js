@@ -1576,103 +1576,150 @@ const SuperAdminDashboard = () => {
       <Dialog open={schoolDialogOpen} onClose={() => !submitting && setSchoolDialogOpen(false)} maxWidth="sm" fullWidth>
 
         <DialogTitle>{editingSchool ? 'Edit School' : 'Add New School'}</DialogTitle>
-
         <DialogContent>
-
           {error && (
 
             <Alert severity="error" sx={{ mb: 2 }}>
-
               {error}
-
             </Alert>
-
           )}
 
-          <TextField label="School Name" fullWidth margin="dense" value={schoolForm.name} onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} />
-
-          <TextField label="Address" fullWidth margin="dense" multiline rows={2} value={schoolForm.address} onChange={(e) => setSchoolForm({ ...schoolForm, address: e.target.value })} />
-
-          <TextField label="Phone Number" fullWidth margin="dense" value={schoolForm.phoneNumber} onChange={(e) => setSchoolForm({ ...schoolForm, phoneNumber: e.target.value })} />
-
-          <TextField label="Email" type="email" fullWidth margin="dense" value={schoolForm.email} onChange={(e) => setSchoolForm({ ...schoolForm, email: e.target.value })} />
-
-          <TextField label="Principal Name" fullWidth margin="dense" value={schoolForm.principalName} onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} />
-
-          {/* Province field - only shown for National SuperAdmins */}
-          {isNationalSuperAdmin() && (
-            <TextField
-              select
-              fullWidth
-              margin="dense"
-              label="Province"
-              name="province"
-              value={schoolForm.province}
-              onChange={(e) => {
-                setSchoolForm({ ...schoolForm, province: e.target.value, region: '' });
-              }}
-              required
-              disabled={loadingSchoolFormProvinces}
-            >
-              <MenuItem value="">
-                <em>Select Province</em>
-              </MenuItem>
-              {(schoolFormProvinces.length ? schoolFormProvinces : PROVINCES).map((province) => {
-                const value = typeof province === 'object' ? (province.id ?? province.name) : province;
-                const label = typeof province === 'object' ? (province.name ?? String(value)) : province;
-                return (
-                  <MenuItem key={String(value)} value={value}>
-                    {label}
-                  </MenuItem>
-                );
-              })}
-            </TextField>
-          )}
-
-          {/* Region field - shown for National and Provincial SuperAdmins */}
-          {(isNationalSuperAdmin() || isProvincialSuperAdmin()) && (
-            <TextField
-              select
-              label="Region"
-              value={schoolForm.regionalId || ''}
-              onChange={(e) => setSchoolForm({ ...schoolForm, regionalId: Number(e.target.value) })}
-            >
-              <MenuItem value="">
-                <em>
-                  {isNationalSuperAdmin() 
-                    ? (!schoolForm.province ? 'Select Province First' : 'Select Region')
-                    : 'Select Region'
-                  }
-                </em>
-              </MenuItem>
-              {schoolFormRegions.map((region) => (
-                <MenuItem key={region.id} value={region.id}>
-                  {region.name}
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-
-          {/* Hidden field for Regional SuperAdmins - shows their assigned region */}
-          {isRegionalSuperAdmin() && (
-            <TextField
-              fullWidth
-              margin="dense"
-              label="Region"
-              value={currentUser?.region || ''}
-              disabled
-              helperText="Region is set based on your assigned region"
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Basic school information */}
+            <TextField 
+              label="School Name" 
+              fullWidth 
+              margin="dense" 
+              value={schoolForm.name} 
+              onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} 
             />
-          )}
+
+            <TextField 
+              label="Address" 
+              fullWidth 
+              margin="dense" 
+              multiline 
+              rows={2} 
+              value={schoolForm.address} 
+              onChange={(e) => setSchoolForm({ ...schoolForm, address: e.target.value })} 
+            />
+
+            {/* Contact information in two columns */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField 
+                label="Phone Number" 
+                fullWidth 
+                margin="dense" 
+                value={schoolForm.phoneNumber} 
+                onChange={(e) => setSchoolForm({ ...schoolForm, phoneNumber: e.target.value })} 
+              />
+              <TextField 
+                label="Email" 
+                type="email" 
+                fullWidth 
+                margin="dense" 
+                value={schoolForm.email} 
+                onChange={(e) => setSchoolForm({ ...schoolForm, email: e.target.value })} 
+              />
+            </Box>
+
+            {/* Principal and location information */}
+            <TextField 
+              label="Principal Name" 
+              fullWidth 
+              margin="dense" 
+              value={schoolForm.principalName} 
+              onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} 
+            />
+
+            {/* Province field - different behavior based on role */}
+            {isNationalSuperAdmin() && (
+              <TextField
+                select
+                fullWidth
+                required
+                margin="dense"
+                label="Province"
+                value={schoolForm.province || ''}
+                onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value, region: '' })}
+              >
+                <MenuItem value="">
+                  <em>Select Province</em>
+                </MenuItem>
+                {(schoolFormProvinces.length ? schoolFormProvinces : PROVINCES).map((province) => {
+                  const value = typeof province === 'object' ? (province.id ?? province.name) : province;
+                  const label = typeof province === 'object' ? (province.name ?? String(value)) : province;
+                  return (
+                    <MenuItem key={String(value)} value={value}>
+                      {label}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+            )}
+
+            {(isProvincialSuperAdmin() || isRegionalSuperAdmin()) && (
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Province"
+                value={currentUser?.province || ''}
+                disabled
+                helperText={
+                  isProvincialSuperAdmin()
+                    ? `Province is fixed to ${currentUser?.province}`
+                    : `Province is fixed to ${currentUser?.province}`
+                }
+              />
+            )}
+
+            {/* Region field - different behavior based on role */}
+            {(isProvincialSuperAdmin() || isNationalSuperAdmin()) && (
+              <TextField
+                select
+                fullWidth
+                required
+                margin="dense"
+                label="Region"
+                value={schoolForm.region || ''}
+                onChange={(e) => setSchoolForm({ ...schoolForm, region: e.target.value })}
+                helperText={
+                  isProvincialSuperAdmin() 
+                    ? `Select region within ${currentUser?.province}`
+                    : 'Select region'
+                }
+              >
+                <MenuItem value="">
+                  <em>Select Region</em>
+                </MenuItem>
+                {/* Show regions for the provincial superadmin's province or national superadmin's selected province */}
+                {schoolFormRegions.map((region) => (
+                  <MenuItem key={region.id} value={region.name}>
+                    {region.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+
+            {/* Hidden field for Regional SuperAdmins - shows their assigned region */}
+            {isRegionalSuperAdmin() && (
+              <TextField
+                fullWidth
+                margin="dense"
+                label="Region"
+                value={currentUser?.region || ''}
+                disabled
+                helperText="Region is set based on your assigned region"
+              />
+            )}
+          </Box>
 
           </DialogContent>
 
         <DialogActions>
 
           <Button onClick={() => setSchoolDialogOpen(false)} disabled={submitting}>
-
             Cancel
-
           </Button>
 
           <Button 
