@@ -1681,10 +1681,10 @@ const SuperAdminDashboard = () => {
                 required
                 margin="dense"
                 label="Region"
-                value={schoolForm.region || ''}
-                onChange={(e) => setSchoolForm({ ...schoolForm, region: e.target.value })}
+                value={schoolForm.regionalId || ''}
+                onChange={(e) => setSchoolForm({ ...schoolForm, regionalId: Number(e.target.value) })}
                 helperText={
-                  isProvincialSuperAdmin() 
+                  isProvincialSuperAdmin()
                     ? `Select region within ${currentUser?.province}`
                     : 'Select region'
                 }
@@ -1694,7 +1694,7 @@ const SuperAdminDashboard = () => {
                 </MenuItem>
                 {/* Show regions for the provincial superadmin's province or national superadmin's selected province */}
                 {schoolFormRegions.map((region) => (
-                  <MenuItem key={region.id} value={region.name}>
+                  <MenuItem key={region.id} value={region.id}>
                     {region.name}
                   </MenuItem>
                 ))}
