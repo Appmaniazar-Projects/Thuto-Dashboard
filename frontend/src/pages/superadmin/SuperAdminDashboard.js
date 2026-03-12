@@ -520,13 +520,10 @@ const SuperAdminDashboard = () => {
       } else if (err.response?.status === 500) {
 
         setError('Server error. Please try again later or contact support.');
-
       } else if (err.code === 'NETWORK_ERROR') {
 
         setError('Network error. Please check your internet connection.');
-
       } else {
-
         setError(err.message || `Failed to ${editingSchool ? 'update' : 'create'} school. Please try again.`);
 
       }
