@@ -1,22 +1,14 @@
 [phases.setup]
-cmds = [
-  "apt-get update && apt-get install -y curl",
-  "curl -fsSL https://deb.nodesource.com/setup_18.x | bash -",
-  "apt-get install -y nodejs"
-]
+nixPkgs = ["nodejs_18"]
 
 [phases.install]
-cmds = [
-  "cd frontend && npm install"
-]
+cmds = ["cd frontend && npm install"]
 
 [phases.build]
-cmds = [
-  "cd frontend && npm run build"
-]
+cmds = ["cd frontend && npm run build"]
 
 [start]
-cmd = "cd frontend && npm start"
+cmd = "cd frontend && npx serve -s build -l $PORT"
 
 [build.args]
 NODE_VERSION = "18.17.0"
