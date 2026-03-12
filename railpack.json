@@ -5,6 +5,6 @@
       "version": "18"
     }
   },
-  "buildCommand": "cd frontend && npm run build",
-  "startCommand": "cd frontend && npx serve -s build -l $PORT"
+  "buildCommand": "npm run build",
+  "startCommand": "npm run start"
 }
