@@ -1,10 +1,5 @@
 {
   "providers": ["node"],
-  "options": {
-    "node": {
-      "version": "18"
-    }
-  },
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "buildCommand": "npm install && cd frontend && npm run build",
   "startCommand": "cd frontend && npx serve -s build -l $PORT"
 }
