@@ -341,17 +341,15 @@ const SuperAdminDashboard = () => {
       
       // Add region to required fields for National and Provincial SuperAdmins
       if (isNationalSuperAdmin() || isProvincialSuperAdmin()) {
-        requiredFields.push('region');
+        requiredFields.push('regionalId');
       }
 
       const missingFields = requiredFields.filter(field => {
-    const value = schoolForm[field];
-    if (typeof value === 'object' && value !== null) {
-      // Handle object values (like province/region with id/name)
-      return !value.name && !value.id;
-    }
-    return !value?.toString().trim();
-  });
+      const value = schoolForm[field];
+        if (value === null || value === undefined || value === '') return true;
+        if (typeof value === 'object') return !value.name && !value.id;
+        return !value?.toString().trim();
+      });
 
       
 
@@ -1609,7 +1607,7 @@ const SuperAdminDashboard = () => {
             <TextField
               select
               fullWidth
-              margin="normal"
+              margin="dense"
               label="Province"
               name="province"
               value={schoolForm.province}
@@ -1662,7 +1660,7 @@ const SuperAdminDashboard = () => {
           {isRegionalSuperAdmin() && (
             <TextField
               fullWidth
-              margin="normal"
+              margin="dense"
               label="Region"
               value={currentUser?.region || ''}
               disabled
@@ -1681,19 +1679,12 @@ const SuperAdminDashboard = () => {
           </Button>
 
           <Button 
-
             onClick={handleSchoolSubmit} 
-
             variant="contained" 
-
             disabled={submitting}
-
             startIcon={submitting ? <CircularProgress size={20} /> : null}
-
           >
-
             {submitting ? 'Saving...' : (editingSchool ? 'Update' : 'Create')}
-
           </Button>
 
         </DialogActions>
