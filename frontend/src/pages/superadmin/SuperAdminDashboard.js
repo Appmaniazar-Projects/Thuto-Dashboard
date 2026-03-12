@@ -1626,7 +1626,7 @@ const SuperAdminDashboard = () => {
               onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })} 
             />
 
-            {/* Province field - different behavior based on role */}
+            {/* Province field - only shown for National SuperAdmin */}
             {isNationalSuperAdmin() && (
               <TextField
                 select
@@ -1635,7 +1635,20 @@ const SuperAdminDashboard = () => {
                 margin="dense"
                 label="Province"
                 value={schoolForm.province || ''}
-                onChange={(e) => setSchoolForm({ ...schoolForm, province: e.target.value, region: '' })}
+                onChange={(e) => {
+                  const selectedProvince = schoolFormProvinces.find(p =>
+                    (typeof p === 'object' ? (p.id ?? p.name) : p) === e.target.value
+                  );
+                  setSchoolForm({
+                    ...schoolForm,
+                    province: e.target.value,
+                    region: '' // Clear region when province changes
+                  });
+                  // Reload regions for the selected province
+                  if (selectedProvince && typeof selectedProvince === 'object' && selectedProvince.id) {
+                    loadRegionsForProvince(selectedProvince.id);
+                  }
+                }}
               >
                 <MenuItem value="">
                   <em>Select Province</em>
@@ -1652,22 +1665,16 @@ const SuperAdminDashboard = () => {
               </TextField>
             )}
 
+            {/* Hidden province field for Provincial/Regional SuperAdmins */}
             {(isProvincialSuperAdmin() || isRegionalSuperAdmin()) && (
-              <TextField
-                fullWidth
-                margin="dense"
-                label="Province"
+              <input
+                type="hidden"
                 value={currentUser?.province || ''}
-                disabled
-                helperText={
-                  isProvincialSuperAdmin()
-                    ? `Province is fixed to ${currentUser?.province}`
-                    : `Province is fixed to ${currentUser?.province}`
-                }
+                name="province"
               />
             )}
 
-            {/* Region field - different behavior based on role */}
+            {/* Region field - shown for National and Provincial, hidden for Regional */}
             {(isProvincialSuperAdmin() || isNationalSuperAdmin()) && (
               <TextField
                 select
@@ -1695,15 +1702,12 @@ const SuperAdminDashboard = () => {
               </TextField>
             )}
 
-            {/* Hidden field for Regional SuperAdmins - shows their assigned region */}
+            {/* Hidden region field for Regional SuperAdmins */}
             {isRegionalSuperAdmin() && (
-              <TextField
-                fullWidth
-                margin="dense"
-                label="Region"
+              <input
+                type="hidden"
                 value={currentUser?.region || ''}
-                disabled
-                helperText="Region is set based on your assigned region"
+                name="region"
               />
             )}
           </Box>
