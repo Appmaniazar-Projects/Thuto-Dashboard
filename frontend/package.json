@@ -15,6 +15,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+    "engines": {
+      "node": "18.x"
+    },
   "dependencies": {
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
@@ -52,10 +55,7 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
-    ],
-    "engines": {
-      "node": "18.x"
-    }
+    ]
   },
   "devDependencies": {
     "eslint-plugin-react-hooks": "^7.0.1"
