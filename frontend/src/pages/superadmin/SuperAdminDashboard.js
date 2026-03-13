@@ -73,6 +73,12 @@ const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('schools');
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Resolved names for currentUser province/region
+  // currentUser stores province: "9", region: "50" (IDs, not names)
+  // These states hold the resolved human-readable names
+  const [currentUserProvinceName, setCurrentUserProvinceName] = useState('');
+  const [currentUserRegionName, setCurrentUserRegionName] = useState('');
+
   // ── Filter bar state ──────────────────────────────────────────
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
@@ -94,10 +100,10 @@ const SuperAdminDashboard = () => {
     phoneNumber: '',
     email: '',
     principalName: '',
-    province: '',       // human-readable name sent to backend
-    provinceId: null,   // ID used only for loading regions
-    regionalId: null,   // ID sent to backend
-    region: '',         // human-readable name (informational)
+    province: '',     // human-readable name sent to backend e.g. "Western Cape"
+    provinceId: null, // numeric ID used only for loading regions dropdown
+    regionalId: null, // numeric ID sent to backend
+    region: '',       // human-readable name (display only)
     logo: ''
   });
 
@@ -122,6 +128,41 @@ const SuperAdminDashboard = () => {
   const [bulkUploadFile, setBulkUploadFile] = useState(null);
   const [bulkUploadPreview, setBulkUploadPreview] = useState([]);
   const [bulkUploadErrors, setBulkUploadErrors] = useState([]);
+
+  // ─────────────────────────────────────────────────────────────
+  // Resolve currentUser province/region IDs to human-readable names
+  // currentUser.province = "9" (ID), currentUser.region = "50" (ID)
+  // ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const resolveUserLocation = async () => {
+      if (!isRegionalSuperAdmin() && !isProvincialSuperAdmin()) return;
+      if (!currentUser?.province) return;
+
+      try {
+        const provinces = await regionService.getAllProvinces();
+        const matchedProvince = provinces.find(p =>
+          String(typeof p === 'object' ? p.id : p) === String(currentUser.province)
+        );
+        const provinceName = typeof matchedProvince === 'object'
+          ? matchedProvince.name
+          : matchedProvince || '';
+        setCurrentUserProvinceName(provinceName);
+
+        // Regional superadmin also needs region name resolved
+        if (isRegionalSuperAdmin() && currentUser?.region) {
+          const regions = await regionService.getRegionsByProvinceId(currentUser.province);
+          const matchedRegion = regions.find(r =>
+            String(r.id) === String(currentUser.region)
+          );
+          setCurrentUserRegionName(matchedRegion?.name || '');
+        }
+      } catch (e) {
+        console.error('Failed to resolve user location names:', e);
+      }
+    };
+
+    resolveUserLocation();
+  }, [currentUser]);
 
   // ─────────────────────────────────────────────────────────────
   // Effects
@@ -156,11 +197,12 @@ const SuperAdminDashboard = () => {
   }, [selectedProvince]);
 
   // Load regions for the school form whenever provinceId changes
+  // Also auto-triggers for Provincial SuperAdmin using their province ID from currentUser
   useEffect(() => {
     const load = async () => {
       const idToLoad =
         schoolForm.provinceId ||
-        (isProvincialSuperAdmin() ? currentUser?.provinceId : null);
+        (isProvincialSuperAdmin() ? currentUser?.province : null);
 
       if (!idToLoad) { setSchoolFormRegions([]); return; }
 
@@ -174,7 +216,7 @@ const SuperAdminDashboard = () => {
     load();
   }, [schoolForm.provinceId, schoolDialogOpen]);
 
-  // Load provinces for the school form when dialog opens
+  // Load provinces list when school dialog opens (used by National SuperAdmin dropdown)
   useEffect(() => {
     if (!schoolDialogOpen) return;
     const load = async () => {
@@ -281,7 +323,7 @@ const SuperAdminDashboard = () => {
     setSubmitting(false);
 
     if (school) {
-      // When editing: try to find the provinceId from the loaded provinces list
+      // Editing: find the provinceId so the region dropdown loads correctly
       const matchedProv = schoolFormProvinces.find(p =>
         (typeof p === 'object' ? p.name : p) === school.province
       );
@@ -299,6 +341,7 @@ const SuperAdminDashboard = () => {
         logo: school.logo || ''
       });
     } else {
+      // Creating new school — pre-fill based on role
       setEditingSchool(null);
       setSchoolForm({
         name: '',
@@ -306,10 +349,13 @@ const SuperAdminDashboard = () => {
         phoneNumber: '',
         email: '',
         principalName: '',
-        province: isProvincialSuperAdmin() ? currentUser?.province || '' : '',
-        provinceId: isProvincialSuperAdmin() ? currentUser?.provinceId || null : null,
-        regionalId: isRegionalSuperAdmin() ? currentUser?.regionId || null : null,
-        region: isRegionalSuperAdmin() ? currentUser?.region || '' : '',
+        // Provincial: use resolved province name; Regional: hidden so leave empty
+        province: isProvincialSuperAdmin() ? currentUserProvinceName : '',
+        // Provincial: province ID needed to load their region dropdown
+        provinceId: isProvincialSuperAdmin() ? currentUser?.province || null : null,
+        // Regional: region ID = currentUser.region (the field stores the ID)
+        regionalId: isRegionalSuperAdmin() ? Number(currentUser?.region) || null : null,
+        region: isRegionalSuperAdmin() ? currentUserRegionName : '',
         logo: ''
       });
       setSchoolFormRegions([]);
@@ -323,10 +369,11 @@ const SuperAdminDashboard = () => {
       setSubmitting(true);
       setError(null);
 
-      // Validation
+      // Required field validation differs per role
       const requiredFields = ['name', 'address', 'phoneNumber', 'email', 'principalName'];
       if (isNationalSuperAdmin()) requiredFields.push('province');
       if (isNationalSuperAdmin() || isProvincialSuperAdmin()) requiredFields.push('regionalId');
+      // Regional SuperAdmin: province + region are auto-assigned, no validation needed
 
       const missingFields = requiredFields.filter(field => {
         const v = schoolForm[field];
@@ -340,7 +387,7 @@ const SuperAdminDashboard = () => {
         return;
       }
 
-      // Duplicate check (only on create)
+      // Duplicate check on create only
       if (!editingSchool) {
         const dupes = checkDuplicateSchool(schoolForm.name, schoolForm.address);
         if (dupes.length > 0) {
@@ -350,7 +397,7 @@ const SuperAdminDashboard = () => {
         }
       }
 
-      // Email / phone validation
+      // Format validation
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schoolForm.email)) {
         setError('Please enter a valid email address');
         return;
@@ -366,19 +413,24 @@ const SuperAdminDashboard = () => {
       );
       if (existing) { setError('A school with this name already exists'); return; }
 
-      // Build payload
+      // Build payload — remove provinceId (internal only, never sent to backend)
       const payload = { ...schoolForm };
-      delete payload.provinceId; // internal only, not sent to backend
+      delete payload.provinceId;
 
-      // Auto-assign province / region for restricted roles
+      // Auto-assign province/region for restricted roles using resolved names
       if (isProvincialSuperAdmin()) {
-        payload.province = currentUser?.province || '';
+        // Province is fixed to their assigned province (name not ID)
+        payload.province = currentUserProvinceName || '';
+        // regionalId was selected by the user from dropdown — already in payload
       }
+
       if (isRegionalSuperAdmin()) {
-        payload.province = currentUser?.province || '';
-        payload.region = currentUser?.region || '';
-        payload.regionalId = currentUser?.regionId || null;
+        // Both province and region are fully auto-assigned from currentUser
+        payload.province = currentUserProvinceName || '';     // "Western Cape"
+        payload.region = currentUserRegionName || '';         // "Northern Region"
+        payload.regionalId = Number(currentUser?.region) || null; // 50 (region field = ID)
       }
+
       payload.createdBy = currentUser.email;
 
       if (editingSchool) {
@@ -386,7 +438,7 @@ const SuperAdminDashboard = () => {
         alert('School updated successfully!');
       } else {
         await createSchool(payload);
-        alert(`School created successfully!`);
+        alert('School created successfully!');
       }
 
       setSchoolDialogOpen(false);
@@ -475,18 +527,18 @@ const SuperAdminDashboard = () => {
 
       const selectedSchool = schools.find(s => s.id === adminForm.schoolId);
 
-      if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUser?.province) {
-        setError(`You can only assign admins to schools in ${currentUser?.province}`); return;
+      if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUserProvinceName) {
+        setError(`You can only assign admins to schools in ${currentUserProvinceName}`); return;
       }
 
-      // Province and region come from the selected school automatically
+      // Province and region are auto-assigned from the selected school
       const province =
         selectedSchool?.province ||
-        (isProvincialSuperAdmin() ? currentUser?.province : '') ||
+        currentUserProvinceName ||
         adminForm.province || '';
       const region =
         selectedSchool?.region ||
-        (isRegionalSuperAdmin() ? currentUser?.region : '') ||
+        currentUserRegionName ||
         adminForm.region || '';
 
       const payload = {
@@ -519,7 +571,10 @@ const SuperAdminDashboard = () => {
 
       setAdminDialogOpen(false);
       setEditingAdmin(null);
-      setAdminForm({ name: '', lastName: '', email: '', phoneNumber: '', schoolId: '', password: '', province: '', region: '' });
+      setAdminForm({
+        name: '', lastName: '', email: '', phoneNumber: '',
+        schoolId: '', password: '', province: '', region: ''
+      });
       fetchData();
     } catch (err) {
       setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} administrator.`);
@@ -553,7 +608,7 @@ const SuperAdminDashboard = () => {
       try {
         const rows = e.target.result.split('\n').filter(r => r.trim());
         const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
-        const schools = [], errors = [];
+        const schoolsList = [], errors = [];
         for (let i = 1; i < rows.length; i++) {
           const vals = rows[i].split(',').map(v => v.trim());
           const school = {};
@@ -570,10 +625,14 @@ const SuperAdminDashboard = () => {
           if (rowErrors.length) {
             errors.push({ row: i + 1, errors: rowErrors, data: school });
           } else {
-            schools.push({ ...school, principalName: school.principalname, region: school.region || '' });
+            schoolsList.push({
+              ...school,
+              principalName: school.principalname,
+              region: school.region || ''
+            });
           }
         }
-        setBulkUploadPreview(schools);
+        setBulkUploadPreview(schoolsList);
         setBulkUploadErrors(errors);
       } catch { setError('Failed to parse CSV file.'); }
     };
@@ -593,7 +652,11 @@ const SuperAdminDashboard = () => {
           await createSchool({ ...school, createdBy });
           results.push({ success: true, name: school.name });
         } catch (err) {
-          results.push({ success: false, name: school.name, error: err.response?.data?.message || err.message });
+          results.push({
+            success: false,
+            name: school.name,
+            error: err.response?.data?.message || err.message
+          });
         }
       }
       const ok = results.filter(r => r.success).length;
@@ -933,8 +996,9 @@ const SuperAdminDashboard = () => {
               onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })}
             />
 
-            {/* ── Province ── */}
-            {/* National: dropdown to select province */}
+            {/* ── Province ─────────────────────────────────────── */}
+
+            {/* National SuperAdmin: selects province from dropdown */}
             {isNationalSuperAdmin() && (
               <TextField
                 select fullWidth margin="dense" required
@@ -946,7 +1010,9 @@ const SuperAdminDashboard = () => {
                   );
                   setSchoolForm({
                     ...schoolForm,
-                    province: typeof selectedProv === 'object' ? selectedProv.name : String(selectedProv || ''),
+                    province: typeof selectedProv === 'object'
+                      ? selectedProv.name
+                      : String(selectedProv || ''),
                     provinceId: e.target.value,
                     regionalId: null,
                     region: ''
@@ -963,21 +1029,22 @@ const SuperAdminDashboard = () => {
               </TextField>
             )}
 
-            {/* Provincial: read-only province */}
+            {/* Provincial SuperAdmin: province shown read-only using resolved name */}
             {isProvincialSuperAdmin() && (
               <TextField
                 fullWidth margin="dense" label="Province"
-                value={currentUser?.province || ''}
+                value={currentUserProvinceName || ''}
                 disabled
                 helperText="Your assigned province"
               />
             )}
 
-            {/* Regional: province completely hidden — auto-assigned in payload */}
+            {/* Regional SuperAdmin: province completely hidden, auto-assigned in payload */}
 
-            {/* ── Region ── */}
-            {/* National and Provincial: dropdown to select region */}
-            {(isNationalSuperAdmin() || isProvincialSuperAdmin()) && (
+            {/* ── Region ──────────────────────────────────────── */}
+
+            {/* National SuperAdmin: selects region after choosing province */}
+            {isNationalSuperAdmin() && (
               <TextField
                 select fullWidth margin="dense" required
                 label="Region"
@@ -990,17 +1057,8 @@ const SuperAdminDashboard = () => {
                     region: selectedReg ? selectedReg.name : ''
                   });
                 }}
-                disabled={
-                  loadingSchoolFormRegions ||
-                  (isNationalSuperAdmin() && !schoolForm.provinceId)
-                }
-                helperText={
-                  isNationalSuperAdmin() && !schoolForm.provinceId
-                    ? 'Select a province first'
-                    : isProvincialSuperAdmin()
-                    ? `Regions within ${currentUser?.province}`
-                    : ''
-                }
+                disabled={loadingSchoolFormRegions || !schoolForm.provinceId}
+                helperText={!schoolForm.provinceId ? 'Select a province first' : ''}
               >
                 <MenuItem value=""><em>Select Region</em></MenuItem>
                 {schoolFormRegions.map((r) => (
@@ -1009,7 +1067,31 @@ const SuperAdminDashboard = () => {
               </TextField>
             )}
 
-            {/* Regional: region completely hidden — auto-assigned in payload */}
+            {/* Provincial SuperAdmin: selects region within their assigned province */}
+            {isProvincialSuperAdmin() && (
+              <TextField
+                select fullWidth margin="dense" required
+                label="Region"
+                value={schoolForm.regionalId || ''}
+                onChange={(e) => {
+                  const selectedReg = schoolFormRegions.find(r => r.id === Number(e.target.value));
+                  setSchoolForm({
+                    ...schoolForm,
+                    regionalId: Number(e.target.value),
+                    region: selectedReg ? selectedReg.name : ''
+                  });
+                }}
+                disabled={loadingSchoolFormRegions}
+                helperText={`Regions within ${currentUserProvinceName}`}
+              >
+                <MenuItem value=""><em>Select Region</em></MenuItem>
+                {schoolFormRegions.map((r) => (
+                  <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+                ))}
+              </TextField>
+            )}
+
+            {/* Regional SuperAdmin: region completely hidden, auto-assigned in payload */}
           </Box>
         </DialogContent>
         <DialogActions>
@@ -1151,7 +1233,7 @@ const SuperAdminDashboard = () => {
           >
             <MenuItem value=""><em>Select School</em></MenuItem>
             {schools
-              .filter(s => !isProvincialSuperAdmin() || s.province === currentUser?.province)
+              .filter(s => !isProvincialSuperAdmin() || s.province === currentUserProvinceName)
               .map((s) => (
                 <MenuItem key={s.id} value={s.id}>
                   {s.name}{!isProvincialSuperAdmin() ? ` (${s.province || 'No province'})` : ''}
@@ -1159,7 +1241,7 @@ const SuperAdminDashboard = () => {
               ))}
           </TextField>
 
-          {/* Auto-assigned province & region from selected school — read-only */}
+          {/* Auto-assigned province & region from selected school — read-only display */}
           {adminForm.schoolId && (() => {
             const sel = schools.find(s => s.id === adminForm.schoolId);
             if (!sel) return null;
