@@ -47,7 +47,7 @@ api.interceptors.request.use(
       '/teacher/',
       '/admin/',
       '/parent',
-      '/parent/',
+      '/api/parent/',
       '/users/',
       '/subjects/',
       '/student/'
@@ -55,7 +55,14 @@ api.interceptors.request.use(
     ];
 
     const requestUrl = (config.url || '').toString();
-    const shouldExcludeSchoolId = excludedPaths.some(path => requestUrl.includes(path));
+
+    // Use startsWith for /parent to avoid partial matches on other paths,
+    // and includes for all other excluded paths
+    const shouldExcludeSchoolId =
+      requestUrl.startsWith('/parent') ||
+      excludedPaths
+        .filter(p => p !== '/parent')
+        .some(path => requestUrl.includes(path));
 
     if (userData?.schoolId && !shouldExcludeSchoolId) {
       // Add schoolId as query parameter
