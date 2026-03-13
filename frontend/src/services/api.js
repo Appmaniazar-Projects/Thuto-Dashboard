@@ -46,8 +46,8 @@ api.interceptors.request.use(
       '/grades/',
       '/teacher/',
       '/admin/',
+      '/parent',
       '/parent/',
-      '/api/parent/',
       '/users/',
       '/subjects/',
       '/student/'
