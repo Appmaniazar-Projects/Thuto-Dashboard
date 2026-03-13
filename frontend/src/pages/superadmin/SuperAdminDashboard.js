@@ -132,10 +132,10 @@ const SuperAdminDashboard = () => {
   // ─────────────────────────────────────────────────────────────
   // Resolve currentUser province/region IDs to human-readable names
   // currentUser.province = "9" (ID), currentUser.region = "50" (ID)
+  // Runs once on mount and whenever currentUser changes
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const resolveUserLocation = async () => {
-      if (!isRegionalSuperAdmin() && !isProvincialSuperAdmin()) return;
       if (!currentUser?.province) return;
 
       try {
@@ -145,11 +145,11 @@ const SuperAdminDashboard = () => {
         );
         const provinceName = typeof matchedProvince === 'object'
           ? matchedProvince.name
-          : matchedProvince || '';
+          : (matchedProvince || '');
         setCurrentUserProvinceName(provinceName);
 
-        // Regional superadmin also needs region name resolved
-        if (isRegionalSuperAdmin() && currentUser?.region) {
+        // Also resolve region name if currentUser has a region ID
+        if (currentUser?.region) {
           const regions = await regionService.getRegionsByProvinceId(currentUser.province);
           const matchedRegion = regions.find(r =>
             String(r.id) === String(currentUser.region)
@@ -163,6 +163,35 @@ const SuperAdminDashboard = () => {
 
     resolveUserLocation();
   }, [currentUser]);
+
+  // Helper: resolve province/region names on demand (used at submit time as fallback)
+  const resolveLocationNames = async () => {
+    try {
+      let provinceName = currentUserProvinceName;
+      let regionName = currentUserRegionName;
+
+      if (!provinceName && currentUser?.province) {
+        const provinces = await regionService.getAllProvinces();
+        const match = provinces.find(p =>
+          String(typeof p === 'object' ? p.id : p) === String(currentUser.province)
+        );
+        provinceName = typeof match === 'object' ? match.name : (match || '');
+        setCurrentUserProvinceName(provinceName);
+      }
+
+      if (!regionName && currentUser?.region) {
+        const regions = await regionService.getRegionsByProvinceId(currentUser.province);
+        const match = regions.find(r => String(r.id) === String(currentUser.region));
+        regionName = match?.name || '';
+        setCurrentUserRegionName(regionName);
+      }
+
+      return { provinceName, regionName };
+    } catch (e) {
+      console.error('Failed to resolve location names at submit time:', e);
+      return { provinceName: currentUserProvinceName, regionName: currentUserRegionName };
+    }
+  };
 
   // ─────────────────────────────────────────────────────────────
   // Effects
@@ -417,18 +446,21 @@ const SuperAdminDashboard = () => {
       const payload = { ...schoolForm };
       delete payload.provinceId;
 
-      // Auto-assign province/region for restricted roles using resolved names
-      if (isProvincialSuperAdmin()) {
-        // Province is fixed to their assigned province (name not ID)
-        payload.province = currentUserProvinceName || '';
-        // regionalId was selected by the user from dropdown — already in payload
-      }
+      // Auto-assign province/region for restricted roles
+      // Re-resolve names at submit time so they're always available
+      if (isProvincialSuperAdmin() || isRegionalSuperAdmin()) {
+        const { provinceName, regionName } = await resolveLocationNames();
 
-      if (isRegionalSuperAdmin()) {
-        // Both province and region are fully auto-assigned from currentUser
-        payload.province = currentUserProvinceName || '';     // "Western Cape"
-        payload.region = currentUserRegionName || '';         // "Northern Region"
-        payload.regionalId = Number(currentUser?.region) || null; // 50 (region field = ID)
+        if (isProvincialSuperAdmin()) {
+          payload.province = provinceName || '';
+          // regionalId already set by dropdown selection
+        }
+
+        if (isRegionalSuperAdmin()) {
+          payload.province = provinceName || '';              // "Western Cape"
+          payload.region = regionName || '';                  // "Northern Region"
+          payload.regionalId = Number(currentUser?.region) || null; // 50
+        }
       }
 
       payload.createdBy = currentUser.email;
