@@ -100,9 +100,9 @@ const LandingPage = () => {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: '100% !important',
+          width: '100vw !important',
+          maxWidth: '100vw !important',
           minHeight: '100vh',
-          width: '100%',
         }}
       >
         <Box sx={{ 
