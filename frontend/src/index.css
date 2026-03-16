@@ -39,3 +39,10 @@
   width: auto !important;
   height: 40px !important;
 }
+
+/* Remove max-width restriction from landing page */
+.css-d3ww3e,
+[class*="css-d3ww3e"] {
+  max-width: none !important;
+  width: 100% !important;
+}

@@ -755,7 +755,7 @@ const SuperAdminDashboard = () => {
             {(provinceOptions.length ? provinceOptions : PROVINCES).map((p) => {
               const v = typeof p === 'object' ? (p.id ?? p.name) : p;
               const l = typeof p === 'object' ? (p.name ?? String(v)) : p;
-              return <MenuItem key={String(v)} value={v}>{l}</MenuItem>;
+              return <MenuItem key={String(v)} value={p.id ?? v}>{l}</MenuItem>;
             })}
           </Select>
         </FormControl>

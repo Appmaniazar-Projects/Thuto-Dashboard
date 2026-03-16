@@ -83,16 +83,39 @@ export const getAllSchools = async (createdBy, queryString) => {
       const response = await api.get('/superadmins/admins/schools/allSchools', {
         params
       });
-      return response.data;
+      // Map snake_case fields to camelCase for consistency
+      const schoolsData = response.data.map(school => ({
+        ...school,
+        phoneNumber: school.phone_number || school.phoneNumber || null,
+        principalName: school.principal_name || school.principalName || null,
+        province: school.province || null,
+        regionalId: school.regional_id || school.regionalId || null,
+        region: school.region || null,
+        municipalityId: school.municipality_id || school.municipalityId || null,
+        createdBy: school.created_by || school.createdBy || null,
+        updatedBy: school.updated_by || school.updatedBy || null
+      }));
+      return schoolsData;
     } catch (firstError) {
       console.log('Primary endpoint failed, trying alternative...');
-      
       // If primary fails, try without region-specific endpoint
       // This might work for National SuperAdmins who don't have a region
       const response = await api.get('/superadmins/admins/schools', {
         params
       });
-      return response.data;
+      // Also map snake_case fields for the fallback endpoint
+      const schoolsData = response.data.map(school => ({
+        ...school,
+        phoneNumber: school.phone_number || school.phoneNumber || null,
+        principalName: school.principal_name || school.principalName || null,
+        province: school.province || null,
+        regionalId: school.regional_id || school.regionalId || null,
+        region: school.region || null,
+        municipalityId: school.municipality_id || school.municipalityId || null,
+        createdBy: school.created_by || school.createdBy || null,
+        updatedBy: school.updated_by || school.updatedBy || null
+      }));
+      return schoolsData;
     }
   } catch (error) {
     console.error('Failed to fetch schools:', error);
