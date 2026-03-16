@@ -103,8 +103,14 @@ export const getSchoolSubjects = async () => {
  * @returns {Promise<Array>} Array of subject objects assigned to teacher
  */
 export const getSubjectsByTeacher = async (teacherId) => {
-  const response = await api.get(`/subjects/teacher/${teacherId}`);
-  return response.data;
+  try {
+    const response = await api.get(`/subjects/teacher/${teacherId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch subjects for teacher:', error);
+    // Return empty array instead of throwing to prevent dashboard crashes
+    return [];
+  }
 };
 
 /**

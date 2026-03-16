@@ -64,8 +64,8 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
 
   const sortedNotes = useMemo(() => {
     return [...(notes || [])].sort((a, b) => {
-      const aTime = safeDate(a.updatedAt || a.createdAt)?.getTime() ?? 0;
-      const bTime = safeDate(b.updatedAt || b.createdAt)?.getTime() ?? 0;
+      const aTime = safeDate(a.updated_at || a.created_at || a.updatedAt || a.createdAt)?.getTime() ?? 0;
+      const bTime = safeDate(b.updated_at || b.created_at || b.updatedAt || b.createdAt)?.getTime() ?? 0;
       return bTime - aTime;
     });
   }, [notes]);
@@ -239,7 +239,8 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
                       <Stack spacing={1}>
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
                           <Typography variant="body2" color="text.secondary">
-                            {formatLastUpdated(note.updatedAt || note.createdAt)}
+                            {formatLastUpdated(note.updated_at || note.created_at || note.updatedAt || note.createdAt)}
+                            {/* Debug: {JSON.stringify({updatedAt: note.updated_at, createdAt: note.created_at, note})} */}
                           </Typography>
 
                           <Stack direction="row" spacing={0.5}>

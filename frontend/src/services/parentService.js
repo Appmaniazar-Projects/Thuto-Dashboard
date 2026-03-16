@@ -28,9 +28,6 @@ const parentService = {
 
       const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
       const encodedPhone = encodeURIComponent(normalizedPhone);
-      const params = {
-        ...(schoolId ? { schoolId } : {})
-      };
 
       const normalizeChildren = (items) => {
         const list = Array.isArray(items) ? items : [];
@@ -59,17 +56,20 @@ const parentService = {
 
       // Prefer token-based endpoint (most common + avoids role/phone mismatch issues)
       try {
-        const response = await api.get('/parent/children', {
-          params: Object.keys(params).length > 0 ? params : undefined
-        });
+        const response = await api.get('/parent/children');
         return normalizeChildren(response.data);
       } catch (primaryError) {
+        console.warn('Primary /parent/children endpoint failed, trying fallback:', primaryError);
         // Fallback to legacy phone-in-path endpoint if backend requires it.
         if (!encodedPhone) throw primaryError;
-        const response = await api.get(`/parent/${encodedPhone}/children`, {
-          params: Object.keys(params).length > 0 ? params : undefined
-        });
-        return normalizeChildren(response.data);
+        try {
+          const response = await api.get(`/parent/${encodedPhone}/children`);
+          return normalizeChildren(response.data);
+        } catch (fallbackError) {
+          console.error('Both parent children endpoints failed:', fallbackError);
+          // Return empty array instead of throwing to prevent UI breakage
+          return [];
+        }
       }
     } catch (error) {
       console.error('Failed to fetch children:', error);
