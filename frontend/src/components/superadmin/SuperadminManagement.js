@@ -31,8 +31,9 @@ import {
   getAllSuperadmins, 
   createSuperadmin, 
   updateSuperadmin, 
-  deleteSuperadmin 
-} from '../../services/masterService';
+  deleteSuperadmin,
+  bulkUploadSuperAdmins
+} from '../../services/superAdminService';
 
 const PROVINCES = [
   'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',

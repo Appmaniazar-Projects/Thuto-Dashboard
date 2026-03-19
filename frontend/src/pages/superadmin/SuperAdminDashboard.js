@@ -37,7 +37,9 @@ import {
 } from '@mui/icons-material';
 import PageTitle from '../../components/common/PageTitle';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../../context/AuthContext';
+import { useSnackbar } from 'notistack';
 import {
   getAllSchools,
   getRegionalSchools,
@@ -48,7 +50,9 @@ import {
   getRegionalAdmins,
   createAdmin,
   updateAdmin,
-  deleteAdmin
+  deleteAdmin,
+  bulkUploadSuperAdmins,
+  bulkUploadSchools
 } from '../../services/superAdminService';
 import regionService from '../../services/regionService';
 
@@ -638,11 +642,35 @@ const SuperAdminDashboard = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const rows = e.target.result.split('\n').filter(r => r.trim());
-        const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+        let rows = [];
+        let headers = [];
+        
+        // Check file extension and parse accordingly
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          // Parse Excel file
+          const workbook = XLSX.read(e.target.result, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          rows = jsonData.map(row => Object.values(row));
+          if (rows.length > 0) {
+            // Get headers from first row
+            const firstRow = rows[0];
+            headers = firstRow.map(h => String(h).trim().toLowerCase());
+            rows = rows.slice(1); // Remove header row
+          }
+        } else {
+          // Parse CSV file (existing logic)
+          const textData = e.target.result;
+          rows = textData.split('\n').filter(r => r.trim());
+          headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+          rows = rows.slice(1); // Remove header row
+        }
+        
         const schoolsList = [], errors = [];
-        for (let i = 1; i < rows.length; i++) {
-          const vals = rows[i].split(',').map(v => v.trim());
+        for (let i = 0; i < rows.length; i++) {
+          const vals = Array.isArray(rows[i]) ? rows[i] : Object.values(rows[i] || {});
           const school = {};
           headers.forEach((h, idx) => { school[h] = vals[idx] || ''; });
           const rowErrors = [];
@@ -655,7 +683,7 @@ const SuperAdminDashboard = () => {
           const dupes = checkDuplicateSchool(school.name, school.address);
           if (dupes.length) rowErrors.push(`Duplicate: ${dupes.map(d => d.name).join(', ')}`);
           if (rowErrors.length) {
-            errors.push({ row: i + 1, errors: rowErrors, data: school });
+            errors.push({ row: i + 2, errors: rowErrors, data: school }); // +2 because we removed header row
           } else {
             schoolsList.push({
               ...school,
@@ -666,9 +694,15 @@ const SuperAdminDashboard = () => {
         }
         setBulkUploadPreview(schoolsList);
         setBulkUploadErrors(errors);
-      } catch { setError('Failed to parse CSV file.'); }
+      } catch { setError('Failed to parse file. Please ensure it\'s a valid Excel or CSV file.'); }
     };
-    reader.readAsText(file);
+    
+    // Read file based on type
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      reader.readAsBinaryString(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   const handleBulkUploadSubmit = async () => {
@@ -678,19 +712,12 @@ const SuperAdminDashboard = () => {
       setError(null);
       const createdBy = currentUser?.email;
       if (!createdBy) { setError('Unable to identify creator.'); return; }
-      const results = [];
-      for (const school of bulkUploadPreview) {
-        try {
-          await createSchool({ ...school, createdBy });
-          results.push({ success: true, name: school.name });
-        } catch (err) {
-          results.push({
-            success: false,
-            name: school.name,
-            error: err.response?.data?.message || err.message
-          });
-        }
-      }
+      
+      const formData = new FormData();
+      formData.append('file', bulkUploadFile);
+      formData.append('createdBy', createdBy);
+      
+      const results = await bulkUploadSchools(formData);
       const ok = results.filter(r => r.success).length;
       const fail = results.filter(r => !r.success);
       alert(`Bulk upload done:\n✅ ${ok} created\n❌ ${fail.length} failed`);
@@ -717,6 +744,110 @@ const SuperAdminDashboard = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // Superadmin bulk upload handlers
+  // ─────────────────────────────────────────────────────────────
+  const handleSuperAdminBulkUploadFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) { setBulkUploadFile(file); parseSuperAdminBulkUploadFile(file); }
+  };
+
+  const parseSuperAdminBulkUploadFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        let rows = [];
+        let headers = [];
+        
+        // Check file extension and parse accordingly
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+          // Parse Excel file
+          const workbook = XLSX.read(e.target.result, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          rows = jsonData.map(row => Object.values(row));
+          if (rows.length > 0) {
+            // Get headers from first row
+            const firstRow = rows[0];
+            headers = firstRow.map(h => String(h).trim().toLowerCase());
+            rows = rows.slice(1); // Remove header row
+          }
+        } else {
+          // Parse CSV file (existing logic)
+          const textData = e.target.result;
+          rows = textData.split('\n').filter(r => r.trim());
+          headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+          rows = rows.slice(1); // Remove header row
+        }
+        
+        const adminsList = [], errors = [];
+        for (let i = 0; i < rows.length; i++) {
+          const vals = Array.isArray(rows[i]) ? rows[i] : Object.values(rows[i] || {});
+          const admin = {};
+          headers.forEach((h, idx) => { admin[h] = vals[idx] || ''; });
+          const rowErrors = [];
+          if (!admin.name) rowErrors.push('Name required');
+          if (!admin.lastName) rowErrors.push('Last Name required');
+          if (!admin.email) rowErrors.push('Email required');
+          if (!admin.phoneNumber) rowErrors.push('Phone required');
+          if (!admin.schoolId) rowErrors.push('School required');
+          const dupes = checkDuplicateAdmin(admin.email, admin.schoolId);
+          if (dupes.length) rowErrors.push(`Duplicate: ${dupes.map(d => d.name).join(', ')}`);
+          if (rowErrors.length) {
+            errors.push({ row: i + 2, errors: rowErrors, data: admin }); // +2 because we removed header row
+          } else {
+            adminsList.push(admin);
+          }
+        }
+        setBulkUploadPreview(adminsList);
+        setBulkUploadErrors(errors);
+      } catch { setError('Failed to parse file. Please ensure it\'s a valid Excel or CSV file.'); }
+    };
+    
+    // Read file based on type
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      reader.readAsBinaryString(file);
+    } else {
+      reader.readAsText(file);
+    }
+  };
+
+  const handleSuperAdminBulkUploadSubmit = async () => {
+    if (!bulkUploadFile || !bulkUploadPreview.length) { setError('No valid admins to upload'); return; }
+    try {
+      setSubmitting(true);
+      setError(null);
+      const createdBy = currentUser?.email;
+      if (!createdBy) { setError('Unable to identify creator.'); return; }
+      
+      const formData = new FormData();
+      formData.append('file', bulkUploadFile);
+      formData.append('createdBy', createdBy);
+      
+      const results = await bulkUploadSuperAdmins(formData);
+      const ok = results.filter(r => r.success).length;
+      const fail = results.filter(r => !r.success);
+      alert(`Bulk upload done:\n✅ ${ok} created\n❌ ${fail.length} failed`);
+      setBulkUploadDialogOpen(false);
+      setBulkUploadFile(null);
+      setBulkUploadPreview([]);
+      setBulkUploadErrors([]);
+      fetchData();
+    } catch (err) {
+      setError(err.message || 'Bulk upload failed');
+    } finally { setSubmitting(false); }
+  };
+
+  const checkDuplicateAdmin = (email, schoolId) => {
+    return admins.filter(a =>
+      a.email.toLowerCase() === email.toLowerCase() &&
+      a.schoolId === schoolId &&
+      a.id !== editingAdmin?.id
+    );
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -1151,7 +1282,7 @@ const SuperAdminDashboard = () => {
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Upload a CSV with columns: name, address, phoneNumber, email, principalName, province, region (optional)
+            Upload a CSV or Excel file with columns: name, address, phoneNumber, email, principalName, province, region (optional)
           </Typography>
           <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={downloadBulkUploadTemplate}>
             Download Template
@@ -1159,7 +1290,8 @@ const SuperAdminDashboard = () => {
           <TextField
             type="file" fullWidth margin="normal"
             onChange={handleBulkUploadFileChange}
-            helperText="Select a CSV file"
+            helperText="Select a CSV or Excel file"
+            inputProps={{ accept: '.csv,.xlsx,.xls' }}
           />
           {bulkUploadPreview.length > 0 && (
             <Box sx={{ mt: 2 }}>
