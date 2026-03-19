@@ -100,14 +100,13 @@ const ParentDashboard = () => {
             setAttendanceWarning('Attendance data is currently unavailable. Your linked children are still shown below.');
           }
           
-          // Fetch other data in parallel
-          const [announcementsRes, eventsRes] = await Promise.allSettled([
-            parentService.getAnnouncements(),
+          // Fetch events only (announcements not implemented yet)
+          const eventsRes = await Promise.allSettled([
             parentService.getUpcomingEvents()
           ]);
           
-          setAnnouncements(announcementsRes.status === 'fulfilled' ? announcementsRes.value : []);
-          setEvents(eventsRes.status === 'fulfilled' ? eventsRes.value : []);
+          setAnnouncements([]); // Empty until backend implements announcements
+          setEvents(eventsRes[0].status === 'fulfilled' ? eventsRes[0].value : []);
           
         } else {
           // No children found - still show dashboard but with placeholder data

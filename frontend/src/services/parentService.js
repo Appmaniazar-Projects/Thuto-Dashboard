@@ -28,6 +28,11 @@ const parentService = {
 
       const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
       const encodedPhone = encodeURIComponent(normalizedPhone);
+      
+      console.log('parentService.getMyChildren - Input phone:', phoneNumber);
+      console.log('parentService.getMyChildren - User phone:', userData?.phoneNumber);
+      console.log('parentService.getMyChildren - Normalized phone:', normalizedPhone);
+      console.log('parentService.getMyChildren - Encoded phone:', encodedPhone);
 
       const normalizeChildren = (items) => {
         const list = Array.isArray(items) ? items : [];
@@ -59,11 +64,16 @@ const parentService = {
         throw new Error('Parent phone number is required to fetch children');
       }
       
+      console.log('parentService.getMyChildren - Making API call to:', `/parent/${encodedPhone}/children`);
+      console.log('parentService.getMyChildren - User data:', userData);
+      
       try {
         const response = await api.get(`/parent/${encodedPhone}/children`);
+        console.log('parentService.getMyChildren - API response:', response.data);
         return normalizeChildren(response.data);
       } catch (error) {
         console.error('Failed to fetch children:', error);
+        console.error('Error response:', error.response?.data);
         // Return empty array instead of throwing to prevent UI breakage
         return [];
       }
@@ -257,10 +267,13 @@ const parentService = {
    */
   getChildAcademicReports: async (phoneNumber, studentId) => {
     try {
+      console.log('parentService.getChildAcademicReports - Fetching reports for:', { phoneNumber, studentId });
       const response = await api.get(`/parent/${phoneNumber}/students/${studentId}/reports`);
+      console.log('parentService.getChildAcademicReports - Response:', response.data);
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
+      console.error('Error response:', error.response?.data);
 
       // Treat "no reports" and "not allowed" as empty rather than a hard error
       // so the UI can show the default empty state.

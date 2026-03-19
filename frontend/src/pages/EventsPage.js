@@ -536,6 +536,17 @@ const EventsPage = () => {
           const taken = Number(r.takenSlots ?? r.signupsCount ?? r.filledSlots ?? 0) || 0;
           const available = Math.max(0, slotLimit - taken);
           const canClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
+          
+          console.log('Event role debug:', {
+            isParent,
+            hasParentSignup,
+            canInteractWithEvent: canInteractWithEvent(ev),
+            available,
+            roleId,
+            slotLimit,
+            taken,
+            canClick
+          });
 
           return (
             <Card key={r.id || r.roleName} variant="outlined">
