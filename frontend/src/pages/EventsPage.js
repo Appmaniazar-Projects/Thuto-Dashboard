@@ -451,7 +451,7 @@ const EventsPage = () => {
   };
 
   const confirmDelete = async (ev) => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isTeacher) return;
     const ok = window.confirm('Delete this event?');
     if (!ok) return;
     try {
@@ -495,16 +495,21 @@ const EventsPage = () => {
   };
 
   const renderEventRoles = (ev) => {
+    console.log('Full event object:', ev);
+    
     const rolesRaw =
-      (Array.isArray(ev?.roles) && ev.roles) ||
       (Array.isArray(ev?.eventRoles) && ev.eventRoles) ||
       (Array.isArray(ev?.roleSlots) && ev.roleSlots) ||
       (Array.isArray(ev?.requiredRoles) && ev.requiredRoles) ||
       [];
 
+    console.log('Raw event roles data:', rolesRaw);
+
     const roles = rolesRaw
       .filter(Boolean)
       .map((r) => {
+        console.log('Processing role:', r);
+        console.log('Role slotLimit value:', r?.slotLimit, 'Type:', typeof r?.slotLimit);
         const slotLimit = r?.slotLimit ?? r?.slots ?? r?.limit ?? r?.capacity;
         const roleName = r?.roleName ?? r?.name ?? r?.role ?? r?.title;
         const takenByList = Array.isArray(r?.signups) ? r.signups.length : undefined;
@@ -792,7 +797,7 @@ const EventsPage = () => {
               Close
             </Button>
 
-            {isAdmin && selectedEvent && (
+            {(isAdmin || isTeacher) && selectedEvent && (
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ ml: 'auto', width: { xs: '100%', sm: 'auto' } }}>
                 <Button
                   variant="outlined"

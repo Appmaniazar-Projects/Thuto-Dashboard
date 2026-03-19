@@ -22,6 +22,7 @@ import {
   deleteTeacherNote,
   getTeacherNotes,
   updateTeacherNote,
+  exportStudentNotes,
 } from '../../services/notesService';
 
 const safeDate = (value) => {
@@ -33,8 +34,8 @@ const safeDate = (value) => {
 
 const formatLastUpdated = (value) => {
   const d = safeDate(value);
-  if (!d) return 'Last updated: —';
-  return `Last updated: ${format(d, 'dd/MM/yyyy, HH:mm')}`;
+  if (!d) return 'Date: —';
+  return `Date: ${format(d, 'dd/MM/yyyy, HH:mm')}`;
 };
 
 const normalizeTeacherId = (teacherId) => {
@@ -64,8 +65,8 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
 
   const sortedNotes = useMemo(() => {
     return [...(notes || [])].sort((a, b) => {
-      const aTime = safeDate(a.updated_at || a.created_at || a.updatedAt || a.createdAt)?.getTime() ?? 0;
-      const bTime = safeDate(b.updated_at || b.created_at || b.updatedAt || b.createdAt)?.getTime() ?? 0;
+      const aTime = safeDate(a.updated_at || a.created_at || a.updatedAt || a.createdAt || a.noteDate)?.getTime() ?? 0;
+      const bTime = safeDate(b.updated_at || b.created_at || b.updatedAt || b.createdAt || b.noteDate)?.getTime() ?? 0;
       return bTime - aTime;
     });
   }, [notes]);
