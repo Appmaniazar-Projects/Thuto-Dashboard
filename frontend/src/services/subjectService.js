@@ -11,7 +11,6 @@ import api from './api';
  * @param {string} subjectData.name - Subject name (e.g., "Mathematics", "English")
  * @param {string} subjectData.description - Subject description
  * @param {Array} subjectData.gradeIds - List of grade IDs associated with the subject
- * @param {string} subjectData.schoolId - School ID associated with the subject
  * @returns {Promise<Object>} Created subject object
  */
 export const createSubject = async (subjectData) => {
@@ -49,18 +48,8 @@ export const updateSubject = async (subjectId, subjectData) => {
  */
 export const getSchoolSubjects = async () => {
   try {
-    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
-    
-    if (!schoolId) {
-      throw new Error('School ID not found in admin context');
-    }
-    
-    
-    // Backend expects schoolId as query parameter (consistent with grades)
-    const response = await api.get('/subjects', {
-      params: { schoolId: schoolId }
-    });
+    // Backend expects no schoolId filtering - subjects are global now
+    const response = await api.get('/subjects');
     
     let subjects = response.data;
     
