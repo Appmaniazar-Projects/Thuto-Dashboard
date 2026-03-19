@@ -15,6 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
+import GetAppIcon from '@mui/icons-material/GetApp';
 import { format } from 'date-fns';
 import { useSnackbar } from 'notistack';
 import {
@@ -240,7 +241,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
                       <Stack spacing={1}>
                         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
                           <Typography variant="body2" color="text.secondary">
-                            {formatLastUpdated(note.updated_at || note.created_at || note.updatedAt || note.createdAt)}
+                            {formatLastUpdated(note.updated_at || note.created_at || note.updatedAt || note.createdAt || note.noteDate)}
                             {/* Debug: {JSON.stringify({updatedAt: note.updated_at, createdAt: note.created_at, note})} */}
                           </Typography>
 

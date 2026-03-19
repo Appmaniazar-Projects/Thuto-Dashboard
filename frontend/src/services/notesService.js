@@ -86,3 +86,12 @@ export const deleteTeacherNote = async ({ id }) => {
   const response = await api.delete(`${API_BASE}/delete/${toId(id)}`);
   return response.data;
 };
+
+export const exportStudentNotes = async (studentId) => {
+  const schoolId = getSchoolId();
+  const response = await api.get(`${API_BASE}/student/${toId(studentId)}/export`, {
+    params: { schoolId: toId(schoolId) },
+    responseType: 'blob',
+  });
+  return response.data;
+};
