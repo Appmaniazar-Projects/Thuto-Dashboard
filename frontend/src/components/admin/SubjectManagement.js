@@ -49,8 +49,7 @@ const SubjectManagement = () => {
   const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
   const [selectedSubject, setSelectedSubject] = useState(null);
   const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-  const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
-  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [], schoolId: schoolId });
+  const [formData, setFormData] = useState({ name: '', description: '', gradeIds: [] });
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [assignLoading, setAssignLoading] = useState(false);
 
