@@ -74,7 +74,6 @@ const SubjectManagement = () => {
         name: subject.name, 
         description: subject.description,
         gradeIds: subject.gradeIds || [],
-        schoolId: subject.schoolId,
         assignedTeacher: subject.assignedTeacher || null, // Include teacher assignment info
         teacher: subject.teacher || null // Alternative teacher field
       })) : [];
@@ -92,7 +91,7 @@ const SubjectManagement = () => {
 
   const handleCreateSubject = () => {
     setDialogMode('create');
-    setFormData({ name: '', description: '', gradeIds: [], schoolId: schoolId });
+    setFormData({ name: '', description: '', gradeIds: [] });
     setSelectedSubject(null);
     setOpenDialog(true);
   };
@@ -103,7 +102,6 @@ const SubjectManagement = () => {
       name: subject.name, 
       description: subject.description || '',
       gradeIds: subject.gradeIds || [],
-      schoolId: subject.schoolId || null
     });
     setSelectedSubject(subject);
     setOpenDialog(true);
