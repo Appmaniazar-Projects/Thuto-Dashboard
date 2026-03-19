@@ -274,3 +274,56 @@ export const getAdminsBySchool = async (schoolId) => {
   }
 };
 
+/**
+ * Bulk upload schools from Excel/CSV file
+ * @param {FormData} formData - FormData with file and metadata
+ * @returns {Promise<Object>} Upload results
+ */
+export const bulkUploadSchools = async (formData) => {
+  try {
+    const response = await api.post('/superadmins/admins/school/bulk/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to bulk upload schools:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk upload superadmin users from Excel/CSV file
+ * @param {FormData} formData - FormData with file and metadata
+ * @returns {Promise<Object>} Upload results
+ */
+export const bulkUploadSuperAdmins = async (formData) => {
+  try {
+    const response = await api.post('/superadmins/admins/bulk/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Failed to bulk upload superadmins:', error);
+    throw error;
+  }
+};
+
+export default {
+  getAllSchools,
+  getRegionalSchools,
+  createSchool,
+  updateSchool,
+  deleteSchool,
+  getAllAdmins,
+  getRegionalAdmins,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
+  bulkUploadSuperAdmins,
+  bulkUploadSchools
+};
+

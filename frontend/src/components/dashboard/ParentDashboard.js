@@ -64,7 +64,9 @@ const ParentDashboard = () => {
         }
         
         // Fetch children data first
+        console.log('ParentDashboard - About to call getMyChildren with phone:', user.phoneNumber);
         const childrenData = await parentService.getMyChildren(user.phoneNumber);
+        console.log('ParentDashboard - Received children data:', childrenData);
         if (childrenData && childrenData.length > 0) {
           setChildren(childrenData);
           setAttendanceWarning('');
