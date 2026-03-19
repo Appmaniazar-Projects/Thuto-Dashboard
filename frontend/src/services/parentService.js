@@ -54,22 +54,18 @@ const parentService = {
           .filter((c) => c?.id !== null && c?.id !== undefined);
       };
 
-      // Prefer token-based endpoint (most common + avoids role/phone mismatch issues)
+      // Use phone-based endpoint (only one that exists in backend)
+      if (!encodedPhone) {
+        throw new Error('Parent phone number is required to fetch children');
+      }
+      
       try {
-        const response = await api.get('/parent/children');
+        const response = await api.get(`/parent/${encodedPhone}/children`);
         return normalizeChildren(response.data);
-      } catch (primaryError) {
-        console.warn('Primary /parent/children endpoint failed, trying fallback:', primaryError);
-        // Fallback to legacy phone-in-path endpoint if backend requires it.
-        if (!encodedPhone) throw primaryError;
-        try {
-          const response = await api.get(`/parent/${encodedPhone}/children`);
-          return normalizeChildren(response.data);
-        } catch (fallbackError) {
-          console.error('Both parent children endpoints failed:', fallbackError);
-          // Return empty array instead of throwing to prevent UI breakage
-          return [];
-        }
+      } catch (error) {
+        console.error('Failed to fetch children:', error);
+        // Return empty array instead of throwing to prevent UI breakage
+        return [];
       }
     } catch (error) {
       console.error('Failed to fetch children:', error);

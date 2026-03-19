@@ -774,7 +774,7 @@ const SuperAdminDashboard = () => {
             <MenuItem value="">All Regions</MenuItem>
             {regionOptions.map((r) => {
               const v = typeof r === 'object' ? (r.id ?? r.name) : r;
-              const l = typeof r === 'object' ? (r.name ?? String(v)) : r;
+              const l = typeof r === 'object' ? (r.name ?? r.regionName ?? r.displayName ?? String(v)) : r;
               return <MenuItem key={String(v)} value={v}>{l}</MenuItem>;
             })}
           </Select>
