@@ -15,11 +15,20 @@ import api from './api';
  */
 export const createSubject = async (subjectData) => {
   try {
-    // Prepare subject data with grade associations
+    // Get admin context for schoolId
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    
+    if (!schoolId) {
+      throw new Error('School ID not found in admin context');
+    }
+    
+    // Prepare subject data with school context and grade associations
     const subjectPayload = {
       name: subjectData.name,
       description: subjectData.description,
       gradeIds: subjectData.gradeIds || [], // Array of grade IDs for many-to-many relationship
+      schoolId: Number(schoolId) // Include schoolId in the request body as expected by backend
     };
     
     

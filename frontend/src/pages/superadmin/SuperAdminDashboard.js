@@ -734,8 +734,8 @@ const SuperAdminDashboard = () => {
   const downloadBulkUploadTemplate = () => {
     const csv = [
       ['name', 'address', 'phoneNumber', 'email', 'principalName', 'province', 'region'],
-      ['Example Primary School', '123 Main St, Cape Town', '0211234567', 'info@example.edu.za', 'Mrs Smith', 'Western Cape', 'Northern Region'],
-      ['Sample High School', '456 Oak Ave, Johannesburg', '0119876543', 'admin@sample.edu.za', 'Mr Johnson', 'Gauteng', 'Central Region']
+      ['Example Primary School','123 Main St','211234567', 'info@example.edu.za','Mrs Smith','Western Cape','Cape Winelands District Municipality'],
+      ['Sample High School','456 Oak Ave','119876543', 'admin@sample.edu.za','Mr Johnson','Mpumalanga','Gert Sibande District Municipality']
     ].map(r => r.join(',')).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
