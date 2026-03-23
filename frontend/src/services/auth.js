@@ -187,8 +187,15 @@ const refreshToken = async () => {
  * @returns {Promise<Object>} Response from the server
  */
 const forgotPassword = async (email) => {
+  console.log('Sending forgot password request for email:', email);
+  try {
   const response = await api.post('/superadmins/forgot-password', { email });
+    console.log('Forgot password response:', response.data);
   return response.data;
+  } catch (error) {
+    console.error('Forgot password error:', error.response?.data || error.message);
+    throw error;
+  }
 };
 
 /**
