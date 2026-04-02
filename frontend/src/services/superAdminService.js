@@ -129,9 +129,12 @@ export const getAllSchools = async (createdBy, queryString) => {
  */
 export const createSchool = async (schoolData) => {
   try {
-    const response = await api.post('/superadmins/admins/school/createSchool/create', {
-      ...schoolData,
-      regionalId: schoolData.regionalId ? Number(schoolData.regionalId) : null, 
+    const createdBy = schoolData.createdBy;
+    const payload = { ...schoolData };
+    delete payload.createdBy; // Remove from body, send as query param
+    
+    const response = await api.post('/superadmins/admins/school/createSchool/create', payload, {
+      params: { createdBy }
     });
     return response.data;
   } catch (error) {

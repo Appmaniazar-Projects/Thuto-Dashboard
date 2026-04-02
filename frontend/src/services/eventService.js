@@ -263,7 +263,10 @@ export const cancelEventSignup = async (eventId) => {
 // Teacher attendance status
 export const setTeacherAttendanceStatus = async (eventId, status) => {
   try {
-    const response = await api.put(`${EVENTS_BASE}/${eventId}/teacher-attendance`, { status });
+    const schoolId = localStorage.getItem('schoolId') || JSON.parse(localStorage.getItem('user') || '{}').schoolId;
+    const response = await api.put(`${EVENTS_BASE}/${eventId}/teacher-attendance`, { status }, {
+      params: { schoolId }
+    });
     return response.data;
   } catch (error) {
     console.error('Error updating teacher attendance:', error);

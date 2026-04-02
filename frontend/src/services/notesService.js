@@ -87,6 +87,60 @@ export const deleteTeacherNote = async ({ id }) => {
   return response.data;
 };
 
+/**
+ * Export all teacher notes for a student to a text file
+ * @param {string} studentId - The student ID
+ * @param {string} studentName - The student name (for filename)
+ */
+export const exportStudentNotesToTxt = async (studentId, studentName) => {
+  try {
+    const schoolId = getSchoolId();
+    const response = await api.get(`${API_BASE}/student/${studentId}`, {
+      params: { schoolId }
+    });
+    
+    const notes = response.data || [];
+    
+    if (!notes.length) {
+      throw new Error('No notes found for this student');
+    }
+
+    // Create text content
+    let textContent = `Notes for ${studentName}\n`;
+    textContent += `Generated on: ${new Date().toLocaleString()}\n`;
+    textContent += `${'='.repeat(50)}\n\n`;
+    
+    notes.forEach((note, index) => {
+      textContent += `Note #${index + 1}\n`;
+      textContent += `Date: ${note.noteDate || 'N/A'}\n`;
+      textContent += `Note: ${note.note || 'N/A'}\n`;
+      textContent += `Teacher: ${note.teacherName || 'N/A'}\n`;
+      textContent += `${'-'.repeat(30)}\n\n`;
+    });
+    
+    // Create and download the file
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    // Clean filename for download
+    const cleanName = (studentName || 'student').replace(/[^a-z0-9]/gi, '_');
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    link.href = url;
+    link.download = `notes_${cleanName}_${timestamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to export notes:', error);
+    throw error;
+  }
+};
+
 export const exportStudentNotes = async (studentId) => {
   const schoolId = getSchoolId();
   const response = await api.get(`${API_BASE}/student/${toId(studentId)}/export`, {

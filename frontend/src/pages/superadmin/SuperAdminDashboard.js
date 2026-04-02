@@ -1009,30 +1009,44 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schools.map((school, i) => (
-                    <TableRow key={school.id || `school-${i}`}>
-                      <TableCell>{school.name}</TableCell>
-                      <TableCell>{school.address}</TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{school.email}</Typography>
-                        <Typography variant="body2" color="text.secondary">{school.phoneNumber}</Typography>
-                      </TableCell>
-                      <TableCell>{school.principalName}</TableCell>
-                      <TableCell>{school.province || 'N/A'}</TableCell>
-                      <TableCell>{school.region || school.regionalId || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={admins.some(a => a.schoolId === school.id) ? 'Active' : 'Pre-populated'}
-                          color={admins.some(a => a.schoolId === school.id) ? 'success' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton onClick={() => openSchoolDialog(school)}><EditIcon /></IconButton>
-                        <IconButton onClick={() => handleDeleteSchool(school.id)} color="error"><DeleteIcon /></IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {schools.map((school, i) => {
+                    // Resolve region name from regionalId using same logic as province
+                    const regionName = (() => {
+                      if (school.region) return school.region; // If backend returns name, use it
+                      if (!school.regionalId) return 'N/A'; // No region ID
+                      
+                      // Look up region name from ID - same approach as province resolution
+                      const region = regionOptions.find(r => 
+                        String(r.id) === String(school.regionalId)
+                      );
+                      return region ? region.name : 'N/A';
+                    })();
+                    
+                    return (
+                      <TableRow key={school.id || `school-${i}`}>
+                        <TableCell>{school.name}</TableCell>
+                        <TableCell>{school.address}</TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{school.email}</Typography>
+                          <Typography variant="body2" color="text.secondary">{school.phoneNumber}</Typography>
+                        </TableCell>
+                        <TableCell>{school.principalName}</TableCell>
+                        <TableCell>{school.province || 'N/A'}</TableCell>
+                        <TableCell>{regionName}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={admins.some(a => a.schoolId === school.id) ? 'Active' : 'Pre-populated'}
+                            color={admins.some(a => a.schoolId === school.id) ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton onClick={() => openSchoolDialog(school)}><EditIcon /></IconButton>
+                          <IconButton onClick={() => handleDeleteSchool(school.id)} color="error"><DeleteIcon /></IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {schools.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} align="center">
@@ -1409,6 +1423,19 @@ const SuperAdminDashboard = () => {
           {adminForm.schoolId && (() => {
             const sel = schools.find(s => s.id === adminForm.schoolId);
             if (!sel) return null;
+            
+            // Resolve region name from regionalId using same logic as province
+            const regionName = (() => {
+              if (sel.region) return sel.region; // If backend returns name, use it
+              if (!sel.regionalId) return 'N/A'; // No region ID
+              
+              // Look up region name from ID - same approach as province resolution
+              const region = regionOptions.find(r => 
+                String(r.id) === String(sel.regionalId)
+              );
+              return region ? region.name : 'N/A';
+            })();
+            
             return (
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField
@@ -1419,7 +1446,7 @@ const SuperAdminDashboard = () => {
                 />
                 <TextField
                   label="Region" fullWidth margin="dense"
-                  value={sel.region || sel.regionalId || ''}
+                  value={regionName}
                   disabled
                   helperText="Auto-assigned from school"
                 />

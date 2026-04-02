@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Divider,
   Grid,
@@ -14,6 +15,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import { getMyStudents } from '../../services/teacherService';
+import { exportStudentNotesToTxt } from '../../services/notesService';
 import NotesToSelfPanel from '../../components/teacher/NotesToSelfPanel';
 
 const TeacherNotesPage = () => {
@@ -25,6 +27,20 @@ const TeacherNotesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const handleExportNotes = async () => {
+    if (!selectedStudentId) return;
+    
+    const selectedStudent = students.find(s => String(s.id) === String(selectedStudentId));
+    const studentName = `${selectedStudent?.name || ''} ${selectedStudent?.lastName || ''}`.trim() || 'Student';
+    
+    try {
+      await exportStudentNotesToTxt(selectedStudentId, studentName);
+      // You could add a success message here if you want
+    } catch (error) {
+      setError('Failed to export notes: ' + error.message);
+    }
+  };
 
   useEffect(() => {
     const loadStudents = async () => {
@@ -146,9 +162,18 @@ const TeacherNotesPage = () => {
         <Grid item xs={12} md={8}>
           {selectedStudent ? (
             <Box>
-              <Typography variant="h6" gutterBottom>
-                {`${selectedStudent?.name || ''} ${selectedStudent?.lastName || ''}`.trim() || 'Student'}
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  {`${selectedStudent?.name || ''} ${selectedStudent?.lastName || ''}`.trim() || 'Student'}
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={handleExportNotes}
+                >
+                  Export Notes
+                </Button>
+              </Box>
               <NotesToSelfPanel studentId={selectedStudentId} teacherId={teacherId} />
             </Box>
           ) : (
