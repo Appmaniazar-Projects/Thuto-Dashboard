@@ -639,98 +639,15 @@ const SuperAdminDashboard = () => {
   };
 
   const parseBulkUploadFile = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        let rows = [];
-        let headers = [];
-        
-        // Check file extension and parse accordingly
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-          // Parse Excel file
-          const workbook = XLSX.read(e.target.result, { type: 'binary' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-          
-          rows = jsonData.map(row => Object.values(row));
-          if (rows.length > 0) {
-            // Get headers from first row
-            const firstRow = rows[0];
-            headers = firstRow.map(h => String(h).trim().toLowerCase());
-            rows = rows.slice(1); // Remove header row
-          }
-        } else {
-          // Parse CSV file (existing logic)
-          const textData = e.target.result;
-          rows = textData.split('\n').filter(r => r.trim());
-          headers = rows[0].split(',').map(h => h.trim().toLowerCase());
-          rows = rows.slice(1); // Remove header row
-          console.log('Parsed headers:', headers);
-          console.log('Sample row data:', rows[0]);
-          console.log('Total rows to process:', rows.length);
-        }
-        
-        const schoolsList = [], errors = [];
-        for (let i = 0; i < rows.length; i++) {
-          const vals = Array.isArray(rows[i]) ? rows[i] : Object.values(rows[i] || {});
-          const school = {};
-          headers.forEach((h, idx) => { school[h] = vals[idx] || ''; });
-          const rowErrors = [];
-          
-          // Handle common column name variations
-          const getValue = (possibleNames) => {
-            for (const name of possibleNames) {
-              if (school[name] && school[name].trim()) return school[name].trim();
-            }
-            return '';
-          };
-          
-          const name = getValue(['name', 'school name', 'schoolname']);
-          const address = getValue(['address', 'physical address', 'physicaladdress']);
-          const phoneNumber = getValue(['phonenumber', 'phone number', 'phone', 'telephone']);
-          const email = getValue(['email', 'email address', 'emailaddress']);
-          const principalName = getValue(['principalname', 'principal name', 'principal', 'principalname']);
-          const province = getValue(['province']);
-          
-          if (!name) rowErrors.push('Name required');
-          if (!address) rowErrors.push('Address required');
-          if (!phoneNumber) rowErrors.push('Phone required');
-          if (!email) rowErrors.push('Email required');
-          if (!principalName) rowErrors.push('Principal name required');
-          if (!province) rowErrors.push('Province required');
-          const dupes = checkDuplicateSchool(name, address);
-          if (dupes.length) rowErrors.push(`Duplicate: ${dupes.map(d => d.name).join(', ')}`);
-          if (rowErrors.length) {
-            errors.push({ row: i + 2, errors: rowErrors, data: school }); // +2 because we removed header row
-          } else {
-            schoolsList.push({
-              ...school,
-              name,
-              address,
-              phoneNumber,
-              email,
-              principalName,
-              province,
-              region: school.region || ''
-            });
-          }
-        }
-        setBulkUploadPreview(schoolsList);
-        setBulkUploadErrors(errors);
-      } catch { setError('Failed to parse file. Please ensure it\'s a valid Excel or CSV file.'); }
-    };
-    
-    // Read file based on type
-    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-      reader.readAsBinaryString(file);
-    } else {
-      reader.readAsText(file);
-    }
+    // Backend will handle all Excel parsing and validation
+    // Just set the file and let backend process it
+    setBulkUploadPreview([]);
+    setBulkUploadErrors([]);
+    console.log('File ready for backend processing:', file.name);
   };
 
   const handleBulkUploadSubmit = async () => {
-    if (!bulkUploadFile || !bulkUploadPreview.length) { setError('No valid schools to upload'); return; }
+    if (!bulkUploadFile) { setError('No file selected'); return; }
     try {
       setSubmitting(true);
       setError(null);
