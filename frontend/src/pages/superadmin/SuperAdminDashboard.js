@@ -666,6 +666,9 @@ const SuperAdminDashboard = () => {
           rows = textData.split('\n').filter(r => r.trim());
           headers = rows[0].split(',').map(h => h.trim().toLowerCase());
           rows = rows.slice(1); // Remove header row
+          console.log('Parsed headers:', headers);
+          console.log('Sample row data:', rows[0]);
+          console.log('Total rows to process:', rows.length);
         }
         
         const schoolsList = [], errors = [];
@@ -674,20 +677,41 @@ const SuperAdminDashboard = () => {
           const school = {};
           headers.forEach((h, idx) => { school[h] = vals[idx] || ''; });
           const rowErrors = [];
-          if (!school.name) rowErrors.push('Name required');
-          if (!school.address) rowErrors.push('Address required');
-          if (!school.phonenumber) rowErrors.push('Phone required');
-          if (!school.email) rowErrors.push('Email required');
-          if (!school.principalname) rowErrors.push('Principal name required');
-          if (!school.province) rowErrors.push('Province required');
-          const dupes = checkDuplicateSchool(school.name, school.address);
+          
+          // Handle common column name variations
+          const getValue = (possibleNames) => {
+            for (const name of possibleNames) {
+              if (school[name] && school[name].trim()) return school[name].trim();
+            }
+            return '';
+          };
+          
+          const name = getValue(['name', 'school name', 'schoolname']);
+          const address = getValue(['address', 'physical address', 'physicaladdress']);
+          const phoneNumber = getValue(['phonenumber', 'phone number', 'phone', 'telephone']);
+          const email = getValue(['email', 'email address', 'emailaddress']);
+          const principalName = getValue(['principalname', 'principal name', 'principal', 'principalname']);
+          const province = getValue(['province']);
+          
+          if (!name) rowErrors.push('Name required');
+          if (!address) rowErrors.push('Address required');
+          if (!phoneNumber) rowErrors.push('Phone required');
+          if (!email) rowErrors.push('Email required');
+          if (!principalName) rowErrors.push('Principal name required');
+          if (!province) rowErrors.push('Province required');
+          const dupes = checkDuplicateSchool(name, address);
           if (dupes.length) rowErrors.push(`Duplicate: ${dupes.map(d => d.name).join(', ')}`);
           if (rowErrors.length) {
             errors.push({ row: i + 2, errors: rowErrors, data: school }); // +2 because we removed header row
           } else {
             schoolsList.push({
               ...school,
-              principalName: school.principalname,
+              name,
+              address,
+              phoneNumber,
+              email,
+              principalName,
+              province,
               region: school.region || ''
             });
           }

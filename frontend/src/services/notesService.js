@@ -95,8 +95,9 @@ export const deleteTeacherNote = async ({ id }) => {
 export const exportStudentNotesToTxt = async (studentId, studentName) => {
   try {
     const schoolId = getSchoolId();
-    const response = await api.get(`${API_BASE}/student/${studentId}`, {
-      params: { schoolId }
+    const response = await api.post(`${API_BASE}/student/notes`, {
+      studentId,
+      schoolId
     });
     
     const notes = response.data || [];
@@ -107,7 +108,14 @@ export const exportStudentNotesToTxt = async (studentId, studentName) => {
 
     // Create text content
     let textContent = `Notes for ${studentName}\n`;
-    textContent += `Generated on: ${new Date().toLocaleString()}\n`;
+    textContent += `Generated on: ${new Date().toLocaleString(undefined, { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })}\n`;
     textContent += `${'='.repeat(50)}\n\n`;
     
     notes.forEach((note, index) => {

@@ -29,9 +29,21 @@ export const getRegionsByProvinceId = async (provinceId) => {
   }
 };
 
+// Get all regions (for mapping regionalId to region names)
+export const getAllRegions = async () => {
+  try {
+    const response = await api.get(`${REGION_BASE}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all regions:', error);
+    throw error;
+  }
+};
+
 const regionService = {
   getAllProvinces,
-  getRegionsByProvinceId
+  getRegionsByProvinceId,
+  getAllRegions
 };
 
 export default regionService;
