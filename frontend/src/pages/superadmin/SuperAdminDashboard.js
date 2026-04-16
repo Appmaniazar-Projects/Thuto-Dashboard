@@ -1303,10 +1303,10 @@ const SuperAdminDashboard = () => {
           <Button
             onClick={handleBulkUploadSubmit}
             variant="contained"
-            disabled={submitting || !bulkUploadPreview.length}
+            disabled={submitting || !bulkUploadFile}
             startIcon={submitting ? <CircularProgress size={20} /> : null}
           >
-            {submitting ? 'Uploading...' : `Upload ${bulkUploadPreview.length} Schools`}
+            {submitting ? 'Uploading...' : 'Upload Schools'}
           </Button>
         </DialogActions>
       </Dialog>
