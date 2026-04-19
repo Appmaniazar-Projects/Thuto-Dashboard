@@ -336,20 +336,19 @@ const SuperAdminDashboard = () => {
     const n = name.toLowerCase().trim();
     const a = (address || '').toLowerCase().trim();
     return schools.filter(s => {
+      if (!s || !s.name) return false;
       const nameMatch =
         s.name.toLowerCase().includes(n) ||
         n.includes(s.name.toLowerCase()) ||
         calculateSimilarity(n, s.name.toLowerCase()) > 0.8;
       const addrMatch =
         !a ||
-        s.address?.toLowerCase().includes(a) ||
-        a.includes(s.address?.toLowerCase());
+        (s.address && s.address.toLowerCase().includes(a)) ||
+        (s.address && a.includes(s.address.toLowerCase()));
       return nameMatch && addrMatch;
     });
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // School handlers
   // ─────────────────────────────────────────────────────────────
   const openSchoolDialog = (school = null) => {
     setError(null);
@@ -1352,7 +1351,7 @@ const SuperAdminDashboard = () => {
           >
             <MenuItem value=""><em>Select School</em></MenuItem>
             {schools
-              .filter(s => !isProvincialSuperAdmin() || s.province === currentUserProvinceName)
+              .filter(s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))
               .map((s) => (
                 <MenuItem key={s.id} value={s.id}>
                   {s.name}{!isProvincialSuperAdmin() ? ` (${s.province || 'No province'})` : ''}
