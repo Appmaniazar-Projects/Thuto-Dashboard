@@ -202,7 +202,7 @@ const SuperAdminDashboard = () => {
   // Effects
   // ─────────────────────────────────────────────────────────────
 
-  // Initial load + reload when filters change
+  // Initial load
   useEffect(() => {
     const initFilters = async () => {
       try {
@@ -213,6 +213,11 @@ const SuperAdminDashboard = () => {
       }
     };
     initFilters();
+    fetchData();
+  }, []);
+
+  // Fetch data when filters change
+  useEffect(() => {
     fetchData();
   }, [selectedRegion, selectedProvince]);
 
@@ -267,6 +272,17 @@ const SuperAdminDashboard = () => {
   // ─────────────────────────────────────────────────────────────
   // Data fetching
   // ─────────────────────────────────────────────────────────────
+  const normalizeArray = (val) => {
+    if (Array.isArray(val)) return val;
+    if (val && Array.isArray(val.data)) return val.data;
+    if (val && Array.isArray(val.results)) return val.results;
+    if (val && Array.isArray(val.schools)) return val.schools;
+    if (val && Array.isArray(val.admins)) return val.admins;
+    if (val && Array.isArray(val.users)) return val.users;
+    if (val && Array.isArray(val.content)) return val.content;
+    return [];
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -296,8 +312,12 @@ const SuperAdminDashboard = () => {
           : getAllAdmins('admin', createdBy, queryString)
       ]);
 
-      setSchools(schoolsData || []);
-      setAdmins(adminsData || []);
+      // Debug: Log raw API responses
+      console.log('Raw schoolsData:', schoolsData);
+      console.log('Raw adminsData:', adminsData);
+
+      setSchools(normalizeArray(schoolsData));
+      setAdmins(normalizeArray(adminsData));
     } catch (err) {
       setError(
         err?.response?.data?.message ||
