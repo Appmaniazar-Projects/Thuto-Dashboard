@@ -132,6 +132,7 @@ const SuperAdminDashboard = () => {
   const [bulkUploadFile, setBulkUploadFile] = useState(null);
   const [bulkUploadPreview, setBulkUploadPreview] = useState([]);
   const [bulkUploadErrors, setBulkUploadErrors] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // ─────────────────────────────────────────────────────────────
   // Resolve currentUser province/region IDs to human-readable names
@@ -635,6 +636,28 @@ const SuperAdminDashboard = () => {
   const handleBulkUploadFileChange = (e) => {
     const file = e.target.files[0];
     if (file) { setBulkUploadFile(file); parseBulkUploadFile(file); }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && (file.type === 'text/csv' || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      setBulkUploadFile(file);
+      parseBulkUploadFile(file);
+    } else {
+      setError('Please upload a CSV or Excel file');
+    }
   };
 
   const parseBulkUploadFile = (file) => {
@@ -1235,23 +1258,41 @@ const SuperAdminDashboard = () => {
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Upload a CSV or Excel file with columns: name, address, phoneNumber, email, principalName, province, region (optional)
+            Upload a CSV or Excel file with school data. 
           </Typography>
-          <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={downloadBulkUploadTemplate}>
-            Download Template
-          </Button>
-          <TextField
-            onChange={handleBulkUploadFileChange}
-            helperText="Select a CSV or Excel file"
-            inputProps={{ accept: '.csv,.xlsx,.xls' }}
-          />
+          <Box
+            sx={{
+              border: `2px dashed ${isDragging ? 'primary.main' : 'grey.300'}`,
+              borderRadius: 2,
+              p: 3,
+              textAlign: 'center',
+              bgcolor: isDragging ? 'action.hover' : 'background.paper',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out'
+            }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => document.getElementById('file-input').click()}
+          >
+            <input
+              id="file-input"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style={{ display: 'none' }}
+              onChange={handleBulkUploadFileChange}
+            />
+            <Typography variant="body1" gutterBottom>
+              {isDragging ? 'Drop file here' : 'Drag and drop file here, or click to select'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Supports CSV, Excel (.xlsx, .xls) files
+            </Typography>
+          </Box>
           {bulkUploadFile && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="success.main">
                 File selected: {bulkUploadFile.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Backend will process and validate this file
               </Typography>
             </Box>
           )}
