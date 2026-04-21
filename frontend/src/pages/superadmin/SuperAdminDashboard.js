@@ -638,11 +638,10 @@ const SuperAdminDashboard = () => {
   };
 
   const parseBulkUploadFile = (file) => {
-    // Backend will handle all Excel parsing and validation
-    // Just set the file and let backend process it
-    setBulkUploadPreview([]);
-    setBulkUploadErrors([]);
-    console.log('File ready for backend processing:', file.name);
+    // Backend handles all Excel parsing and validation
+    // Frontend just accepts the file
+    setBulkUploadFile(file);
+    console.log('File selected for backend processing:', file.name);
   };
 
   const handleBulkUploadSubmit = async () => {
@@ -823,7 +822,7 @@ const SuperAdminDashboard = () => {
             onChange={(e) => { setSelectedProvince(e.target.value); setSelectedRegion(''); }}
           >
             <MenuItem value="">All Provinces</MenuItem>
-            {(provinceOptions.length ? provinceOptions : PROVINCES).map((p) => {
+            {(provinceOptions.length ? provinceOptions : PROVINCES).filter(p => p).map((p) => {
               const v = typeof p === 'object' ? (p.id ?? p.name) : p;
               const l = typeof p === 'object' ? (p.name ?? String(v)) : p;
               return <MenuItem key={String(v)} value={p.id ?? v}>{l}</MenuItem>;
@@ -843,7 +842,7 @@ const SuperAdminDashboard = () => {
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
             <MenuItem value="">All Regions</MenuItem>
-            {regionOptions.map((r) => {
+            {regionOptions.filter(r => r).map((r) => {
               const v = typeof r === 'object' ? (r.id ?? r.name) : r;
               const l = typeof r === 'object' ? (r.name ?? r.regionName ?? r.displayName ?? String(v)) : r;
               return <MenuItem key={String(v)} value={v}>{l}</MenuItem>;
@@ -949,7 +948,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schools.map((school, i) => {
+                  {schools.filter(s => s).map((school, i) => {
                     // Resolve region name from regionalId using same logic as province
                     const regionName = (() => {
                       if (school.region) return school.region; // If backend returns name, use it
@@ -1028,7 +1027,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {admins.map((admin, i) => {
+                  {admins.filter(a => a).map((admin, i) => {
                     const school = schools.find(s => s.id === (admin.schoolId || admin.school?.id));
                     const schoolName = school?.name || admin.school?.name || admin.schoolName || 'Unknown School';
                     return (
@@ -1242,58 +1241,18 @@ const SuperAdminDashboard = () => {
             Download Template
           </Button>
           <TextField
-            type="file" fullWidth margin="normal"
             onChange={handleBulkUploadFileChange}
             helperText="Select a CSV or Excel file"
             inputProps={{ accept: '.csv,.xlsx,.xls' }}
           />
-          {bulkUploadPreview.length > 0 && (
+          {bulkUploadFile && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>Preview ({bulkUploadPreview.length} schools)</Typography>
-              <TableContainer component={Paper} sx={{ maxHeight: 300 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell>Address</TableCell>
-                      <TableCell>Phone</TableCell>
-                      <TableCell>Province</TableCell>
-                      <TableCell>Region</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {bulkUploadPreview.slice(0, 10).map((s, i) => (
-                      <TableRow key={i}>
-                        <TableCell>{s.name}</TableCell>
-                        <TableCell>{s.address}</TableCell>
-                        <TableCell>{s.phoneNumber}</TableCell>
-                        <TableCell>{s.province}</TableCell>
-                        <TableCell>{s.region || '-'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              {bulkUploadPreview.length > 10 && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  ... and {bulkUploadPreview.length - 10} more
-                </Typography>
-              )}
-            </Box>
-          )}
-          {bulkUploadErrors.length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" color="error" sx={{ mb: 1 }}>
-                Validation Errors ({bulkUploadErrors.length})
+              <Typography variant="body2" color="success.main">
+                File selected: {bulkUploadFile.name}
               </Typography>
-              {bulkUploadErrors.slice(0, 5).map((e, i) => (
-                <Alert key={i} severity="error" sx={{ mb: 1 }}>Row {e.row}: {e.errors.join(', ')}</Alert>
-              ))}
-              {bulkUploadErrors.length > 5 && (
-                <Typography variant="body2" color="text.secondary">
-                  ... and {bulkUploadErrors.length - 5} more errors
-                </Typography>
-              )}
+              <Typography variant="body2" color="text.secondary">
+                Backend will process and validate this file
+              </Typography>
             </Box>
           )}
         </DialogContent>
