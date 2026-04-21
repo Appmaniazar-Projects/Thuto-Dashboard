@@ -135,6 +135,21 @@ const SuperAdminDashboard = () => {
   const [isDragging, setIsDragging] = useState(false);
 
   // ─────────────────────────────────────────────────────────────
+  // Utility: Normalize API responses to arrays
+  // ─────────────────────────────────────────────────────────────
+  const normalizeArray = (val) => {
+    // Already an array
+    if (Array.isArray(val)) return val;
+    // Null / undefined / non-object
+    if (!val || typeof val !== 'object') return [];
+    // Search every key on the object for the first array value
+    for (const key of Object.keys(val)) {
+      if (Array.isArray(val[key])) return val[key];
+    }
+    return [];
+  };
+
+  // ─────────────────────────────────────────────────────────────
   // Resolve currentUser province/region IDs to human-readable names
   // currentUser.province = "9" (ID), currentUser.region = "50" (ID)
   // Runs once on mount and whenever currentUser changes
@@ -207,7 +222,7 @@ const SuperAdminDashboard = () => {
     const initFilters = async () => {
       try {
         const provinces = await regionService.getAllProvinces();
-        setProvinceOptions(Array.isArray(provinces) ? provinces : []);
+        setProvinceOptions(normalizeArray(provinces));
       } catch {
         setProvinceOptions(PROVINCES);
       }
@@ -228,7 +243,7 @@ const SuperAdminDashboard = () => {
       setLoadingRegions(true);
       try {
         const regions = await regionService.getRegionsByProvinceId(selectedProvince);
-        setRegionOptions(Array.isArray(regions) ? regions : []);
+        setRegionOptions(normalizeArray(regions));
       } catch { setRegionOptions([]); }
       finally { setLoadingRegions(false); }
     };
@@ -248,7 +263,7 @@ const SuperAdminDashboard = () => {
       setLoadingSchoolFormRegions(true);
       try {
         const regions = await regionService.getRegionsByProvinceId(idToLoad);
-        setSchoolFormRegions(Array.isArray(regions) ? regions : []);
+        setSchoolFormRegions(normalizeArray(regions));
       } catch { setSchoolFormRegions([]); }
       finally { setLoadingSchoolFormRegions(false); }
     };
@@ -262,7 +277,7 @@ const SuperAdminDashboard = () => {
       setLoadingSchoolFormProvinces(true);
       try {
         const provinces = await regionService.getAllProvinces();
-        setSchoolFormProvinces(Array.isArray(provinces) ? provinces : []);
+        setSchoolFormProvinces(normalizeArray(provinces));
       } catch { setSchoolFormProvinces(PROVINCES); }
       finally { setLoadingSchoolFormProvinces(false); }
     };
@@ -272,17 +287,6 @@ const SuperAdminDashboard = () => {
   // ─────────────────────────────────────────────────────────────
   // Data fetching
   // ─────────────────────────────────────────────────────────────
-  const normalizeArray = (val) => {
-    if (Array.isArray(val)) return val;
-    if (val && Array.isArray(val.data)) return val.data;
-    if (val && Array.isArray(val.results)) return val.results;
-    if (val && Array.isArray(val.schools)) return val.schools;
-    if (val && Array.isArray(val.admins)) return val.admins;
-    if (val && Array.isArray(val.users)) return val.users;
-    if (val && Array.isArray(val.content)) return val.content;
-    return [];
-  };
-
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -311,6 +315,10 @@ const SuperAdminDashboard = () => {
           ? getRegionalAdmins(createdBy, currentUser?.region)
           : getAllAdmins('admin', createdBy, queryString)
       ]);
+
+      // Debug: Log raw API responses
+      console.log('RAW schoolsData:', JSON.stringify(schoolsData));
+      console.log('RAW adminsData:', JSON.stringify(adminsData));
 
       setSchools(normalizeArray(schoolsData));
       setAdmins(normalizeArray(adminsData));
