@@ -64,7 +64,7 @@ const SuperadminManagement = () => {
     try {
       setLoading(true);
       const data = await getAllSuperadmins();
-      setSuperadmins(data);
+      setSuperadmins(Array.isArray(data) ? data : data?.data || data?.content || []);
     } catch (error) {
       enqueueSnackbar('Failed to fetch superadmins', { variant: 'error' });
     } finally {
