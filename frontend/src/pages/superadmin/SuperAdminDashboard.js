@@ -312,10 +312,6 @@ const SuperAdminDashboard = () => {
           : getAllAdmins('admin', createdBy, queryString)
       ]);
 
-      // Debug: Log raw API responses
-      console.log('Raw schoolsData:', schoolsData);
-      console.log('Raw adminsData:', adminsData);
-
       setSchools(normalizeArray(schoolsData));
       setAdmins(normalizeArray(adminsData));
     } catch (err) {
@@ -352,22 +348,15 @@ const SuperAdminDashboard = () => {
     return (long.length - levenshteinDistance(long, short)) / long.length;
   };
 
-  const checkDuplicateSchool = (name, address) => {
-    if (!name || !schools.length) return [];
-    const n = name.toLowerCase().trim();
-    const a = (address || '').toLowerCase().trim();
-    return schools.filter(s => {
-      if (!s || !s.name) return false;
-      const nameMatch =
-        s.name.toLowerCase().includes(n) ||
-        n.includes(s.name.toLowerCase()) ||
-        calculateSimilarity(n, s.name.toLowerCase()) > 0.8;
-      const addrMatch =
-        !a ||
-        (s.address && s.address.toLowerCase().includes(a)) ||
-        (s.address && a.includes(s.address.toLowerCase()));
-      return nameMatch && addrMatch;
-    });
+  const checkDuplicateAdmin = (email, schoolId) => {
+    if (!admins || !Array.isArray(admins)) return [];
+    const e = email.toLowerCase().trim();
+    return admins.filter(a =>
+      a && a.email &&
+      a.email.toLowerCase().trim() === e && 
+      a.schoolId === schoolId &&
+      a.id !== editingAdmin?.id
+    );
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -440,16 +429,6 @@ const SuperAdminDashboard = () => {
         return;
       }
 
-      // Duplicate check on create only
-      if (!editingSchool) {
-        const dupes = checkDuplicateSchool(schoolForm.name, schoolForm.address);
-        if (dupes.length > 0) {
-          if (!window.confirm(
-            `Potential duplicate schools found: ${dupes.map(d => d.name).join(', ')}\n\nContinue anyway?`
-          )) return;
-        }
-      }
-
       // Format validation
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(schoolForm.email)) {
         setError('Please enter a valid email address');
@@ -459,12 +438,6 @@ const SuperAdminDashboard = () => {
         setError('Please enter a valid South African phone number (e.g. 0123456789 or +27123456789)');
         return;
       }
-
-      // Duplicate name check
-      const existing = schools.find(s =>
-        s.name.toLowerCase() === schoolForm.name.toLowerCase() && s.id !== editingSchool?.id
-      );
-      if (existing) { setError('A school with this name already exists'); return; }
 
       // Build payload — remove provinceId (internal only, never sent to backend)
       const payload = { ...schoolForm };
@@ -609,13 +582,6 @@ const SuperAdminDashboard = () => {
         updatedBy: currentUser.email
       };
       if (!editingAdmin || adminForm.password) payload.password = adminForm.password;
-
-      const duplicate = admins.find(a =>
-        a.email.toLowerCase() === payload.email.toLowerCase() &&
-        a.schoolId === payload.schoolId &&
-        a.id !== editingAdmin?.id
-      );
-      if (duplicate) { setError('An admin with this email already exists for this school'); return; }
 
       if (editingAdmin) {
         await updateAdmin(editingAdmin.id, { ...payload, id: editingAdmin.id });
@@ -777,8 +743,6 @@ const SuperAdminDashboard = () => {
           if (!admin.email) rowErrors.push('Email required');
           if (!admin.phoneNumber) rowErrors.push('Phone required');
           if (!admin.schoolId) rowErrors.push('School required');
-          const dupes = checkDuplicateAdmin(admin.email, admin.schoolId);
-          if (dupes.length) rowErrors.push(`Duplicate: ${dupes.map(d => d.name).join(', ')}`);
           if (rowErrors.length) {
             errors.push({ row: i + 2, errors: rowErrors, data: admin }); // +2 because we removed header row
           } else {
@@ -824,13 +788,7 @@ const SuperAdminDashboard = () => {
     } finally { setSubmitting(false); }
   };
 
-  const checkDuplicateAdmin = (email, schoolId) => {
-    return admins.filter(a =>
-      a.email.toLowerCase() === email.toLowerCase() &&
-      a.schoolId === schoolId &&
-      a.id !== editingAdmin?.id
-    );
-  };
+ 
 
   // ─────────────────────────────────────────────────────────────
   // Loading state
