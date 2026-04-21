@@ -149,6 +149,8 @@ const SuperAdminDashboard = () => {
     return [];
   };
 
+  const safeFilter = (arr, fn) => (Array.isArray(arr) ? arr : []).filter(fn);
+
   // ─────────────────────────────────────────────────────────────
   // Resolve currentUser province/region IDs to human-readable names
   // currentUser.province = "9" (ID), currentUser.region = "50" (ID)
@@ -831,7 +833,7 @@ const SuperAdminDashboard = () => {
             onChange={(e) => { setSelectedProvince(e.target.value); setSelectedRegion(''); }}
           >
             <MenuItem value="">All Provinces</MenuItem>
-            {(provinceOptions.length ? provinceOptions : PROVINCES).filter(p => p).map((p) => {
+            {safeFilter(provinceOptions.length ? provinceOptions : PROVINCES, p => p).map((p) => {
               const v = typeof p === 'object' ? (p.id ?? p.name) : p;
               const l = typeof p === 'object' ? (p.name ?? String(v)) : p;
               return <MenuItem key={String(v)} value={p.id ?? v}>{l}</MenuItem>;
@@ -851,7 +853,7 @@ const SuperAdminDashboard = () => {
             onChange={(e) => setSelectedRegion(e.target.value)}
           >
             <MenuItem value="">All Regions</MenuItem>
-            {regionOptions.filter(r => r).map((r) => {
+            {safeFilter(regionOptions, r => r).map((r) => {
               const v = typeof r === 'object' ? (r.id ?? r.name) : r;
               const l = typeof r === 'object' ? (r.name ?? r.regionName ?? r.displayName ?? String(v)) : r;
               return <MenuItem key={String(v)} value={v}>{l}</MenuItem>;
@@ -957,7 +959,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schools.filter(s => s).map((school, i) => {
+                  {safeFilter(schools, s => s).map((school, i) => {
                     // Resolve region name from regionalId using same logic as province
                     const regionName = (() => {
                       if (school.region) return school.region; // If backend returns name, use it
@@ -983,8 +985,8 @@ const SuperAdminDashboard = () => {
                         <TableCell>{regionName}</TableCell>
                         <TableCell>
                           <Chip
-                            label={admins.some(a => a.schoolId === school.id) ? 'Active' : 'Pre-populated'}
-                            color={admins.some(a => a.schoolId === school.id) ? 'success' : 'default'}
+                            label={safeFilter(admins, a => a.schoolId === school.id).length > 0 ? 'Active' : 'Pre-populated'}
+                            color={safeFilter(admins, a => a.schoolId === school.id).length > 0 ? 'success' : 'default'}
                             size="small"
                           />
                         </TableCell>
@@ -1036,7 +1038,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {admins.filter(a => a).map((admin, i) => {
+                  {safeFilter(admins, a => a).map((admin, i) => {
                     const school = schools.find(s => s.id === (admin.schoolId || admin.school?.id));
                     const schoolName = school?.name || admin.school?.name || admin.schoolName || 'Unknown School';
                     return (
@@ -1146,7 +1148,7 @@ const SuperAdminDashboard = () => {
                 disabled={loadingSchoolFormProvinces}
               >
                 <MenuItem value=""><em>Select Province</em></MenuItem>
-                {(schoolFormProvinces.length ? schoolFormProvinces : PROVINCES).map((p) => {
+                {safeFilter(schoolFormProvinces.length ? schoolFormProvinces : PROVINCES, () => true).map((p) => {
                   const v = typeof p === 'object' ? p.id : p;
                   const l = typeof p === 'object' ? p.name : p;
                   return <MenuItem key={String(v)} value={v}>{l}</MenuItem>;
@@ -1186,7 +1188,7 @@ const SuperAdminDashboard = () => {
                 helperText={!schoolForm.provinceId ? 'Select a province first' : ''}
               >
                 <MenuItem value=""><em>Select Region</em></MenuItem>
-                {schoolFormRegions.map((r) => (
+                {safeFilter(schoolFormRegions, () => true).map((r) => (
                   <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
                 ))}
               </TextField>
@@ -1210,7 +1212,7 @@ const SuperAdminDashboard = () => {
                 helperText={`Regions within ${currentUserProvinceName}`}
               >
                 <MenuItem value=""><em>Select Region</em></MenuItem>
-                {schoolFormRegions.map((r) => (
+                {safeFilter(schoolFormRegions, () => true).map((r) => (
                   <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
                 ))}
               </TextField>
@@ -1336,8 +1338,7 @@ const SuperAdminDashboard = () => {
             onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}
           >
             <MenuItem value=""><em>Select School</em></MenuItem>
-            {schools
-              .filter(s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))
+            {safeFilter(schools, s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))
               .map((s) => (
                 <MenuItem key={s.id} value={s.id}>
                   {s.name}{!isProvincialSuperAdmin() ? ` (${s.province || 'No province'})` : ''}
