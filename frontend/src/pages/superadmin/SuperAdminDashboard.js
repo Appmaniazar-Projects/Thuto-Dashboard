@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -22,7 +22,10 @@ import {
   IconButton,
   MenuItem,
   Chip,
-  Grid
+  Grid,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -47,6 +50,56 @@ import {
   bulkUploadSchools
 } from '../../services/superAdminService';
 import regionService from '../../services/regionService';
+
+// ScrollableTable: wraps a table with a top scrollbar that mirrors the bottom one
+const ScrollableTable = ({ children }) => {
+  const topRef = useRef(null);
+  const bottomRef = useRef(null);
+  const syncingRef = useRef(false);
+
+  const syncTop = useCallback(() => {
+    if (syncingRef.current) return;
+    syncingRef.current = true;
+    if (topRef.current && bottomRef.current) {
+      topRef.current.scrollLeft = bottomRef.current.scrollLeft;
+    }
+    syncingRef.current = false;
+  }, []);
+
+  const syncBottom = useCallback(() => {
+    if (syncingRef.current) return;
+    syncingRef.current = true;
+    if (topRef.current && bottomRef.current) {
+      bottomRef.current.scrollLeft = topRef.current.scrollLeft;
+    }
+    syncingRef.current = false;
+  }, []);
+
+  return (
+    <Box>
+      {/* Top scrollbar */}
+      <Box
+        ref={topRef}
+        onScroll={syncBottom}
+        sx={{ overflowX: 'auto', overflowY: 'hidden', height: 12, mb: 0.5 }}
+      >
+        {/* Phantom div — same width as the table — so the scrollbar appears */}
+        <Box sx={{ height: 1, minWidth: '100%', width: 'max-content' }}>
+          {React.cloneElement(children, { style: { visibility: 'hidden', height: 0, overflow: 'hidden' } })}
+        </Box>
+      </Box>
+      {/* Actual table */}
+      <TableContainer
+        component={Paper}
+        ref={bottomRef}
+        onScroll={syncTop}
+        sx={{ overflowX: 'auto' }}
+      >
+        {children}
+      </TableContainer>
+    </Box>
+  );
+};
 
 const SuperAdminDashboard = () => {
   const {
@@ -111,6 +164,7 @@ const SuperAdminDashboard = () => {
   const [bulkUploadFile, setBulkUploadFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
+
   // ─────────────────────────────────────────────────────────────
   // Utilities
   // ─────────────────────────────────────────────────────────────
@@ -127,6 +181,62 @@ const SuperAdminDashboard = () => {
 
   // ─────────────────────────────────────────────────────────────
   // Resolve currentUser province/region IDs to human-readable names
+
+  // ─────────────────────────────────────────────────────────────
+  // Client-side filter state (National/Master only)
+  // Derives filtered lists from already-loaded data — no extra API calls
+  // ─────────────────────────────────────────────────────────────
+  const [filterProvince, setFilterProvince] = useState('');
+  const [filterRegion, setFilterRegion] = useState('');
+  const [filterRegionOptions, setFilterRegionOptions] = useState([]);
+  const [loadingFilterRegions, setLoadingFilterRegions] = useState(false);
+
+  // Only National SuperAdmin and Master see multiple provinces — show filter for them
+  const showFilter = isNationalSuperAdmin() || isMaster();
+
+  // Derived unique province list from loaded schools (no extra API call)
+  const filterProvinceOptions = Array.from(
+    new Set(safeFilter(schools, s => s?.province).map(s => s.province))
+  ).sort();
+
+  // Load regions for the filter bar when a province is selected
+  useEffect(() => {
+    if (!filterProvince) { setFilterRegionOptions([]); setFilterRegion(''); return; }
+    setLoadingFilterRegions(true);
+    regionService.getRegionsByProvinceId(
+      // Find province ID from name — use schoolFormProvinces if loaded, otherwise search by name
+      schoolFormProvinces.find(p => (typeof p === 'object' ? p.name : p) === filterProvince)?.id || filterProvince
+    )
+      .then(data => setFilterRegionOptions(normalizeArray(data)))
+      .catch(() => {
+        // Fallback: derive unique regions from already-loaded schools for selected province
+        const regions = Array.from(
+          new Set(
+            safeFilter(schools, s => s?.province === filterProvince && s?.region)
+              .map(s => s.region)
+          )
+        ).sort().map(name => ({ id: name, name }));
+        setFilterRegionOptions(regions);
+      })
+      .finally(() => setLoadingFilterRegions(false));
+  }, [filterProvince]);
+
+  // Apply client-side filters to already-loaded data
+  const filteredSchools = safeFilter(schools, s => {
+    if (filterProvince && s.province !== filterProvince) return false;
+    if (filterRegion && s.region !== filterRegion) return false;
+    return true;
+  });
+
+  const filteredAdmins = safeFilter(admins, a => {
+    if (filterProvince && a.province !== filterProvince) return false;
+    if (filterRegion) {
+      // Match admin via their school's region
+      const school = schools.find(s => s.id === (a.schoolId || a.school?.id));
+      if (school && school.region !== filterRegion) return false;
+    }
+    return true;
+  });
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const resolveUserLocation = async () => {
@@ -649,8 +759,47 @@ const SuperAdminDashboard = () => {
       {activeTab === 'schools' && (
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">School Management</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Typography variant="h6">School Management</Typography>
+                {showFilter && (
+                  <>
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                      <InputLabel>Province</InputLabel>
+                      <Select
+                        value={filterProvince}
+                        label="Province"
+                        onChange={(e) => { setFilterProvince(e.target.value); setFilterRegion(''); }}
+                      >
+                        <MenuItem value="">All Provinces</MenuItem>
+                        {filterProvinceOptions.map(p => (
+                          <MenuItem key={p} value={p}>{p}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={!filterProvince || loadingFilterRegions}>
+                      <InputLabel>Region</InputLabel>
+                      <Select
+                        value={filterRegion}
+                        label="Region"
+                        onChange={(e) => setFilterRegion(e.target.value)}
+                      >
+                        <MenuItem value="">All Regions</MenuItem>
+                        {filterRegionOptions.map(r => (
+                          <MenuItem key={typeof r === 'object' ? r.id : r} value={typeof r === 'object' ? r.name : r}>
+                            {typeof r === 'object' ? r.name : r}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    {(filterProvince || filterRegion) && (
+                      <Button size="small" variant="text" onClick={() => { setFilterProvince(''); setFilterRegion(''); }}>
+                        Clear
+                      </Button>
+                    )}
+                  </>
+                )}
+              </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {isNationalSuperAdmin() && (
                   <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBulkUploadDialogOpen(true)}>
@@ -663,7 +812,8 @@ const SuperAdminDashboard = () => {
               </Box>
             </Box>
 
-            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+            {/* Top scrollbar — mirrors the bottom one */}
+            <ScrollableTable>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -678,7 +828,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {safeFilter(schools, s => s).map((school, i) => (
+                  {filteredSchools.map((school, i) => (
                     <TableRow key={school.id || `school-${i}`}>
                       <TableCell>{school.name}</TableCell>
                       <TableCell>{school.address}</TableCell>
@@ -702,16 +852,18 @@ const SuperAdminDashboard = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {schools.length === 0 && (
+                  {filteredSchools.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} align="center">
-                        <Typography color="text.secondary">No schools found.</Typography>
+                        <Typography color="text.secondary">
+                          {schools.length === 0 ? 'No schools found.' : 'No schools match the selected filters.'}
+                        </Typography>
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </ScrollableTable>
           </CardContent>
         </Card>
       )}
@@ -720,14 +872,53 @@ const SuperAdminDashboard = () => {
       {activeTab === 'admins' && (
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6">Administrator Management</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Typography variant="h6">Administrator Management</Typography>
+                {showFilter && (
+                  <>
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                      <InputLabel>Province</InputLabel>
+                      <Select
+                        value={filterProvince}
+                        label="Province"
+                        onChange={(e) => { setFilterProvince(e.target.value); setFilterRegion(''); }}
+                      >
+                        <MenuItem value="">All Provinces</MenuItem>
+                        {filterProvinceOptions.map(p => (
+                          <MenuItem key={p} value={p}>{p}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={!filterProvince || loadingFilterRegions}>
+                      <InputLabel>Region</InputLabel>
+                      <Select
+                        value={filterRegion}
+                        label="Region"
+                        onChange={(e) => setFilterRegion(e.target.value)}
+                      >
+                        <MenuItem value="">All Regions</MenuItem>
+                        {filterRegionOptions.map(r => (
+                          <MenuItem key={typeof r === 'object' ? r.id : r} value={typeof r === 'object' ? r.name : r}>
+                            {typeof r === 'object' ? r.name : r}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    {(filterProvince || filterRegion) && (
+                      <Button size="small" variant="text" onClick={() => { setFilterProvince(''); setFilterRegion(''); }}>
+                        Clear
+                      </Button>
+                    )}
+                  </>
+                )}
+              </Box>
               <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAdminDialog(null)}>
                 Add Administrator
               </Button>
             </Box>
 
-            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+            <ScrollableTable>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -741,7 +932,7 @@ const SuperAdminDashboard = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {safeFilter(admins, a => a).map((admin, i) => {
+                  {filteredAdmins.map((admin, i) => {
                     const school = schools.find(s => s.id === (admin.schoolId || admin.school?.id));
                     const schoolName = school?.name || admin.school?.name || admin.schoolName || 'Unknown School';
                     return (
@@ -761,18 +952,20 @@ const SuperAdminDashboard = () => {
                       </TableRow>
                     );
                   })}
-                  {admins.length === 0 && (
+                  {filteredAdmins.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} align="center">
                         <Typography color="text.secondary">
-                          No administrators found. Click "Add Administrator" to create one.
+                          {admins.length === 0
+                            ? 'No administrators found. Click "Add Administrator" to create one.'
+                            : 'No administrators match the selected filters.'}
                         </Typography>
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </ScrollableTable>
           </CardContent>
         </Card>
       )}
@@ -969,6 +1162,11 @@ const SuperAdminDashboard = () => {
               </Typography>
             </Box>
           )}
+          <Box sx={{ mt: 2 }}>
+            <Button size="small" variant="text" onClick={downloadBulkUploadTemplate}>
+              Download template
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBulkUploadDialogOpen(false)} disabled={submitting}>Cancel</Button>
