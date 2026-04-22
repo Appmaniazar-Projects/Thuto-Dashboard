@@ -535,14 +535,26 @@ const SuperAdminDashboard = () => {
       formData.append('createdBy', createdBy);
 
       const results = await bulkUploadSchools(formData);
-      const ok = normalizeArray(results).filter(r => r.success).length;
-      const fail = normalizeArray(results).filter(r => !r.success).length;
-      alert(`Bulk upload done:\n✅ ${ok} created\n❌ ${fail} failed`);
+      console.log('Bulk upload raw response:', JSON.stringify(results));
+
+      const resultArray = normalizeArray(results);
+      if (resultArray.length > 0) {
+        const ok = resultArray.filter(r => r.success).length;
+        const fail = resultArray.filter(r => !r.success).length;
+        alert(`Bulk upload complete!\n✅ ${ok} schools created\n❌ ${fail} failed`);
+      } else if (results?.message) {
+        alert(`Bulk upload: ${results.message}`);
+      } else if (results?.success === true) {
+        alert('Bulk upload successful!');
+      } else {
+        alert('Bulk upload submitted. Refresh to see results.');
+      }
+
       setBulkUploadDialogOpen(false);
       setBulkUploadFile(null);
       fetchData();
     } catch (err) {
-      setError(err.message || 'Bulk upload failed');
+      alert(`Bulk upload failed: ${err.response?.data?.message || err.message || 'Unknown error'}`);
     } finally { setSubmitting(false); }
   };
 
@@ -651,7 +663,7 @@ const SuperAdminDashboard = () => {
               </Box>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -715,7 +727,7 @@ const SuperAdminDashboard = () => {
               </Button>
             </Box>
 
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -957,11 +969,6 @@ const SuperAdminDashboard = () => {
               </Typography>
             </Box>
           )}
-          <Box sx={{ mt: 2 }}>
-            <Button size="small" variant="text" onClick={downloadBulkUploadTemplate}>
-              Download template
-            </Button>
-          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setBulkUploadDialogOpen(false)} disabled={submitting}>Cancel</Button>
