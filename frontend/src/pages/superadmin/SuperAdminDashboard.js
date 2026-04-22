@@ -114,6 +114,13 @@ const SuperAdminDashboard = () => {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Performance optimization: pagination state
+  const [schoolPage, setSchoolPage] = useState(1);
+  const [adminPage, setAdminPage] = useState(1);
+  const [hasMoreSchools, setHasMoreSchools] = useState(true);
+  const [hasMoreAdmins, setHasMoreAdmins] = useState(true);
+  const [pageSize] = useState(50); // Load 50 items at a time
   const [activeTab, setActiveTab] = useState('schools');
   const [submitting, setSubmitting] = useState(false);
 
@@ -296,9 +303,14 @@ const SuperAdminDashboard = () => {
   // Effects
   // ─────────────────────────────────────────────────────────────
 
-  // Initial data load
+  // Initial data load - with performance optimization
   useEffect(() => {
-    fetchData();
+    // Add a small delay to prevent blocking the UI
+    const timer = setTimeout(() => {
+      fetchData(true); // Reset for initial load
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Load regions for the school form whenever provinceId changes
@@ -335,22 +347,55 @@ const SuperAdminDashboard = () => {
   }, [schoolDialogOpen]);
 
   // ─────────────────────────────────────────────────────────────
-  // Data fetching — backend handles all role-based filtering
-  // ─────────────────────────────────────────────────────────────
-  const fetchData = async () => {
+  // Data fetching with pagination
+  const fetchData = async (reset = false) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoading(false); // Don't show full loading for pagination
+      }
+      
+      if (reset) {
+        setSchoolPage(1);
+        setAdminPage(1);
+        setSchools([]);
+        setAdmins([]);
+        setHasMoreSchools(true);
+        setHasMoreAdmins(true);
+      } else {
+        setLoading(false); // Don't show full loading for pagination
+      }
+      
       setError(null);
       const createdBy = currentUser?.email;
       if (!createdBy) { setError('Unable to identify user. Please log in again.'); return; }
 
+      // Build pagination query strings
+      const schoolQuery = `page=${schoolPage}&limit=${pageSize}`;
+      const adminQuery = `page=${adminPage}&limit=${pageSize}`;
+
       const [schoolsData, adminsData] = await Promise.all([
-        getAllSchools(createdBy),
-        getAllAdmins('admin', createdBy)
+        getAllSchools(createdBy, schoolQuery),
+        getAllAdmins('admin', createdBy, adminQuery)
       ]);
 
-      setSchools(normalizeArray(schoolsData));
-      setAdmins(normalizeArray(adminsData));
+      const newSchools = normalizeArray(schoolsData);
+      const newAdmins = normalizeArray(adminsData);
+
+      if (reset) {
+        setSchools(newSchools);
+        setAdmins(newAdmins);
+      } else {
+        setSchools(prev => [...prev, ...newSchools]);
+        setAdmins(prev => [...prev, ...newAdmins]);
+      }
+
+      // Check if there might be more data
+      setHasMoreSchools(newSchools.length === pageSize);
+      setHasMoreAdmins(newAdmins.length === pageSize);
+      
     } catch (err) {
       setError(
         err?.response?.data?.message ||
@@ -360,6 +405,21 @@ const SuperAdminDashboard = () => {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load more function for pagination
+  const loadMoreSchools = () => {
+    if (hasMoreSchools && !loading) {
+      setSchoolPage(prev => prev + 1);
+      fetchData(false);
+    }
+  };
+
+  const loadMoreAdmins = () => {
+    if (hasMoreAdmins && !loading) {
+      setAdminPage(prev => prev + 1);
+      fetchData(false);
     }
   };
 
@@ -469,7 +529,7 @@ const SuperAdminDashboard = () => {
         principalName: '', province: '', provinceId: null,
         regionalId: null, region: '', logo: ''
       });
-      fetchData();
+      fetchData(true);
     } catch (err) {
       const status = err.response?.status;
       if (status === 400) setError(err.response.data?.message || 'Invalid school data.');
@@ -486,7 +546,7 @@ const SuperAdminDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this school?')) return;
     try {
       await deleteSchool(schoolId);
-      fetchData();
+      fetchData(true);
       alert('School deleted successfully!');
     } catch { setError('Failed to delete school'); }
   };
@@ -582,7 +642,7 @@ const SuperAdminDashboard = () => {
         name: '', lastName: '', email: '', phoneNumber: '',
         schoolId: '', password: '', province: '', region: ''
       });
-      fetchData();
+      fetchData(true);
     } catch (err) {
       setError(err.message || `Failed to ${editingAdmin ? 'update' : 'create'} administrator.`);
     } finally {
@@ -594,7 +654,7 @@ const SuperAdminDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this administrator?')) return;
     try {
       await deleteAdmin(adminId);
-      fetchData();
+      fetchData(true);
       alert('Administrator deleted successfully!');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete administrator.');
@@ -662,7 +722,7 @@ const SuperAdminDashboard = () => {
 
       setBulkUploadDialogOpen(false);
       setBulkUploadFile(null);
-      fetchData();
+      fetchData(true);
     } catch (err) {
       alert(`Bulk upload failed: ${err.response?.data?.message || err.message || 'Unknown error'}`);
     } finally { setSubmitting(false); }

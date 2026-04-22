@@ -21,6 +21,7 @@ import { formatDisplayDate } from '../../utils/date';
 import { getAttendanceStats } from '../../services/attendanceService';
 import { getMyProfile } from '../../services/studentService';
 import { getResourcesByGrade } from '../../services/resourceService';
+import { getEvents } from '../../services/eventService';
 import StatCard from '../common/StatCard';
 
 const StudentDashboard = () => {
@@ -37,6 +38,7 @@ const StudentDashboard = () => {
     upcomingEvents: 0,
     unreadMessages: 0
   });
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -57,20 +59,33 @@ const StudentDashboard = () => {
           ? getResourcesByGrade(studentGradeId, schoolId).catch(e => { console.error('Resources fetch failed:', e); return []; })
           : Promise.resolve([]);
 
-        const [profileData, attendanceData, resourcesData] = await Promise.all([
+        // Fetch events for the next 30 days
+        const today = new Date();
+        const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        const eventsPromise = getEvents(today.toISOString().split('T')[0], thirtyDaysFromNow.toISOString().split('T')[0])
+          .catch(e => { console.error('Events fetch failed:', e); return []; });
+
+        const [profileData, attendanceData, resourcesData, eventsData] = await Promise.all([
           getMyProfile(user.phoneNumber).catch(e => { console.error('Profile fetch failed:', e); return null; }),
           getAttendanceStats().catch(e => { console.error('Attendance fetch failed:', e); return { percentage: 0 }; }),
-          resourcesPromise
+          resourcesPromise,
+          eventsPromise
         ]);
 
         if (profileData) {
           setStudentProfile(profileData);
         }
+
+        // Process events data
+        const eventsArray = Array.isArray(eventsData) ? eventsData : (eventsData?.data || eventsData?.events || []);
+        const upcomingEventsList = eventsArray.slice(0, 5); // Show next 5 events
+        
+        setUpcomingEvents(upcomingEventsList);
         
         setStats({
           attendance: attendanceData.percentage || 0,
           resources: (Array.isArray(resourcesData) ? resourcesData : (resourcesData?.data || resourcesData?.resources || [])).length || 0,
-          upcomingEvents: 0, // Placeholder
+          upcomingEvents: eventsArray.length,
           unreadMessages: 0  // Placeholder
         });
         
@@ -190,17 +205,47 @@ const StudentDashboard = () => {
                 component={Link} 
                 to="/student/events" 
                 endIcon={<ArrowForwardIcon />}
-                disabled
                 size="small"
               >
                 View All
               </Button>
             </Box>
-            <Box textAlign="center" py={4}>
-              <Typography variant="body1" color="text.secondary">
-                Events feature is coming soon
-              </Typography>
-            </Box>
+            {upcomingEvents.length > 0 ? (
+              <Box>
+                {upcomingEvents.map((event, index) => (
+                  <Box key={event.id || index} sx={{ mb: 2 }}>
+                    <Box display="flex" alignItems="center" mb={1}>
+                      <EventNoteIcon sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
+                      <Typography variant="subtitle2" fontWeight="bold">
+                        {event.title || 'Untitled Event'}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ ml: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        📅 {event.startDate ? formatDisplayDate(new Date(event.startDate)) : 'Date TBD'}
+                      </Typography>
+                      {event.startTime && (
+                        <Typography variant="body2" color="text.secondary">
+                          🕐 {event.startTime}
+                        </Typography>
+                      )}
+                      {event.description && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          📝 {event.description}
+                        </Typography>
+                      )}
+                    </Box>
+                    {index < upcomingEvents.length - 1 && <Divider sx={{ mt: 2, mb: 1 }} />}
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box textAlign="center" py={4}>
+                <Typography variant="body1" color="text.secondary">
+                  No upcoming events in the next 30 days
+                </Typography>
+              </Box>
+            )}
           </Paper>
         </Grid>
 

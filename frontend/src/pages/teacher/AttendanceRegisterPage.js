@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, Avatar, TextField, 
-  CircularProgress, Alert, Grid, Snackbar
+  CircularProgress, Alert, Grid, Snackbar, Dialog, DialogTitle, 
+  DialogContent, DialogActions, Chip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Person as PersonIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
@@ -23,6 +24,7 @@ const AttendanceRegisterPage = () => {
   const [attendanceDate, setAttendanceDate] = useState(new Date());
   const [error, setError] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [summaryDialog, setSummaryDialog] = useState({ open: false, summary: null });
 
   const isLocked = differenceInHours(new Date(), attendanceDate) > 48;
 
@@ -204,6 +206,14 @@ const AttendanceRegisterPage = () => {
         throw new Error('Teacher information not found. Please log in again.');
       }
 
+      // Calculate attendance summary before submitting
+      const attendanceSummary = {
+        present: students.filter(s => s.status === 'PRESENT').length,
+        absent: students.filter(s => s.status === 'ABSENT').length,
+        late: students.filter(s => s.status === 'LATE').length,
+        total: students.length
+      };
+
       await submitTeacherAttendance({
         grade: selectedGradeId,
         teacherId: teacherId,
@@ -215,6 +225,19 @@ const AttendanceRegisterPage = () => {
         }))
       });
       
+      // Show summary dialog
+      setSummaryDialog({
+        open: true,
+        summary: {
+          ...attendanceSummary,
+          date: format(attendanceDate, 'dd/MM/yyyy'),
+          grade: selectedGrade,
+          presentStudents: students.filter(s => s.status === 'PRESENT'),
+          absentStudents: students.filter(s => s.status === 'ABSENT'),
+          lateStudents: students.filter(s => s.status === 'LATE')
+        }
+      });
+
       setSnackbar({
         open: true,
         message: 'Attendance saved successfully!',
@@ -469,6 +492,144 @@ const AttendanceRegisterPage = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Attendance Summary Dialog */}
+      <Dialog 
+        open={summaryDialog.open} 
+        onClose={() => setSummaryDialog({ open: false, summary: null })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" component="div">
+            Attendance Summary - {summaryDialog.summary?.grade}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Date: {summaryDialog.summary?.date}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          {summaryDialog.summary && (
+            <Box>
+              {/* Summary Cards */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={3}>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#e8f5e8' }}>
+                    <Typography variant="h4" color="success.main">
+                      {summaryDialog.summary.present}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Present
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#ffebee' }}>
+                    <Typography variant="h4" color="error.main">
+                      {summaryDialog.summary.absent}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Absent
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#fff3e0' }}>
+                    <Typography variant="h4" color="warning.main">
+                      {summaryDialog.summary.late}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Late
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={3}>
+                  <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#f5f5f5' }}>
+                    <Typography variant="h4" color="text.primary">
+                      {summaryDialog.summary.total}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Total
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* Student Lists */}
+              {(summaryDialog.summary.absentStudents?.length > 0 || 
+                summaryDialog.summary.lateStudents?.length > 0) && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Students Requiring Attention
+                  </Typography>
+                  
+                  {/* Absent Students */}
+                  {summaryDialog.summary.absentStudents?.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle1" color="error.main" sx={{ mb: 1 }}>
+                        Absent ({summaryDialog.summary.absentStudents.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {summaryDialog.summary.absentStudents.map(student => (
+                          <Chip
+                            key={student.id}
+                            label={`${student.name} ${student.lastName}`}
+                            color="error"
+                            variant="outlined"
+                            size="small"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Late Students */}
+                  {summaryDialog.summary.lateStudents?.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle1" color="warning.main" sx={{ mb: 1 }}>
+                        Late ({summaryDialog.summary.lateStudents.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {summaryDialog.summary.lateStudents.map(student => (
+                          <Chip
+                            key={student.id}
+                            label={`${student.name} ${student.lastName}`}
+                            color="warning"
+                            variant="outlined"
+                            size="small"
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              )}
+
+              {/* Success Message */}
+              {summaryDialog.summary.absentStudents?.length === 0 && 
+               summaryDialog.summary.lateStudents?.length === 0 && (
+                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: '#e8f5e8' }}>
+                  <Typography variant="h6" color="success.main">
+                    🎉 Perfect Attendance!
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    All {summaryDialog.summary.present} students were present today.
+                  </Typography>
+                </Paper>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setSummaryDialog({ open: false, summary: null })}
+            variant="contained"
+            color="primary"
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

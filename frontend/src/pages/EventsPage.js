@@ -519,6 +519,7 @@ const EventsPage = () => {
       (Array.isArray(ev?.eventRoles) && ev.eventRoles) ||
       (Array.isArray(ev?.roleSlots) && ev.roleSlots) ||
       (Array.isArray(ev?.requiredRoles) && ev.requiredRoles) ||
+      (Array.isArray(ev?.roles) && ev.roles) ||
       [];
 
     console.log('Raw event roles data:', rolesRaw);

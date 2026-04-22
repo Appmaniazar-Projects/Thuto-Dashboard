@@ -66,11 +66,20 @@ const parentService = {
       
       console.log('parentService.getMyChildren - Making API call to:', `/parent/${encodedPhone}/children`);
       console.log('parentService.getMyChildren - User data:', userData);
+      console.log('parentService.getMyChildren - User role:', userData?.role);
+      console.log('parentService.getMyChildren - User ID:', userData?.id);
       
       try {
         const response = await api.get(`/parent/${encodedPhone}/children`);
-        console.log('parentService.getMyChildren - API response:', response.data);
-        return normalizeChildren(response.data);
+        console.log('parentService.getMyChildren - Raw API response:', response);
+        console.log('parentService.getMyChildren - Response status:', response.status);
+        console.log('parentService.getMyChildren - Response data type:', typeof response.data);
+        console.log('parentService.getMyChildren - Response data:', response.data);
+        
+        const normalized = normalizeChildren(response.data);
+        console.log('parentService.getMyChildren - Normalized children:', normalized);
+        
+        return normalized;
       } catch (error) {
         console.error('Failed to fetch children:', error);
         console.error('Error response:', error.response?.data);
@@ -228,7 +237,18 @@ const parentService = {
       const response = await api.get(`/attendance/student/${studentId}`, {
         params: Object.keys(params).length > 0 ? params : undefined
       });
-      const data = response.data;
+      
+      // Handle string response from backend
+      let data = response.data;
+      if (typeof data === 'string') {
+        try {
+          data = JSON.parse(data);
+          console.log('Parsed string response in parent service');
+        } catch (e) {
+          console.error('Failed to parse string response:', e);
+          data = [];
+        }
+      }
 
       const normalizeRecords = (records) => {
         const list = Array.isArray(records) ? records : [];

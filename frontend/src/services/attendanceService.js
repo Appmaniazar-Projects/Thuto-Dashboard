@@ -50,7 +50,19 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
       }
     });
 
-    const rawData = response.data;
+    // Handle string response from backend
+    let rawData = response.data;
+    
+    // If response is a string, try to parse it as JSON
+    if (typeof rawData === 'string') {
+      try {
+        rawData = JSON.parse(rawData);
+        console.log('Parsed string response to JSON');
+      } catch (e) {
+        console.error('Failed to parse string response:', e);
+        rawData = [];
+      }
+    }
     
     // Debug: Log the actual response structure
     console.log('RAW attendance response:', JSON.stringify(rawData, null, 2));
@@ -294,14 +306,43 @@ export const getAttendanceSubmissions = async () => {
       null;
     const adminEmail = userData?.email || null;
 
+    console.log('Fetching attendance submissions with params:', { schoolId, adminEmail });
+
     const params = {
       ...(schoolId ? { schoolId } : {}),
       ...(adminEmail ? { adminEmail } : {})
     };
 
-    const response = await api.get('/attendance/submission', {
-      params: Object.keys(params).length > 0 ? params : undefined
-    });
+    // Try multiple possible endpoints for attendance submissions
+    let response;
+    const endpoints = [
+      '/attendance/submission',
+      '/attendance/submissions', 
+      '/api/attendance/submission',
+      '/api/attendance/submissions'
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying endpoint: ${endpoint}`);
+        response = await api.get(endpoint, {
+          params: Object.keys(params).length > 0 ? params : undefined
+        });
+        console.log(`Success with endpoint: ${endpoint}`);
+        break;
+      } catch (err) {
+        console.log(`Failed endpoint ${endpoint}:`, err.response?.status);
+        if (err.response?.status !== 404) {
+          // If it's not a 404, the endpoint exists but has other issues
+          throw err;
+        }
+        // Continue to next endpoint if 404
+      }
+    }
+
+    if (!response) {
+      throw new Error('No attendance submission endpoint found');
+    }
 
     const rows = Array.isArray(response.data) ? response.data : [];
     return rows.map((record) => {

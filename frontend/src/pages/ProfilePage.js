@@ -190,7 +190,13 @@ const ProfilePage = () => {
               </div>
               <div className="detail-item">
                 <strong>School:</strong>
-                <span>{user.school?.name || 'N/A'}</span>
+                <span>{
+                  user.school?.name || 
+                  user.schoolName || 
+                  user.school?.schoolName ||
+                  (typeof user.school === 'string' ? user.school : null) ||
+                  'N/A'
+                }</span>
               </div>
             </div>
 

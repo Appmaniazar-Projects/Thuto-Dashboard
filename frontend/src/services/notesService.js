@@ -155,10 +155,11 @@ export const exportStudentNotesToTxt = async (studentId, studentName, teacherId)
 
     // Create text content
     let textContent = `Notes for ${studentName}\n`;
-    textContent += `Generated on: ${new Date().toLocaleString(undefined, { 
-      year: 'numeric', 
-      month: '2-digit', 
+    textContent += `Generated on: ${new Date().toLocaleDateString('en-GB', { 
       day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric'
+    })}, ${new Date().toLocaleTimeString('en-GB', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: false 
@@ -166,10 +167,33 @@ export const exportStudentNotesToTxt = async (studentId, studentName, teacherId)
     textContent += `${'='.repeat(50)}\n\n`;
     
     notes.forEach((note, index) => {
+      // Format date to DD/MM/YYYY format
+      let formattedDate = 'N/A';
+      if (note.noteDate) {
+        try {
+          const date = new Date(note.noteDate);
+          formattedDate = date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+          });
+        } catch (e) {
+          console.warn('Invalid date format:', note.noteDate);
+        }
+      }
+      
+      // Extract teacher name from various possible fields
+      const teacherName = note.teacherName || 
+                         note.teacher?.name || 
+                         note.teacher?.fullName ||
+                         note.createdBy ||
+                         note.teacherId ||
+                         'N/A';
+      
       textContent += `Note #${index + 1}\n`;
-      textContent += `Date: ${note.noteDate || 'N/A'}\n`;
+      textContent += `Date: ${formattedDate}\n`;
       textContent += `Note: ${note.note || 'N/A'}\n`;
-      textContent += `Teacher: ${note.teacherName || 'N/A'}\n`;
+      textContent += `Teacher: ${teacherName}\n`;
       textContent += `${'-'.repeat(30)}\n\n`;
     });
     
