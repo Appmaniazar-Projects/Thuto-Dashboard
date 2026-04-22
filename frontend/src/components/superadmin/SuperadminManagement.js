@@ -22,26 +22,21 @@ import {
   Select,
   MenuItem,
   IconButton,
-  Chip,
-  Alert
+  Chip
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { useSnackbar } from 'notistack';
-import { 
-  getAllSuperadmins, 
-  createSuperadmin, 
-  updateSuperadmin, 
-  deleteSuperadmin 
+import {
+  getAllSuperadmins,
+  createSuperadmin,
+  updateSuperadmin,
+  deleteSuperadmin
 } from '../../services/masterService';
-import { bulkUploadSuperAdmins } from '../../services/superAdminService';
-
-const PROVINCES = [
-  'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
-  'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'
-];
+import regionService from '../../services/regionService';
 
 const SuperadminManagement = () => {
   const [superadmins, setSuperadmins] = useState([]);
+  const [provinces, setProvinces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -50,7 +45,7 @@ const SuperadminManagement = () => {
     name: '',
     lastName: '',
     email: '',
-    role: 'superadmin_provincial', // Default role
+    role: 'superadmin_provincial',
     province: '',
     password: ''
   });
@@ -58,13 +53,16 @@ const SuperadminManagement = () => {
 
   useEffect(() => {
     fetchSuperadmins();
+    regionService.getAllProvinces()
+      .then(data => setProvinces(Array.isArray(data) ? data : []))
+      .catch(() => setProvinces([]));
   }, []);
 
   const fetchSuperadmins = async () => {
     try {
       setLoading(true);
       const data = await getAllSuperadmins();
-      setSuperadmins(Array.isArray(data) ? data : data?.data || data?.content || []);
+      setSuperadmins(Array.isArray(data) ? data : []);
     } catch (error) {
       enqueueSnackbar('Failed to fetch superadmins', { variant: 'error' });
     } finally {
@@ -87,13 +85,13 @@ const SuperadminManagement = () => {
     } else {
       setEditMode(false);
       setSelectedSuperadmin(null);
-      setFormData({ 
-        name: '', 
+      setFormData({
+        name: '',
         lastName: '',
-        email: '', 
+        email: '',
         role: 'superadmin_provincial',
-        province: '', 
-        password: '' 
+        province: '',
+        password: ''
       });
     }
     setDialogOpen(true);
@@ -101,13 +99,13 @@ const SuperadminManagement = () => {
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
-    setFormData({ 
-      name: '', 
+    setFormData({
+      name: '',
       lastName: '',
-      email: '', 
+      email: '',
       role: 'superadmin_provincial',
-      province: '', 
-      password: '' 
+      province: '',
+      password: ''
     });
     setSelectedSuperadmin(null);
     setEditMode(false);
@@ -116,14 +114,9 @@ const SuperadminManagement = () => {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      
       const payload = { ...formData };
-      
-      // Remove password field if it's empty (edit mode)
-      if (editMode && !payload.password) {
-        delete payload.password;
-      }
-      
+      if (editMode && !payload.password) delete payload.password;
+
       if (editMode) {
         await updateSuperadmin(selectedSuperadmin.id, payload);
         enqueueSnackbar('Superadmin updated successfully', { variant: 'success' });
@@ -131,12 +124,12 @@ const SuperadminManagement = () => {
         await createSuperadmin(payload);
         enqueueSnackbar('Superadmin created successfully', { variant: 'success' });
       }
-      
+
       handleCloseDialog();
       fetchSuperadmins();
     } catch (error) {
-      enqueueSnackbar(error.message || `Failed to ${editMode ? 'update' : 'create'} superadmin`, { 
-        variant: 'error' 
+      enqueueSnackbar(error.message || `Failed to ${editMode ? 'update' : 'create'} superadmin`, {
+        variant: 'error'
       });
     } finally {
       setLoading(false);
@@ -156,13 +149,10 @@ const SuperadminManagement = () => {
   };
 
   const getRoleLabel = (role) => {
-    switch(role) {
-      case 'superadmin_national':
-        return 'National Super Admin';
-      case 'superadmin_provincial':
-        return 'Provincial Super Admin';
-      default:
-        return role;
+    switch (role) {
+      case 'superadmin_national': return 'National Super Admin';
+      case 'superadmin_provincial': return 'Provincial Super Admin';
+      default: return role;
     }
   };
 
@@ -173,15 +163,11 @@ const SuperadminManagement = () => {
           <Typography variant="h5" component="h2">
             Superadmin Management
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => handleOpenDialog()}
-          >
+          <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
             Add Superadmin
           </Button>
         </Box>
-        
+
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -197,15 +183,11 @@ const SuperadminManagement = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    Loading...
-                  </TableCell>
+                  <TableCell colSpan={6} align="center">Loading...</TableCell>
                 </TableRow>
               ) : superadmins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No superadmins found
-                  </TableCell>
+                  <TableCell colSpan={6} align="center">No superadmins found</TableCell>
                 </TableRow>
               ) : (
                 superadmins.map((admin) => (
@@ -214,7 +196,7 @@ const SuperadminManagement = () => {
                     <TableCell>{admin.lastName || 'N/A'}</TableCell>
                     <TableCell>{admin.email}</TableCell>
                     <TableCell>
-                      <Chip 
+                      <Chip
                         label={getRoleLabel(admin.role)}
                         color={admin.role === 'superadmin_national' ? 'primary' : 'secondary'}
                         size="small"
@@ -222,15 +204,8 @@ const SuperadminManagement = () => {
                     </TableCell>
                     <TableCell>{admin.province || 'N/A'}</TableCell>
                     <TableCell>
-                      <IconButton onClick={() => handleOpenDialog(admin)}>
-                        <Edit />
-                      </IconButton>
-                      <IconButton 
-                        onClick={() => handleDelete(admin.id)}
-                        color="error"
-                      >
-                        <Delete />
-                      </IconButton>
+                      <IconButton onClick={() => handleOpenDialog(admin)}><Edit /></IconButton>
+                      <IconButton onClick={() => handleDelete(admin.id)} color="error"><Delete /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))
@@ -242,47 +217,37 @@ const SuperadminManagement = () => {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editMode ? 'Edit Superadmin' : 'Add New Superadmin'}
-        </DialogTitle>
+        <DialogTitle>{editMode ? 'Edit Superadmin' : 'Add New Superadmin'}</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
-              fullWidth
-              label="First Name"
+              fullWidth label="First Name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              margin="normal"
-              required
+              margin="normal" required
             />
             <TextField
-              fullWidth
-              label="Last Name"
+              fullWidth label="Last Name"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              margin="normal"
-              required
+              margin="normal" required
             />
             <TextField
-              fullWidth
-              label="Email"
-              type="email"
+              fullWidth label="Email" type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              margin="normal"
-              required
+              margin="normal" required
               disabled={editMode}
             />
-            
+
             <FormControl fullWidth margin="normal" required>
               <InputLabel>Role</InputLabel>
               <Select
                 value={formData.role}
                 label="Role"
-                onChange={(e) => setFormData({ 
-                  ...formData, 
+                onChange={(e) => setFormData({
+                  ...formData,
                   role: e.target.value,
-                  // Reset province when changing to national
                   province: e.target.value === 'superadmin_national' ? '' : formData.province
                 })}
               >
@@ -290,7 +255,7 @@ const SuperadminManagement = () => {
                 <MenuItem value="superadmin_provincial">Provincial Super Admin</MenuItem>
               </Select>
             </FormControl>
-            
+
             {formData.role === 'superadmin_provincial' && (
               <FormControl fullWidth margin="normal" required>
                 <InputLabel>Province</InputLabel>
@@ -299,15 +264,16 @@ const SuperadminManagement = () => {
                   label="Province"
                   onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                 >
-                  {PROVINCES.map((province) => (
-                    <MenuItem key={province} value={province}>
-                      {province}
-                    </MenuItem>
-                  ))}
+                  {provinces.map((p) => {
+                    const value = typeof p === 'object' ? p.name : p;
+                    return (
+                      <MenuItem key={value} value={value}>{value}</MenuItem>
+                    );
+                  })}
                 </Select>
               </FormControl>
             )}
-            
+
             <TextField
               fullWidth
               label={editMode ? 'New Password (leave blank to keep current)' : 'Password'}
@@ -320,16 +286,17 @@ const SuperadminManagement = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            color="primary" 
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button
+            onClick={handleSubmit}
             variant="contained"
-            disabled={loading || !formData.name || !formData.email || 
-                     (formData.role === 'superadmin_provincial' && !formData.province) ||
-                     (!editMode && !formData.password)}
+            disabled={
+              loading ||
+              !formData.name ||
+              !formData.email ||
+              (formData.role === 'superadmin_provincial' && !formData.province) ||
+              (!editMode && !formData.password)
+            }
           >
             {loading ? 'Saving...' : 'Save'}
           </Button>
