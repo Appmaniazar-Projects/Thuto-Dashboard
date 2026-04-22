@@ -263,13 +263,70 @@ export const cancelEventSignup = async (eventId) => {
 // Teacher attendance status
 export const setTeacherAttendanceStatus = async (eventId, status) => {
   try {
-    const schoolId = localStorage.getItem('schoolId') || JSON.parse(localStorage.getItem('user') || '{}').schoolId;
-    const response = await api.put(`${EVENTS_BASE}/${eventId}/teacher-attendance`, { status }, {
-      params: { schoolId }
-    });
-    return response.data;
+    // Get required IDs with fallback
+    let schoolId = localStorage.getItem('schoolId');
+    let userId = null;
+    
+    // Try to get schoolId and userId from user object
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      schoolId = schoolId || user?.schoolId;
+      userId = user?.id || user?.userId || user?.phoneNumber;
+    } catch (e) {
+      console.warn('Failed to parse user from localStorage:', e);
+    }
+    
+    if (!schoolId) {
+      throw new Error('School ID is required for teacher attendance update');
+    }
+    
+    if (!userId) {
+      throw new Error('User ID is required for teacher attendance update');
+    }
+    
+    console.log('Updating teacher attendance:', { eventId, status, schoolId, userId });
+    
+    // Try multiple endpoint patterns that backend might expect
+    const endpoints = [
+      `${EVENTS_BASE}/${eventId}/teacher-attendance`,
+      `${EVENTS_BASE}/${eventId}/attendance/teacher`,
+      `${EVENTS_BASE}/${eventId}/attendance`,
+      `/events/${eventId}/teacher-attendance`
+    ];
+    
+    let lastError = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await api.put(endpoint, { 
+          status,
+          userId,
+          schoolId,
+          teacherId: userId // Some backends might expect teacherId instead of userId
+        }, {
+          params: { schoolId }
+        });
+        
+        console.log('Teacher attendance updated successfully:', response.data);
+        return response.data;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Failed to update teacher attendance via ${endpoint}:`, err.response?.status);
+        continue;
+      }
+    }
+    
+    // If all endpoints failed, throw the last error
+    throw lastError;
+    
   } catch (error) {
     console.error('Error updating teacher attendance:', error);
+    console.error('Request details:', {
+      eventId,
+      status,
+      errorStatus: error?.response?.status,
+      errorData: error?.response?.data
+    });
     throw error;
   }
 };

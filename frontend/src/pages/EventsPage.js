@@ -486,11 +486,29 @@ const EventsPage = () => {
 
   const teacherSetStatus = async (ev, status) => {
     try {
+      console.log('Setting teacher attendance:', { eventId: ev.id, status, eventName: ev.title });
       await setTeacherAttendanceStatus(ev.id, status);
-      enqueueSnackbar('Attendance updated', { variant: 'success' });
+      enqueueSnackbar('Attendance updated successfully', { variant: 'success' });
       await loadEvents();
     } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to update attendance', { variant: 'error' });
+      console.error('Teacher attendance update failed:', e);
+      
+      // Provide more specific error messages based on status code
+      let errorMessage = 'Failed to update attendance';
+      
+      if (e?.response?.status === 500) {
+        errorMessage = 'Server error: The teacher attendance feature may not be available. Please contact support.';
+      } else if (e?.response?.status === 404) {
+        errorMessage = 'Event not found or attendance endpoint not available';
+      } else if (e?.response?.status === 403) {
+        errorMessage = 'You do not have permission to update teacher attendance';
+      } else if (e?.response?.data?.message) {
+        errorMessage = e.response.data.message;
+      } else if (e?.message) {
+        errorMessage = e.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };
 

@@ -91,16 +91,63 @@ export const deleteTeacherNote = async ({ id }) => {
  * Export all teacher notes for a student to a text file
  * @param {string} studentId - The student ID
  * @param {string} studentName - The student name (for filename)
+ * @param {string} teacherId - The teacher ID (optional, will try to get from localStorage)
  */
-export const exportStudentNotesToTxt = async (studentId, studentName) => {
+export const exportStudentNotesToTxt = async (studentId, studentName, teacherId) => {
   try {
     const schoolId = getSchoolId();
-    const response = await api.post(`${API_BASE}/student/notes`, {
-      studentId,
-      schoolId
-    });
     
-    const notes = response.data || [];
+    // Get teacherId if not provided
+    let resolvedTeacherId = teacherId;
+    if (!resolvedTeacherId) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        resolvedTeacherId = user?.id || user?.userId || user?.phoneNumber;
+      } catch (e) {
+        console.warn('Could not get teacherId from localStorage:', e);
+      }
+    }
+    
+    if (!studentId) {
+      throw new Error('Student ID is required for export');
+    }
+    
+    if (!schoolId) {
+      throw new Error('School ID is required for export');
+    }
+    
+    console.log('Exporting notes for student:', { studentId, studentName, teacherId: resolvedTeacherId, schoolId });
+    
+    // Try multiple approaches to get notes
+    let notes = [];
+    
+    // First try: Get notes with teacherId
+    if (resolvedTeacherId) {
+      try {
+        const response = await api.post(`${API_BASE}/student/notes`, {
+          studentId,
+          teacherId: resolvedTeacherId,
+          schoolId
+        });
+        notes = response.data || [];
+      } catch (e) {
+        console.warn('Failed to get notes with teacherId, trying without:', e.response?.status);
+      }
+    }
+    
+    // Second try: Get notes without teacherId (all notes for student)
+    if (!notes.length) {
+      try {
+        const response = await api.post(`${API_BASE}/student/notes`, {
+          studentId,
+          schoolId
+        });
+        notes = response.data || [];
+      } catch (e) {
+        console.error('Failed to get notes for export:', e);
+        throw new Error('Failed to retrieve notes for export');
+      }
+    }
     
     if (!notes.length) {
       throw new Error('No notes found for this student');
@@ -150,10 +197,56 @@ export const exportStudentNotesToTxt = async (studentId, studentName) => {
 };
 
 export const exportStudentNotes = async (studentId) => {
-  const schoolId = getSchoolId();
-  const response = await api.get(`${API_BASE}/student/${toId(studentId)}/export`, {
-    params: { schoolId: toId(schoolId) },
-    responseType: 'blob',
-  });
-  return response.data;
+  try {
+    const schoolId = getSchoolId();
+    
+    if (!studentId) {
+      throw new Error('Student ID is required for export');
+    }
+    
+    if (!schoolId) {
+      throw new Error('School ID is required for export');
+    }
+    
+    console.log('Exporting notes blob for student:', { studentId, schoolId });
+    
+    // Try multiple export endpoints
+    const endpoints = [
+      `${API_BASE}/student/${toId(studentId)}/export`,
+      `${API_BASE}/export/student/${toId(studentId)}`,
+      `${API_BASE}/student/notes/export`,
+      `${API_BASE}/export`
+    ];
+    
+    let lastError = null;
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await api.get(endpoint, {
+          params: { schoolId: toId(schoolId), studentId: toId(studentId) },
+          responseType: 'blob',
+        });
+        
+        console.log('Export successful via:', endpoint);
+        return response.data;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Failed to export via ${endpoint}:`, err.response?.status);
+        continue;
+      }
+    }
+    
+    // If all endpoints failed, throw the last error
+    throw lastError || new Error('All export endpoints failed');
+    
+  } catch (error) {
+    console.error('Error exporting student notes:', error);
+    console.error('Request details:', {
+      studentId,
+      schoolId: getSchoolId(),
+      errorStatus: error?.response?.status,
+      errorData: error?.response?.data
+    });
+    throw error;
+  }
 };

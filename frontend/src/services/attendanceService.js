@@ -51,15 +51,26 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
     });
 
     const rawData = response.data;
+    
+    // Debug: Log the actual response structure
+    console.log('RAW attendance response:', JSON.stringify(rawData, null, 2));
+    console.log('Response type:', typeof rawData);
+    console.log('Is array?', Array.isArray(rawData));
+    console.log('Has details?', rawData?.details);
+    console.log('Has summary?', rawData?.summary);
 
     let details;
     let summary;
 
-    // Support both array responses and { summary, details } objects from backend
+    // Support multiple response structures from backend
     if (Array.isArray(rawData)) {
+      // Direct array response
       details = rawData;
+      console.log('Using direct array response, found', details.length, 'records');
     } else if (rawData && Array.isArray(rawData.details)) {
+      // Object with details property
       details = rawData.details;
+      console.log('Using details property, found', details.length, 'records');
       if (rawData.summary) {
         summary = {
           presentDays: rawData.summary.presentDays ?? 0,
@@ -67,9 +78,29 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
           lateDays: rawData.summary.lateDays ?? rawData.summary.late ?? 0,
           attendanceRate: rawData.summary.attendanceRate ?? 0
         };
+        console.log('Using provided summary:', summary);
+      }
+    } else if (rawData && Array.isArray(rawData.data)) {
+      // Object with data property
+      details = rawData.data;
+      console.log('Using data property, found', details.length, 'records');
+    } else if (rawData && Array.isArray(rawData.attendance)) {
+      // Object with attendance property
+      details = rawData.attendance;
+      console.log('Using attendance property, found', details.length, 'records');
+    } else if (rawData && typeof rawData === 'object') {
+      // Try to find any array property in the response
+      const arrayProps = Object.keys(rawData).filter(key => Array.isArray(rawData[key]));
+      if (arrayProps.length > 0) {
+        details = rawData[arrayProps[0]];
+        console.log('Using', arrayProps[0], 'property, found', details.length, 'records');
+      } else {
+        details = [];
+        console.log('No array properties found in response object');
       }
     } else {
       details = [];
+      console.log('Response is not in expected format, using empty array');
     }
 
     // If no summary provided by backend, build one from the records
@@ -78,8 +109,11 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
       let absentDays = 0;
       let lateDays = 0;
 
-      details.forEach(record => {
+      console.log('Building summary from', details.length, 'records');
+      
+      details.forEach((record, index) => {
         const status = (record.status || '').toLowerCase();
+        console.log(`Record ${index}:`, { status: record.status, normalized: status });
         if (status === 'present') {
           presentDays++;
         } else if (status === 'absent') {
@@ -98,8 +132,11 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
         lateDays,
         attendanceRate
       };
+      
+      console.log('Calculated summary:', summary);
     }
 
+    console.log('Final attendance data:', { summary, details: details.slice(0, 3) });
     return { summary, details };
   } catch (error) {
     console.error('Error fetching attendance records:', error);

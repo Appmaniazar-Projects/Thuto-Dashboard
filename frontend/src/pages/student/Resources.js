@@ -103,22 +103,38 @@ const Resources = () => {
           ? user.subjects.map((s) => s?.id).filter(Boolean)
           : [];
 
+        // Debug: Log user data and filtering criteria
+        console.log('=== Resources Debug ===');
+        console.log('User data:', user);
+        console.log('School ID:', schoolId);
+        console.log('Student Grade ID:', studentGradeId);
+        console.log('Student Subject IDs:', studentSubjectIds);
+        console.log('Selected filters:', { selectedSubject, selectedGrade });
+
         let resourcesData = [];
 
         if (selectedSubject !== 'all' && selectedGrade !== 'all') {
+          console.log('Fetching resources by subject and grade:', selectedSubject, selectedGrade);
           resourcesData = await getResourcesBySubjectAndGrade(selectedSubject, selectedGrade, schoolId);
         } else if (selectedSubject !== 'all') {
+          console.log('Fetching resources by subject:', selectedSubject);
           resourcesData = await getResourcesBySubject(selectedSubject, schoolId);
         } else if (selectedGrade !== 'all') {
+          console.log('Fetching resources by grade:', selectedGrade);
           resourcesData = await getResourcesByGrade(selectedGrade, schoolId);
         } else if (studentGradeId) {
+          console.log('Fetching resources by student grade:', studentGradeId);
           resourcesData = await getResourcesByGrade(studentGradeId, schoolId);
         } else if (studentSubjectIds.length) {
+          console.log('Fetching resources by first student subject:', studentSubjectIds[0]);
           resourcesData = await getResourcesBySubject(studentSubjectIds[0], schoolId);
         } else {
+          console.log('No filtering criteria available, using empty array');
           resourcesData = [];
         }
 
+        console.log('Raw resources data:', resourcesData);
+        console.log('Normalized resources:', normalizeResources(resourcesData));
         setResources(normalizeResources(resourcesData));
       } catch (err) {
         console.error('Failed to fetch resources:', err);
@@ -156,9 +172,10 @@ const Resources = () => {
         return false;
       }
 
-      // Students should only see resources linked to Grade + Subject
-      if (!visibility || visibility === 'PUBLIC') return false;
-      if (visibility !== 'GRADE_SUBJECT') return false;
+      // Students can see PUBLIC resources or resources linked to their Grade + Subject
+      if (!visibility) return false;
+      if (visibility === 'PUBLIC') return true; // Public resources are visible to all students
+      if (visibility !== 'GRADE_SUBJECT') return false; // Only allow other visibility types if they're GRADE_SUBJECT
 
       const resourceGradeIds = Array.isArray(r.gradeIds)
         ? r.gradeIds
@@ -174,7 +191,23 @@ const Resources = () => {
       const matchesGrade = !resourceGradeIds.length || (studentGradeId && resourceGradeIds.some((gid) => String(gid) === String(studentGradeId)));
       const matchesSubject = !resourceSubjectIds.length || resourceSubjectIds.some((sid) => studentSubjectIds.some((uSid) => String(uSid) === String(sid)));
 
-      return matchesGrade && matchesSubject;
+      const passesFilter = matchesGrade && matchesSubject;
+      
+      // Debug: Log filtering for first few resources
+      if (resources.indexOf(r) < 3) {
+        console.log(`Resource "${r.title || r.fileName}":`, {
+          visibility,
+          resourceGradeIds,
+          resourceSubjectIds,
+          studentGradeId,
+          studentSubjectIds,
+          matchesGrade,
+          matchesSubject,
+          passesFilter
+        });
+      }
+
+      return passesFilter;
     });
 
     if (searchTerm) {
@@ -205,8 +238,11 @@ const Resources = () => {
         return ids.some((gid) => String(gid) === String(selectedGrade));
       });
     }
+
+    console.log('Final filtered resources count:', result.length);
+    console.log('Final filtered resources:', result.slice(0, 3));
     setFilteredResources(result);
-  }, [searchTerm, selectedSubject, selectedGrade, resources, user]);
+  }, [resources, searchTerm, selectedSubject, selectedGrade, user]);
 
   const handleDownload = async (fileUrl, fileName) => {
     try {

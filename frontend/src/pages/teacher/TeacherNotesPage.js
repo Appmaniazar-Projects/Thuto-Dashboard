@@ -35,9 +35,10 @@ const TeacherNotesPage = () => {
     const studentName = `${selectedStudent?.name || ''} ${selectedStudent?.lastName || ''}`.trim() || 'Student';
     
     try {
-      await exportStudentNotesToTxt(selectedStudentId, studentName);
+      await exportStudentNotesToTxt(selectedStudentId, studentName, teacherId);
       // You could add a success message here if you want
     } catch (error) {
+      console.error('Export notes error:', error);
       setError('Failed to export notes: ' + error.message);
     }
   };
