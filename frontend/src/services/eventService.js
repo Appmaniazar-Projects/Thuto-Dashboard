@@ -287,14 +287,14 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
     console.log('Updating teacher attendance:', { eventId, status, schoolId, userId });
     
     // Use only the specific endpoint as requested
-    const endpoint = `/events/${eventId}/teacher-attendance`;
+    const endpoint = `/api/events/${eventId}/teacher-attendance`;
     
     try {
-      const response = await api.put(endpoint, { 
-        status,
-        userId,
-        schoolId,
-        teacherId: userId // Include teacherId as alternative field
+      const response = await api.post(endpoint, { 
+        status: status,
+        userId: userId,
+        schoolId: schoolId,
+        teacherId: userId
       });
       
       console.log('Teacher attendance updated successfully:', response.data);

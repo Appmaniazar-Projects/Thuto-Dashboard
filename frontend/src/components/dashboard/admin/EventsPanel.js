@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Paper, Typography, Chip, Card, CardContent, Stack } from '@mui/material';
+import { Paper, Typography, Chip, Card, CardContent, Stack, Box } from '@mui/material';
 import { getEvents } from '../../../services/eventService';
 import { format } from 'date-fns';
 
