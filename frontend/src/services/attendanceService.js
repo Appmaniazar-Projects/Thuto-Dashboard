@@ -319,21 +319,28 @@ export const getAttendanceSubmissions = async () => {
       '/attendance/submission',
       '/attendance/submissions', 
       '/api/attendance/submission',
-      '/api/attendance/submissions'
+      '/api/attendance/submissions',
+      '/attendance',
+      '/api/attendance'
     ];
 
     for (const endpoint of endpoints) {
       try {
-        console.log(`Trying endpoint: ${endpoint}`);
+        console.log(`Trying endpoint: ${endpoint} with params:`, params);
         response = await api.get(endpoint, {
           params: Object.keys(params).length > 0 ? params : undefined
         });
         console.log(`Success with endpoint: ${endpoint}`);
         break;
       } catch (err) {
-        console.log(`Failed endpoint ${endpoint}:`, err.response?.status);
+        console.log(`Failed endpoint ${endpoint}:`, err.response?.status, err.response?.data);
+        if (err.response?.status === 500) {
+          // For 500 errors, try the next endpoint but log the full error
+          console.error('500 Error details:', err.response?.data);
+          continue;
+        }
         if (err.response?.status !== 404) {
-          // If it's not a 404, the endpoint exists but has other issues
+          // If it's not a 404 or 500, the endpoint exists but has other issues
           throw err;
         }
         // Continue to next endpoint if 404
@@ -341,7 +348,8 @@ export const getAttendanceSubmissions = async () => {
     }
 
     if (!response) {
-      throw new Error('No attendance submission endpoint found');
+      console.log('All endpoints failed, returning empty array to prevent UI breakage');
+      return [];
     }
 
     const rows = Array.isArray(response.data) ? response.data : [];

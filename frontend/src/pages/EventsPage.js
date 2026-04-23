@@ -688,7 +688,14 @@ const EventsPage = () => {
                       </Typography>
                       {ev.location && (
                         <Typography variant="body2" color="text.secondary">
-                          {ev.location}
+                          📍 {ev.location}
+                        </Typography>
+                      )}
+                      
+                      {/* Show roles in brief overview */}
+                      {ev.roles && ev.roles.length > 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                          🎭 Roles: {ev.roles.map(r => r.roleName || r.name).join(', ')}
                         </Typography>
                       )}
                     </Stack>

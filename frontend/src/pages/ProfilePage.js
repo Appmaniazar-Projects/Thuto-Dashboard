@@ -191,11 +191,30 @@ const ProfilePage = () => {
               <div className="detail-item">
                 <strong>School:</strong>
                 <span>{
-                  user.school?.name || 
-                  user.schoolName || 
-                  user.school?.schoolName ||
-                  (typeof user.school === 'string' ? user.school : null) ||
-                  'N/A'
+                  (() => {
+                    // Try all possible school name fields
+                    const schoolName = user.school?.name || 
+                                     user.schoolName || 
+                                     user.school?.schoolName ||
+                                     user.school?.title ||
+                                     (typeof user.school === 'string' ? user.school : null) ||
+                                     user.institution?.name ||
+                                     user.institutionName ||
+                                     'N/A';
+                    
+                    // Debug logging
+                    console.log('ProfilePage - School name resolution:', {
+                      'user.school?.name': user.school?.name,
+                      'user.schoolName': user.schoolName,
+                      'user.school?.schoolName': user.school?.schoolName,
+                      'user.school': user.school,
+                      'user.institution?.name': user.institution?.name,
+                      'user.institutionName': user.institutionName,
+                      'final': schoolName
+                    });
+                    
+                    return schoolName;
+                  })()
                 }</span>
               </div>
             </div>

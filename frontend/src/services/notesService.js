@@ -183,12 +183,29 @@ export const exportStudentNotesToTxt = async (studentId, studentName, teacherId)
       }
       
       // Extract teacher name from various possible fields
-      const teacherName = note.teacherName || 
-                         note.teacher?.name || 
-                         note.teacher?.fullName ||
-                         note.createdBy ||
-                         note.teacherId ||
-                         'N/A';
+      let teacherName = note.teacherName || 
+                       note.teacher?.name || 
+                       note.teacher?.fullName ||
+                       note.createdBy ||
+                       'N/A';
+      
+      // If teacherName is still a number or ID, try to get it from localStorage or use a fallback
+      if (teacherName === 'N/A' || typeof teacherName === 'number') {
+        // Try to get teacher info from current user if they're a teacher
+        try {
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          if (currentUser.role === 'TEACHER' && (currentUser.id == note.teacherId || currentUser.phoneNumber == note.teacherId)) {
+            teacherName = `${currentUser.name || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'Current Teacher';
+          } else if (typeof teacherName === 'number') {
+            teacherName = `Teacher ID: ${teacherName}`;
+          }
+        } catch (e) {
+          console.warn('Could not resolve teacher name:', e);
+          if (typeof teacherName === 'number') {
+            teacherName = `Teacher ID: ${teacherName}`;
+          }
+        }
+      }
       
       textContent += `Note #${index + 1}\n`;
       textContent += `Date: ${formattedDate}\n`;

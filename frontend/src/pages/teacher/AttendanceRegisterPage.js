@@ -208,9 +208,9 @@ const AttendanceRegisterPage = () => {
 
       // Calculate attendance summary before submitting
       const attendanceSummary = {
-        present: students.filter(s => s.status === 'PRESENT').length,
-        absent: students.filter(s => s.status === 'ABSENT').length,
-        late: students.filter(s => s.status === 'LATE').length,
+        present: students.filter(s => s.status?.toUpperCase() === 'PRESENT').length,
+        absent: students.filter(s => s.status?.toUpperCase() === 'ABSENT').length,
+        late: students.filter(s => s.status?.toUpperCase() === 'LATE').length,
         total: students.length
       };
 
@@ -232,9 +232,9 @@ const AttendanceRegisterPage = () => {
           ...attendanceSummary,
           date: format(attendanceDate, 'dd/MM/yyyy'),
           grade: selectedGrade,
-          presentStudents: students.filter(s => s.status === 'PRESENT'),
-          absentStudents: students.filter(s => s.status === 'ABSENT'),
-          lateStudents: students.filter(s => s.status === 'LATE')
+          presentStudents: students.filter(s => s.status?.toUpperCase() === 'PRESENT'),
+          absentStudents: students.filter(s => s.status?.toUpperCase() === 'ABSENT'),
+          lateStudents: students.filter(s => s.status?.toUpperCase() === 'LATE')
         }
       });
 
@@ -443,9 +443,9 @@ const AttendanceRegisterPage = () => {
           {/* Summary and Save Button */}
           <Box mt={2} display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="body2" color="text.secondary">
-              Present: {students.filter(s => s.status === 'present').length} | 
-              Late: {students.filter(s => s.status === 'late').length} | 
-              Absent: {students.filter(s => s.status === 'absent').length}
+              Present: {students.filter(s => s.status?.toUpperCase() === 'PRESENT').length} | 
+              Late: {students.filter(s => s.status?.toUpperCase() === 'LATE').length} | 
+              Absent: {students.filter(s => s.status?.toUpperCase() === 'ABSENT').length}
             </Typography>
 
             <Button 
