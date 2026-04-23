@@ -286,38 +286,23 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
     
     console.log('Updating teacher attendance:', { eventId, status, schoolId, userId });
     
-    // Try multiple endpoint patterns that backend might expect
-    const endpoints = [
-      `${EVENTS_BASE}/${eventId}/teacher-attendance`,
-      `${EVENTS_BASE}/${eventId}/attendance/teacher`,
-      `${EVENTS_BASE}/${eventId}/attendance`,
-      `/events/${eventId}/teacher-attendance`
-    ];
+    // Use only the specific endpoint as requested
+    const endpoint = `/events/${eventId}/teacher-attendance`;
     
-    let lastError = null;
-    
-    for (const endpoint of endpoints) {
-      try {
-        const response = await api.put(endpoint, { 
-          status,
-          userId,
-          schoolId,
-          teacherId: userId // Some backends might expect teacherId instead of userId
-        }, {
-          params: { schoolId }
-        });
-        
-        console.log('Teacher attendance updated successfully:', response.data);
-        return response.data;
-      } catch (err) {
-        lastError = err;
-        console.warn(`Failed to update teacher attendance via ${endpoint}:`, err.response?.status);
-        continue;
-      }
+    try {
+      const response = await api.put(endpoint, { 
+        status,
+        userId,
+        schoolId,
+        teacherId: userId // Include teacherId as alternative field
+      });
+      
+      console.log('Teacher attendance updated successfully:', response.data);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to update teacher attendance:', err.response?.status, err.response?.data);
+      throw err;
     }
-    
-    // If all endpoints failed, throw the last error
-    throw lastError;
     
   } catch (error) {
     console.error('Error updating teacher attendance:', error);
