@@ -5,8 +5,10 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Divider,
   IconButton,
+  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -16,6 +18,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import GetAppIcon from '@mui/icons-material/GetApp';
+import SendIcon from '@mui/icons-material/Send';
 import { format } from 'date-fns';
 import { useSnackbar } from 'notistack';
 import {
@@ -49,6 +52,17 @@ const normalizeStudentId = (studentId) => {
   return String(studentId);
 };
 
+// Note categories
+const NOTE_CATEGORIES = [
+  'General',
+  'Academic',
+  'Health',
+  'Behavioral',
+  'Social',
+  'Emergency',
+  'Other'
+];
+
 const NotesToSelfPanel = ({ studentId, teacherId }) => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -60,6 +74,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
   const [warning, setWarning] = useState('');
 
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('General');
   const [editingId, setEditingId] = useState(null);
 
   const trimmedContent = content.trim();
@@ -98,11 +113,13 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
   const startEdit = (note) => {
     setEditingId(note.id);
     setContent(note.note || note.content || '');
+    setCategory(note.category || 'General');
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setContent('');
+    setCategory('General');
   };
 
   const handleSave = async () => {
@@ -117,6 +134,7 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
           noteDate: new Date(),
           teacherId: stableTeacherId,
           studentId: stableStudentId,
+          category: category,
         });
         enqueueSnackbar('Note updated', { variant: 'success' });
       } else {
@@ -125,11 +143,13 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
           teacherId: stableTeacherId,
           note: trimmedContent,
           noteDate: new Date(),
+          category: category,
         });
         enqueueSnackbar('Note saved', { variant: 'success' });
       }
 
       setContent('');
+      setCategory('General');
       setEditingId(null);
       await loadNotes();
     } catch (e) {
@@ -178,6 +198,21 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
           {warning ? <Alert severity="warning">{warning}</Alert> : null}
 
           <TextField
+            select
+            fullWidth
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            sx={{ mb: 2 }}
+          >
+            {NOTE_CATEGORIES.map((cat) => (
+              <MenuItem key={cat} value={cat}>
+                {cat}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
             fullWidth
             multiline
             minRows={4}
@@ -196,6 +231,16 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
               sx={{ minHeight: 44 }}
             >
               {editingId ? 'Update' : 'Save'}
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<SendIcon />}
+              onClick={() => {}} // Placeholder for now
+              disabled={true} // Greyed out for now
+              sx={{ minHeight: 44 }}
+            >
+              Send to parent
             </Button>
 
             <Button
@@ -262,6 +307,16 @@ const NotesToSelfPanel = ({ studentId, teacherId }) => {
                             </IconButton>
                           </Stack>
                         </Stack>
+
+                        {/* Category chip */}
+                        {note.category && (
+                          <Chip 
+                            label={note.category} 
+                            size="small" 
+                            variant="outlined" 
+                            sx={{ alignSelf: 'flex-start', mb: 1 }}
+                          />
+                        )}
 
                         <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                           {note.note || note.content || ''}

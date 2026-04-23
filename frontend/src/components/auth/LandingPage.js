@@ -185,7 +185,7 @@ const LandingPage = () => {
               lineHeight: 1.4
             }}
           >
-            School Relationship Platform
+            Educational Management Platform
           </Typography>
           
           <Box
@@ -445,7 +445,7 @@ const LandingPage = () => {
                 letterSpacing: '0.5px'
               }}
             >
-              2025 Thuto School Relationship Platform
+              2026 Thuto Educational Management Platform
             </Typography>
           </Box>
         </Box>

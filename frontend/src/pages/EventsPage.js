@@ -177,7 +177,7 @@ const EventsPage = () => {
   const isStudent = role === 'student';
   const canCreateEvents = isAdmin || isTeacher;
 
-  const [viewMode, setViewMode] = useState(isMobile ? 'agenda' : 'month');
+  const [viewMode, setViewMode] = useState((isAdmin || isTeacher) ? 'agenda' : (isMobile ? 'agenda' : 'month'));
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -512,6 +512,102 @@ const EventsPage = () => {
     }
   };
 
+  const teacherRoleSignup = async (ev, roleId) => {
+    try {
+      console.log('Teacher signing up for role:', { eventId: ev.id, roleId, eventName: ev.title });
+      // Use the same parent signup function since it should work for any user type
+      await parentSignup(ev, roleId);
+      enqueueSnackbar('Successfully signed up for role!', { variant: 'success' });
+      await loadEvents();
+    } catch (e) {
+      console.error('Teacher role signup failed:', e);
+      
+      let errorMessage = 'Failed to sign up for role';
+      
+      if (e?.response?.status === 500) {
+        errorMessage = 'Server error: Role signup may not be available. Please contact support.';
+      } else if (e?.response?.status === 404) {
+        errorMessage = 'Event or role not found';
+      } else if (e?.response?.status === 403) {
+        errorMessage = 'You do not have permission to sign up for this role';
+      } else if (e?.response?.data?.message) {
+        errorMessage = e.response.data.message;
+      } else if (e?.message) {
+        errorMessage = e.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: 'error' });
+    }
+  };
+
+  const getHasTeacherSignup = (ev, roleId) => {
+    // Check if teacher is already signed up for a specific role
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
+    
+    if (!ev.roles || !teacherId) return false;
+    
+    return ev.roles.some(role => 
+      role.id === roleId && 
+      Array.isArray(role.signups) && 
+      role.signups.some(signup => 
+        signup.userId === teacherId || signup.id === teacherId || signup.phoneNumber === teacherId
+      )
+    );
+  };
+
+  const getTeacherSignupRoleId = (ev) => {
+    // Get the role ID that teacher is signed up for
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
+    
+    if (!ev.roles || !teacherId) return null;
+    
+    for (const role of ev.roles) {
+      if (Array.isArray(role.signups) && 
+          role.signups.some(signup => 
+            signup.userId === teacherId || signup.id === teacherId || signup.phoneNumber === teacherId
+          )) {
+        return role.id;
+      }
+    }
+    
+    return null;
+  };
+
+  const teacherCancelSignup = async (ev) => {
+    try {
+      const roleId = getTeacherSignupRoleId(ev);
+      if (!roleId) {
+        throw new Error('No role signup found to cancel');
+      }
+      
+      console.log('Teacher cancelling role signup:', { eventId: ev.id, roleId, eventName: ev.title });
+      // Use the same parent cancel function since it should work for any user type
+      await parentCancel(ev);
+      enqueueSnackbar('Role signup cancelled successfully', { variant: 'info' });
+      await loadEvents();
+    } catch (e) {
+      console.error('Teacher role signup cancel failed:', e);
+      
+      let errorMessage = 'Failed to cancel role signup';
+      
+      if (e?.response?.status === 500) {
+        errorMessage = 'Server error: Unable to cancel signup. Please contact support.';
+      } else if (e?.response?.status === 404) {
+        errorMessage = 'Event or signup not found';
+      } else if (e?.response?.status === 403) {
+        errorMessage = 'You do not have permission to cancel this signup';
+      } else if (e?.response?.data?.message) {
+        errorMessage = e.response.data.message;
+      } else if (e?.message) {
+        errorMessage = e.message;
+      }
+      
+      enqueueSnackbar(errorMessage, { variant: 'error' });
+    }
+  };
+
   const renderEventRoles = (ev) => {
     console.log('Full event object:', ev);
     
@@ -559,17 +655,24 @@ const EventsPage = () => {
           const slotLimit = Number(r.slotLimit) || 0;
           const taken = Number(r.takenSlots ?? r.signupsCount ?? r.filledSlots ?? 0) || 0;
           const available = Math.max(0, slotLimit - taken);
-          const canClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
+          
+          // Check signup status for both parents and teachers
+          const hasTeacherRoleSignup = getHasTeacherSignup(ev, roleId);
+          const canParentClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
+          const canTeacherClick = isTeacher && !hasTeacherRoleSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
           
           console.log('Event role debug:', {
             isParent,
+            isTeacher,
             hasParentSignup,
+            hasTeacherRoleSignup,
             canInteractWithEvent: canInteractWithEvent(ev),
             available,
             roleId,
             slotLimit,
             taken,
-            canClick
+            canParentClick,
+            canTeacherClick
           });
 
           return (
@@ -581,17 +684,31 @@ const EventsPage = () => {
                     <Typography variant="body2" color="text.secondary">
                       Slots: {slotLimit} | Available: {available}
                     </Typography>
+                    {(hasParentSignup || hasTeacherRoleSignup) && (
+                      <Typography variant="caption" color="success.main">
+                        ✓ You are signed up
+                      </Typography>
+                    )}
                   </Box>
 
-                  {isParent && (
+                  {(isParent || isTeacher) && (
                     <Button
-                      variant="contained"
-                      startIcon={<PersonAddAltIcon />}
-                      onClick={() => parentSignup(ev, roleId)}
-                      disabled={!canClick}
+                      variant={hasParentSignup || hasTeacherRoleSignup ? "outlined" : "contained"}
+                      color={hasParentSignup || hasTeacherRoleSignup ? "error" : "primary"}
+                      startIcon={hasParentSignup || hasTeacherRoleSignup ? null : <PersonAddAltIcon />}
+                      onClick={() => {
+                        if (hasParentSignup || hasTeacherRoleSignup) {
+                          if (isParent) parentCancel(ev);
+                          else teacherCancelSignup(ev);
+                        } else {
+                          if (isParent) parentSignup(ev, roleId);
+                          else teacherRoleSignup(ev, roleId);
+                        }
+                      }}
+                      disabled={isParent ? !canParentClick : !canTeacherClick}
                       sx={{ minHeight: 44 }}
                     >
-                      Sign up
+                      {hasParentSignup || hasTeacherRoleSignup ? 'Cancel' : 'Sign up'}
                     </Button>
                   )}
                 </Stack>
@@ -673,35 +790,100 @@ const EventsPage = () => {
           ) : (
             agendaItems.map((ev) => {
               const status = deriveStatus(ev);
-              return (
-                <Card key={ev.id} variant="outlined" onClick={() => openDetails(ev)} sx={{ cursor: 'pointer' }}>
-                  <CardContent>
-                    <Stack spacing={1}>
-                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
-                        <Typography variant="h6" sx={{ mr: 1 }}>
-                          {ev.title || 'Untitled event'}
-                        </Typography>
-                        <Chip label={status} color={getStatusColor(status)} size="small" />
+              
+              // Detailed view for admin and teacher, simple view for others
+              if (isAdmin || isTeacher) {
+                return (
+                  <Card key={ev.id} variant="outlined" onClick={() => openDetails(ev)} sx={{ cursor: 'pointer' }}>
+                    <CardContent sx={{ py: 3, '&:last-child': { pb: 3 } }}>
+                      <Stack spacing={2}>
+                        {/* Event Title and Status */}
+                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+                          <Typography variant="h5" sx={{ fontWeight: 600, mr: 1 }}>
+                            {ev.title || 'Untitled event'}
+                          </Typography>
+                          <Chip label={status} color={getStatusColor(status)} size="medium" />
+                        </Stack>
+                        
+                        {/* Detailed Information */}
+                        <Box sx={{ pl: 1 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 500, mb: 1 }}>
+                            {status}
+                          </Typography>
+                          
+                          {ev.location && (
+                            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                              Location: {ev.location}
+                            </Typography>
+                          )}
+                          
+                          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                            Date & Time: {format(ev._start, 'dd/MM/yyyy, HH:mm')} – {format(ev._end, 'dd/MM/yyyy, HH:mm')}
+                          </Typography>
+                          
+                          {ev.roles && ev.roles.length > 0 && (
+                            <Box>
+                              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                                Role/s: {ev.roles.map(r => r.roleName || r.name).join(', ')}
+                              </Typography>
+                              
+                              {/* Show participation details for each role */}
+                              {ev.roles.map((role, idx) => (
+                                <Typography key={idx} variant="body2" color="text.secondary" sx={{ ml: 2, mb: 0.5 }}>
+                                  • {role.roleName || role.name}: {role.takenSlots || role.signupsCount || 0}/{role.slotLimit || 0} participants
+                                </Typography>
+                              ))}
+                              
+                              {/* Show teacher attendance if available */}
+                              {ev.teacherAttendance && ev.teacherAttendance.length > 0 && (
+                                <Typography variant="body2" color="text.secondary" sx={{ ml: 2, mt: 1 }}>
+                                  📚 Teachers attending: {ev.teacherAttendance.length}
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                        </Box>
                       </Stack>
-                      <Typography variant="body2" color="text.secondary">
-                        {format(ev._start, 'dd/MM/yyyy, HH:mm')} – {format(ev._end, 'HH:mm')}
-                      </Typography>
-                      {ev.location && (
+                    </CardContent>
+                  </Card>
+                );
+              } else {
+                // Simple view for parents and students (original format)
+                return (
+                  <Card key={ev.id} variant="outlined" onClick={() => openDetails(ev)} sx={{ cursor: 'pointer' }}>
+                    <CardContent>
+                      <Stack spacing={1}>
+                        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+                          <Typography variant="h6" sx={{ mr: 1 }}>
+                            {ev.title || 'Untitled event'}
+                          </Typography>
+                          <Chip label={status} color={getStatusColor(status)} size="small" />
+                        </Stack>
                         <Typography variant="body2" color="text.secondary">
-                          📍 {ev.location}
+                          {format(ev._start, 'dd/MM/yyyy, HH:mm')} – {format(ev._end, 'HH:mm')}
                         </Typography>
-                      )}
-                      
-                      {/* Show roles in brief overview */}
-                      {ev.roles && ev.roles.length > 0 && (
-                        <Typography variant="body2" color="text.secondary">
-                          🎭 Roles: {ev.roles.map(r => r.roleName || r.name).join(', ')}
-                        </Typography>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              );
+                        {ev.location && (
+                          <Typography variant="body2" color="text.secondary">
+                            📍 {ev.location}
+                          </Typography>
+                        )}
+                        
+                        {/* Show roles in brief overview */}
+                        {ev.roles && ev.roles.length > 0 && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              🎭 Roles: {ev.roles.map(r => r.roleName || r.name).join(', ')}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                              {ev.roles.reduce((total, role) => total + (role.takenSlots || role.signupsCount || 0), 0)} participants total
+                            </Typography>
+                          </Box>
+                        )}
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                );
+              }
             })
           )}
         </Stack>
@@ -805,6 +987,27 @@ const EventsPage = () => {
                       </Grid>
                     ))}
                   </Grid>
+
+                  <Divider sx={{ mt: 2, mb: 1 }} />
+                  <Typography variant="subtitle1">Participate as Role</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Sign up to participate in a specific role for this event.
+                  </Typography>
+                  {renderEventRoles(selectedEvent)}
+                  
+                  {getTeacherSignupRoleId(selectedEvent) && (
+                    <Box sx={{ mt: 2 }}>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => teacherCancelSignup(selectedEvent)}
+                        disabled={!canInteractWithEvent(selectedEvent)}
+                        sx={{ minHeight: 44 }}
+                      >
+                        Cancel my role participation
+                      </Button>
+                    </Box>
+                  )}
                 </>
               )}
 

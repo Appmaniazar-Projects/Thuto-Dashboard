@@ -55,20 +55,21 @@ const toBackendDateOnly = (value) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-export const createTeacherNote = async ({ studentId, teacherId, note, noteDate, schoolId }) => {
+export const createTeacherNote = async ({ studentId, teacherId, note, noteDate, category, schoolId }) => {
   const payload = {
     note: note ?? '',
     noteDate: toBackendDateOnly(noteDate) || toBackendDateOnly(new Date()),
     teacherId: toId(teacherId),
     studentId: toId(studentId),
     schoolId: toId(schoolId ?? getSchoolId()),
+    category: category ?? 'General',
   };
 
   const response = await api.post(`${API_BASE}/create`, payload);
   return response.data;
 };
 
-export const updateTeacherNote = async ({ id, note, noteDate, teacherId, studentId, schoolId }) => {
+export const updateTeacherNote = async ({ id, note, noteDate, teacherId, studentId, category, schoolId }) => {
   const payload = {
     id: toId(id),
     note: note ?? '',
@@ -76,6 +77,7 @@ export const updateTeacherNote = async ({ id, note, noteDate, teacherId, student
     teacherId: toId(teacherId),
     studentId: toId(studentId),
     schoolId: toId(schoolId ?? getSchoolId()),
+    category: category ?? 'General',
   };
 
   const response = await api.put(`${API_BASE}/update`, payload);
@@ -189,13 +191,27 @@ export const exportStudentNotesToTxt = async (studentId, studentName, teacherId)
                        note.createdBy ||
                        'N/A';
       
-      // If teacherName is still a number or ID, try to get it from localStorage or use a fallback
-      if (teacherName === 'N/A' || typeof teacherName === 'number') {
-        // Try to get teacher info from current user if they're a teacher
+      // Always try to get teacher info from current user if they're a teacher and teacherId matches
+      if (teacherName === 'N/A' || typeof teacherName === 'number' || !teacherName) {
         try {
           const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-          if (currentUser.role === 'TEACHER' && (currentUser.id == note.teacherId || currentUser.phoneNumber == note.teacherId)) {
-            teacherName = `${currentUser.name || ''} ${currentUser.lastName || ''}`.trim() || currentUser.name || 'Current Teacher';
+          console.log('Trying to resolve teacher name:', {
+            currentUserRole: currentUser.role,
+            currentUserId: currentUser.id || currentUser.userId || currentUser.phoneNumber,
+            noteTeacherId: note.teacherId,
+            comparison: currentUser.id == note.teacherId || currentUser.userId == note.teacherId || currentUser.phoneNumber == note.teacherId
+          });
+          
+          if (currentUser.role === 'TEACHER' && (
+            currentUser.id == note.teacherId || 
+            currentUser.userId == note.teacherId || 
+            currentUser.phoneNumber == note.teacherId
+          )) {
+            teacherName = `${currentUser.name || ''} ${currentUser.lastName || ''}`.trim() || 
+                        currentUser.fullName || 
+                        currentUser.name || 
+                        'Current Teacher';
+            console.log('Resolved teacher name:', teacherName);
           } else if (typeof teacherName === 'number') {
             teacherName = `Teacher ID: ${teacherName}`;
           }
