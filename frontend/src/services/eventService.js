@@ -242,18 +242,7 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
-    // Get schoolId for the request
-    const schoolId = (() => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        return localStorage.getItem('schoolId') || user?.school?.id || user?.schoolId || null;
-      } catch {
-        return localStorage.getItem('schoolId') || null;
-      }
-    })();
-
-    const params = schoolId ? `?schoolId=${schoolId}` : '';
-    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup${params}`);
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
     return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
@@ -303,8 +292,7 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
     try {
       const response = await api.put(endpoint, { 
         status: status,
-        teacherId: userId,
-        schoolId: schoolId
+        teacherId: userId
       });
       
       console.log('Teacher attendance updated successfully:', response.data);
