@@ -177,7 +177,7 @@ const EventsPage = () => {
   const isStudent = role === 'student';
   const canCreateEvents = isAdmin || isTeacher;
 
-  const [viewMode, setViewMode] = useState((isAdmin || isTeacher) ? 'agenda' : (isMobile ? 'agenda' : 'month'));
+  const [viewMode, setViewMode] = useState((isAdmin || isTeacher) ? 'month' : (isMobile ? 'agenda' : 'month'));
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -479,6 +479,7 @@ const EventsPage = () => {
       await cancelEventSignup(ev.id);
       enqueueSnackbar('Signup cancelled', { variant: 'info' });
       await loadEvents();
+      await refreshSelectedEvent(); // Refresh the dialog to show updated availability
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel signup', { variant: 'error' });
     }
@@ -515,10 +516,10 @@ const EventsPage = () => {
   const teacherRoleSignup = async (ev, roleId) => {
     try {
       console.log('Teacher signing up for role:', { eventId: ev.id, roleId, eventName: ev.title });
-      // Use the same parent signup function since it should work for any user type
-      await parentSignup(ev, roleId);
+      await signUpForEventRole(ev.id, roleId);
       enqueueSnackbar('Successfully signed up for role!', { variant: 'success' });
       await loadEvents();
+      await refreshSelectedEvent(); // Refresh the dialog to show updated availability
     } catch (e) {
       console.error('Teacher role signup failed:', e);
       
@@ -583,10 +584,10 @@ const EventsPage = () => {
       }
       
       console.log('Teacher cancelling role signup:', { eventId: ev.id, roleId, eventName: ev.title });
-      // Use the same parent cancel function since it should work for any user type
-      await parentCancel(ev);
+      await cancelEventSignup(ev.id);
       enqueueSnackbar('Role signup cancelled successfully', { variant: 'info' });
       await loadEvents();
+      await refreshSelectedEvent(); // Refresh the dialog to show updated availability
     } catch (e) {
       console.error('Teacher role signup cancel failed:', e);
       
@@ -1011,12 +1012,7 @@ const EventsPage = () => {
                 </>
               )}
 
-              {isStudent && (
-                <Typography variant="body2" color="text.secondary">
-                  You can view events, but you cannot sign up or edit.
-                </Typography>
-              )}
-            </Stack>
+                          </Stack>
           )}
         </DialogContent>
 
@@ -1081,7 +1077,7 @@ const EventsPage = () => {
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
-                    label="Description"
+                    label="Description & Requirements"
                     value={formData.description}
                     onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
                     multiline

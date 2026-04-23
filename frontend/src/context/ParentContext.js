@@ -49,14 +49,19 @@ export const ParentProvider = ({ children }) => {
       try {
         setLoading(true);
         setError(null);
-        const phoneNumber = userData.phoneNumber;
+        const phoneNumber = userData?.phoneNumber;
+
+        console.log('ParentContext - User data:', userData);
+        console.log('ParentContext - Phone number:', phoneNumber);
 
         if (!phoneNumber) {
           setError('Phone number not found. Please log in again.');
           return;
         }
 
+        console.log('ParentContext - About to call getMyChildren with phone:', phoneNumber);
         const data = await parentService.getMyChildren(phoneNumber);
+        console.log('ParentContext - Received children data:', data);
         const normalized = normalizeChildren(data);
         setChildrenData(normalized);
 

@@ -242,7 +242,18 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
-    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
+    // Get schoolId for the request
+    const schoolId = (() => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return localStorage.getItem('schoolId') || user?.school?.id || user?.schoolId || null;
+      } catch {
+        return localStorage.getItem('schoolId') || null;
+      }
+    })();
+
+    const params = schoolId ? `?schoolId=${schoolId}` : '';
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup${params}`);
     return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
@@ -286,15 +297,14 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
     
     console.log('Updating teacher attendance:', { eventId, status, schoolId, userId });
     
-    // Use only the specific endpoint as requested
-    const endpoint = `/api/events/${eventId}/teacher-attendance`;
+  
+    const endpoint = `/events/${eventId}/teacher-attendance`;
     
     try {
-      const response = await api.post(endpoint, { 
+      const response = await api.put(endpoint, { 
         status: status,
-        userId: userId,
-        schoolId: schoolId,
-        teacherId: userId
+        teacherId: userId,
+        schoolId: schoolId
       });
       
       console.log('Teacher attendance updated successfully:', response.data);
