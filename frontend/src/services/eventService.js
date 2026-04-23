@@ -242,7 +242,10 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
+    console.log('signUpForEventRole - Using UPDATED code without manual schoolId');
+    console.log('signUpForEventRole - Endpoint:', `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
     const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
+    console.log('signUpForEventRole - Success:', response.status);
     return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
