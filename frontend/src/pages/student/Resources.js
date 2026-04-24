@@ -134,8 +134,15 @@ const Resources = () => {
         }
 
         console.log('Raw resources data:', resourcesData);
-        console.log('Normalized resources:', normalizeResources(resourcesData));
-        setResources(normalizeResources(resourcesData));
+        const normalizedResources = normalizeResources(resourcesData);
+        console.log('Normalized resources:', normalizedResources);
+        
+        // Debug: Show structure of first resource
+        if (normalizedResources.length > 0) {
+          console.log('First resource structure:', normalizedResources[0]);
+          console.log('First resource keys:', Object.keys(normalizedResources[0]));
+        }
+        setResources(normalizedResources);
       } catch (err) {
         console.error('Failed to fetch resources:', err);
         if (err.response?.status === 500 || err.code === 'ERR_NETWORK') {

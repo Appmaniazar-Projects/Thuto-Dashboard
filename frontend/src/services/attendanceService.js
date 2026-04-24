@@ -41,13 +41,25 @@ import api from './api';
  */
 export const getStudentAttendance = async (studentId, startDate, endDate) => {
   try {
-    // Make API request with formatted date parameters
+    // Get schoolId from localStorage for consistency with parent service
+    const storedUser = localStorage.getItem('user');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
+    const schoolId =
+      localStorage.getItem('schoolId') ||
+      userData?.school?.id ||
+      userData?.schoolId ||
+      null;
+
+    // Make API request with formatted date parameters and schoolId
+    const params = {
+      // Convert Date objects to YYYY-MM-DD format for backend compatibility
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      ...(schoolId ? { schoolId } : {})
+    };
+
     const response = await api.get(`/attendance/student/${studentId}`, {
-      params: { 
-        // Convert Date objects to YYYY-MM-DD format for backend compatibility
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      }
+      params: Object.keys(params).length > 0 ? params : undefined
     });
 
     // Handle string response from backend

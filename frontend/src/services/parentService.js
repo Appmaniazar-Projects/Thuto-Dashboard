@@ -64,7 +64,7 @@ const parentService = {
         throw new Error('Parent phone number is required to fetch children');
       }
       
-      console.log('parentService.getMyChildren - Making API call to:', `/parent/${encodedPhone}/children`);
+      console.log('parentService.getMyChildren - Making API call to:', `/api/parent/${encodedPhone}/children`);
       console.log('parentService.getMyChildren - User data:', userData);
       console.log('parentService.getMyChildren - User role:', userData?.role);
       console.log('parentService.getMyChildren - User ID:', userData?.id);
