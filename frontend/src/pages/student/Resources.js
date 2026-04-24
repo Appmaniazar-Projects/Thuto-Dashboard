@@ -29,10 +29,8 @@ import {
   FindInPage as FindInPageIcon,
 } from '@mui/icons-material';
 import {
+  getMyResources,
   downloadResource,
-  getResourcesByGrade,
-  getResourcesBySubject,
-  getResourcesBySubjectAndGrade,
 } from '../../services/resourceService';
 import subjectService from '../../services/subjectService';
 import gradeService from '../../services/gradeService';
@@ -111,27 +109,8 @@ const Resources = () => {
         console.log('Student Subject IDs:', studentSubjectIds);
         console.log('Selected filters:', { selectedSubject, selectedGrade });
 
-        let resourcesData = [];
-
-        if (selectedSubject !== 'all' && selectedGrade !== 'all') {
-          console.log('Fetching resources by subject and grade:', selectedSubject, selectedGrade);
-          resourcesData = await getResourcesBySubjectAndGrade(selectedSubject, selectedGrade, schoolId);
-        } else if (selectedSubject !== 'all') {
-          console.log('Fetching resources by subject:', selectedSubject);
-          resourcesData = await getResourcesBySubject(selectedSubject, schoolId);
-        } else if (selectedGrade !== 'all') {
-          console.log('Fetching resources by grade:', selectedGrade);
-          resourcesData = await getResourcesByGrade(selectedGrade, schoolId);
-        } else if (studentGradeId) {
-          console.log('Fetching resources by student grade:', studentGradeId);
-          resourcesData = await getResourcesByGrade(studentGradeId, schoolId);
-        } else if (studentSubjectIds.length) {
-          console.log('Fetching resources by first student subject:', studentSubjectIds[0]);
-          resourcesData = await getResourcesBySubject(studentSubjectIds[0], schoolId);
-        } else {
-          console.log('No filtering criteria available, using empty array');
-          resourcesData = [];
-        }
+        console.log('Fetching student resources using getMyResources()');
+        const resourcesData = await getMyResources();
 
         console.log('Raw resources data:', resourcesData);
         const normalizedResources = normalizeResources(resourcesData);
