@@ -198,6 +198,17 @@ const EventsPage = () => {
   const isStudent = role === 'student';
   const canCreateEvents = isAdmin || isTeacher;
 
+  // Debug logging for teacher permissions
+  console.log('User role debug:', {
+    currentUser,
+    role,
+    isAdmin,
+    isTeacher,
+    isParent,
+    isStudent,
+    canCreateEvents
+  });
+
   const [viewMode, setViewMode] = useState((isAdmin || isTeacher) ? 'month' : (isMobile ? 'agenda' : 'month'));
   const [anchorDate, setAnchorDate] = useState(() => new Date());
   const [events, setEvents] = useState([]);
@@ -457,8 +468,12 @@ const EventsPage = () => {
   };
 
   const submitEvent = async () => {
+    console.log('submitEvent called:', { canCreateEvents, editMode, isAdmin, isTeacher });
     try {
-      if (!canCreateEvents) return;
+      if (!canCreateEvents) {
+        console.log('submitEvent blocked: cannot create events');
+        return;
+      }
 
       if (editMode === 'edit' && derivedFormStatus.toLowerCase() === 'cancelled') {
         if (!formData.id) return;
@@ -525,7 +540,11 @@ const EventsPage = () => {
   };
 
   const confirmDelete = async (ev) => {
-    if (!isAdmin && !isTeacher) return;
+    console.log('confirmDelete called:', { isAdmin, isTeacher, ev });
+    if (!isAdmin && !isTeacher) {
+      console.log('Delete blocked: not admin or teacher');
+      return;
+    }
     const ok = window.confirm('Delete this event?');
     if (!ok) return;
     try {
@@ -810,13 +829,20 @@ const EventsPage = () => {
 
   // Load available organizers (admins and teachers)
   const loadAvailableOrganizers = async () => {
-    if (!canCreateEvents) return;
+    if (!canCreateEvents) {
+      console.log('Cannot create events, skipping organizer loading');
+      return;
+    }
     
+    console.log('Loading available organizers...');
     try {
       const [adminResponse, teacherResponse] = await Promise.all([
         adminService.getAllUsers({ role: 'admin' }),
         adminService.getAllUsers({ role: 'teacher' })
       ]);
+
+      console.log('Admin response:', adminResponse?.data);
+      console.log('Teacher response:', teacherResponse?.data);
 
       const organizers = [
         ...(adminResponse?.data || []).map(user => ({
@@ -831,16 +857,19 @@ const EventsPage = () => {
         }))
       ];
 
+      console.log('Setting organizers:', organizers);
       setAvailableOrganizers(organizers);
     } catch (e) {
       console.error('Failed to load organizers:', e);
       // Fallback to current user if available
       if (currentUser && (isAdmin || isTeacher)) {
-        setAvailableOrganizers([{
+        const fallbackOrganizer = [{
           id: currentUser.id,
           name: currentUser.name || currentUser.email,
           role: isAdmin ? 'Admin' : 'Teacher'
-        }]);
+        }];
+        console.log('Using fallback organizer:', fallbackOrganizer);
+        setAvailableOrganizers(fallbackOrganizer);
       }
     }
   };
@@ -1472,12 +1501,16 @@ const EventsPage = () => {
               Close
             </Button>
 
-            {(isAdmin || isTeacher) && selectedEvent && (
+            {(isAdmin || isTeacher) && selectedEvent && (() => {
+              console.log('Edit button should be visible:', { isAdmin, isTeacher, selectedEvent });
+              return true;
+            })() && (
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ ml: 'auto', width: { xs: '100%', sm: 'auto' } }}>
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
                   onClick={() => {
+                    console.log('Edit button clicked:', { isAdmin, isTeacher, selectedEvent });
                     closeDetails();
                     openEdit(selectedEvent);
                   }}
@@ -1489,7 +1522,10 @@ const EventsPage = () => {
                   variant="outlined"
                   color="error"
                   startIcon={<DeleteOutlineIcon />}
-                  onClick={() => confirmDelete(selectedEvent)}
+                  onClick={() => {
+                    console.log('Delete button clicked:', { isAdmin, isTeacher, selectedEvent });
+                    confirmDelete(selectedEvent);
+                  }}
                   sx={{ minHeight: 44 }}
                 >
                   Delete
@@ -1586,11 +1622,22 @@ const EventsPage = () => {
                       label="Organizer"
                       onChange={(e) => setFormData((p) => ({ ...p, organizer: e.target.value }))}
                     >
-                      {availableOrganizers.map((organizer) => (
-                        <MenuItem key={organizer.id} value={organizer.id}>
-                          {organizer.name} ({organizer.role})
+                      {availableOrganizers.length === 0 ? (
+                        <MenuItem value="">
+                          <em>No organizers available (Debug: {availableOrganizers.length} items)</em>
                         </MenuItem>
-                      ))}
+                      ) : (
+                        availableOrganizers.map((organizer) => (
+                          <MenuItem key={organizer.id} value={organizer.id}>
+                            {organizer.name} ({organizer.role})
+                          </MenuItem>
+                        ))
+                      )}
+                      {currentUser && (isAdmin || isTeacher) && (
+                        <MenuItem value={currentUser.id}>
+                          {currentUser.name || currentUser.email} (You)
+                        </MenuItem>
+                      )}
                     </Select>
                   </FormControl>
                 </Grid>
