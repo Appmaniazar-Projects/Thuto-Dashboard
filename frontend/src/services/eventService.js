@@ -78,6 +78,35 @@ const normalizeEventPayload = (eventData) => {
   if (typeof payload.startDate === 'string') payload.startDate = normalizeDateString(payload.startDate);
   if (typeof payload.endDate === 'string') payload.endDate = normalizeDateString(payload.endDate);
 
+  // Handle new event fields
+  if (payload.organizer !== undefined) {
+    payload.organizer = (payload.organizer ?? '').toString().trim();
+  }
+
+  if (payload.sponsorshipEnabled !== undefined) {
+    payload.sponsorshipEnabled = Boolean(payload.sponsorshipEnabled);
+  }
+
+  if (payload.maxAttendees !== undefined) {
+    payload.maxAttendees = Number.isFinite(Number(payload.maxAttendees)) ? Number(payload.maxAttendees) : null;
+  }
+
+  if (payload.notificationSchedule !== undefined) {
+    if (payload.notificationSchedule && typeof payload.notificationSchedule === 'object') {
+      payload.notificationSchedule = JSON.stringify(payload.notificationSchedule);
+    } else {
+      payload.notificationSchedule = null;
+    }
+  }
+
+  if (payload.recurringPattern !== undefined) {
+    if (payload.recurringPattern && typeof payload.recurringPattern === 'object') {
+      payload.recurringPattern = JSON.stringify(payload.recurringPattern);
+    } else {
+      payload.recurringPattern = null;
+    }
+  }
+
   if (!Array.isArray(payload.roles)) {
     delete payload.roles;
   } else {
@@ -313,6 +342,179 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
       errorStatus: error?.response?.status,
       errorData: error?.response?.data
     });
+    throw error;
+  }
+};
+
+// RSVP Management
+export const submitRSVP = async (eventId, rsvpData) => {
+  try {
+    const response = await api.post(`/events/rsvps/${eventId}/remind`, rsvpData);
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting RSVP:', error);
+    throw error;
+  }
+};
+
+export const getEventRSVPs = async (eventId, responseFilter = null) => {
+  try {
+    const params = responseFilter ? { response: responseFilter } : {};
+    const response = await api.get(`/events/rsvps/${eventId}`, { params });
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching RSVPs:', error);
+    throw error;
+  }
+};
+
+export const updateRSVP = async (rsvpId, rsvpData) => {
+  try {
+    const response = await api.put(`/rsvps/${rsvpId}`, rsvpData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating RSVP:', error);
+    throw error;
+  }
+};
+
+export const getAdminRSVPList = async (eventId) => {
+  try {
+    const response = await api.get(`/admin/events/rsvps/${eventId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin RSVP list:', error);
+    throw error;
+  }
+};
+
+export const sendRSVPReminders = async (eventId, message) => {
+  try {
+    const response = await api.post(`/admin/events/rsvps/${eventId}/rsvps/remind`, { message });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending RSVP reminders:', error);
+    throw error;
+  }
+};
+
+// Sponsorship Management
+export const createSponsorship = async (eventId, sponsorshipData) => {
+  try {
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/sponsorships`, sponsorshipData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating sponsorship:', error);
+    throw error;
+  }
+};
+
+export const getEventSponsorships = async (eventId, statusFilter = null) => {
+  try {
+    const params = statusFilter ? { status: statusFilter } : {};
+    const response = await api.get(`${EVENTS_BASE}/${eventId}/sponsorships`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching sponsorships:', error);
+    throw error;
+  }
+};
+
+export const updateSponsorship = async (sponsorshipId, sponsorshipData) => {
+  try {
+    const response = await api.put(`/sponsorships/${sponsorshipId}`, sponsorshipData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating sponsorship:', error);
+    throw error;
+  }
+};
+
+export const cancelSponsorship = async (sponsorshipId) => {
+  try {
+    const response = await api.delete(`/sponsorships/${sponsorshipId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error cancelling sponsorship:', error);
+    throw error;
+  }
+};
+
+export const getAdminPledgeLog = async (eventId) => {
+  try {
+    const response = await api.get(`/admin/events/${eventId}/sponsorships`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin pledge log:', error);
+    throw error;
+  }
+};
+
+// Enhanced Volunteer Management
+export const getVolunteerRoles = async (eventId) => {
+  try {
+    const response = await api.get(`${EVENTS_BASE}/${eventId}/volunteer-roles`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching volunteer roles:', error);
+    throw error;
+  }
+};
+
+export const signUpForVolunteerRole = async (eventId, roleId, signupData) => {
+  try {
+    const response = await api.post(`${EVENTS_BASE}/${eventId}/volunteer-roles/${roleId}/signup`, signupData);
+    return response.data;
+  } catch (error) {
+    console.error('Error signing up for volunteer role:', error);
+    throw error;
+  }
+};
+
+export const getAdminVolunteerList = async (eventId) => {
+  try {
+    const response = await api.get(`/admin/events/${eventId}/volunteers`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin volunteer list:', error);
+    throw error;
+  }
+};
+
+// Enhanced Event Details
+export const getEventDetails = async (eventId) => {
+  try {
+    const response = await api.get(`${EVENTS_BASE}/${eventId}/details`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching event details:', error);
+    throw error;
+  }
+};
+
+// Event Export
+export const exportEvent = async (eventId, format = 'ics') => {
+  try {
+    const response = await api.get(`${EVENTS_BASE}/export/${eventId}`, {
+      params: { format },
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting event:', error);
+    throw error;
+  }
+};
+
+// Event Search
+export const searchEvents = async (query, filters = {}) => {
+  try {
+    const schoolId = getCurrentSchoolId();
+    const params = { ...filters, query, schoolId };
+    const response = await api.get(`${EVENTS_BASE}/search`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching events:', error);
     throw error;
   }
 };

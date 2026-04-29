@@ -21,12 +21,28 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  Switch,
+  FormControlLabel,
+  Avatar,
+  Tooltip,
+  Paper,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
+import ShareIcon from '@mui/icons-material/Share';
+import DownloadIcon from '@mui/icons-material/Download';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import PeopleIcon from '@mui/icons-material/People';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
@@ -51,6 +67,7 @@ import { ErrorDisplay } from '../components/common/ErrorDisplay';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import adminService from '../services/adminService';
 import {
   cancelEventSignup,
   cancelEvent as cancelEventById,
@@ -61,6 +78,10 @@ import {
   setTeacherAttendanceStatus,
   signUpForEventRole,
   updateEvent,
+  submitRSVP,
+  createSponsorship,
+  signUpForVolunteerRole,
+  exportEvent,
 } from '../services/eventService';
 import { useSnackbar } from 'notistack';
 
@@ -187,6 +208,38 @@ const EventsPage = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  // New state for enhanced features
+  const [rsvpDialogOpen, setRsvpDialogOpen] = useState(false);
+  const [sponsorshipDialogOpen, setSponsorshipDialogOpen] = useState(false);
+  const [volunteerDialogOpen, setVolunteerDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  const [rsvpData, setRsvpData] = useState({
+    response: 'attending',
+    numberOfGuests: 0,
+    dietaryRequirements: '',
+    specialRequests: ''
+  });
+
+  const [sponsorshipData, setSponsorshipData] = useState({
+    pledgeType: 'monetary',
+    pledgeAmount: '',
+    pledgeDescription: '',
+    isAnonymous: false
+  });
+
+  const [volunteerData, setVolunteerData] = useState({
+    roleId: '',
+    notes: '',
+    skills: '',
+    timePreferences: [],
+    emergencyContact: '',
+    specialRequirements: ''
+  });
+
+  // State for available organizers
+  const [availableOrganizers, setAvailableOrganizers] = useState([]);
+
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState('create');
   const [formData, setFormData] = useState({
@@ -197,6 +250,10 @@ const EventsPage = () => {
     endDate: '',
     location: '',
     status: '',
+    organizer: '',
+    eventType: '',
+    sponsorshipEnabled: false,
+    maxAttendees: null,
     roles: [],
   });
 
@@ -246,6 +303,11 @@ const EventsPage = () => {
       setLoading(false);
     }
   }, [range.end, range.start]);
+
+  useEffect(() => {
+    loadEvents();
+    loadAvailableOrganizers();
+  }, [loadEvents]);
 
   useEffect(() => {
     if (!apiFailed) {
@@ -339,6 +401,10 @@ const EventsPage = () => {
       endDate: slotInfo?.end ? toDateTimeLocalInputValue(slotInfo.end) : '',
       location: '',
       status: '',
+      organizer: '',
+      eventType: '',
+      sponsorshipEnabled: false,
+      maxAttendees: null,
       roles: [],
     });
     setEditOpen(true);
@@ -354,6 +420,10 @@ const EventsPage = () => {
       endDate: toDateTimeLocalInputValue(ev.endDate),
       location: ev.location || '',
       status: ev.status || '',
+      organizer: ev.organizer || '',
+      eventType: ev.eventType || '',
+      sponsorshipEnabled: ev.sponsorshipEnabled || false,
+      maxAttendees: ev.maxAttendees || null,
       roles: Array.isArray(ev.roles) ? ev.roles.map((r) => buildRoleDraft({ id: r.id, roleName: r.roleName || '', slotLimit: r.slotLimit ?? 0 })) : [],
     });
     setEditOpen(true);
@@ -423,6 +493,10 @@ const EventsPage = () => {
         endTime: toBackendTimeOnly(formData.endDate),
         location: formData.location || '',
         status: derivedFormStatus,
+        organizer: formData.organizer || '',
+        eventType: formData.eventType || '',
+        sponsorshipEnabled: formData.sponsorshipEnabled || false,
+        maxAttendees: formData.maxAttendees || null,
         roles: (formData.roles || [])
           .map((r) => ({
             id: r.id,
@@ -606,6 +680,168 @@ const EventsPage = () => {
       }
       
       enqueueSnackbar(errorMessage, { variant: 'error' });
+    }
+  };
+
+  // New handler functions for enhanced features
+  const handleRSVP = async () => {
+    try {
+      await submitRSVP(selectedEvent.id, rsvpData);
+      enqueueSnackbar('RSVP submitted successfully', { variant: 'success' });
+      setRsvpDialogOpen(false);
+      await loadEvents();
+      await refreshSelectedEvent();
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit RSVP', { variant: 'error' });
+    }
+  };
+
+  const handleSponsorship = async () => {
+    try {
+      await createSponsorship(selectedEvent.id, sponsorshipData);
+      enqueueSnackbar('Sponsorship pledge submitted successfully', { variant: 'success' });
+      setSponsorshipDialogOpen(false);
+      setSponsorshipData({
+        pledgeType: 'monetary',
+        pledgeAmount: '',
+        pledgeDescription: '',
+        isAnonymous: false
+      });
+      await loadEvents();
+      await refreshSelectedEvent();
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit sponsorship', { variant: 'error' });
+    }
+  };
+
+  const handleVolunteerSignup = async () => {
+    try {
+      await signUpForVolunteerRole(selectedEvent.id, volunteerData.roleId, {
+        notes: volunteerData.notes,
+        skills: volunteerData.skills,
+        timePreferences: volunteerData.timePreferences,
+        emergencyContact: volunteerData.emergencyContact,
+        specialRequirements: volunteerData.specialRequirements
+      });
+      enqueueSnackbar('Volunteer signup successful', { variant: 'success' });
+      setVolunteerDialogOpen(false);
+      setVolunteerData({
+        roleId: '',
+        notes: '',
+        skills: '',
+        timePreferences: [],
+        emergencyContact: '',
+        specialRequirements: ''
+      });
+      await loadEvents();
+      await refreshSelectedEvent();
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up as volunteer', { variant: 'error' });
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: selectedEvent.title,
+          text: selectedEvent.description,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      enqueueSnackbar('Event link copied to clipboard', { variant: 'success' });
+    }
+    setShareDialogOpen(false);
+  };
+
+  const handleExport = async () => {
+    try {
+      const blob = await exportEvent(selectedEvent.id, 'ics');
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedEvent.title.replace(/[^a-z0-9]/gi, '_')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      enqueueSnackbar('Event exported successfully', { variant: 'success' });
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to export event', { variant: 'error' });
+    }
+  };
+
+  const hasUserRSVPd = () => {
+    return selectedEvent?.rsvps?.some(rsvp => rsvp.userId === currentUser?.id);
+  };
+
+  const getUserRSVP = () => {
+    return selectedEvent?.rsvps?.find(rsvp => rsvp.userId === currentUser?.id);
+  };
+
+  const hasUserSignedUp = () => {
+    return selectedEvent?.roles?.some(role => 
+      role.signups?.some(signup => signup.userId === currentUser?.id)
+    );
+  };
+
+  const refreshSelectedEvent = async () => {
+    if (!selectedEvent?.id) return;
+    try {
+      const details = await getEventById(selectedEvent.id);
+      if (!details) return;
+      setSelectedEvent((prev) => {
+        if (!prev || String(prev.id) !== String(selectedEvent.id)) return prev;
+        return { ...prev, ...details };
+      });
+    } catch (e) {
+      // Ignore detail load failures so the dialog still works with list data
+    }
+  };
+
+  const canInteractWithEvent = (event) => {
+    const status = deriveStatus(event);
+    return status === 'UPCOMING' || status === 'ONGOING';
+  };
+
+  // Load available organizers (admins and teachers)
+  const loadAvailableOrganizers = async () => {
+    if (!canCreateEvents) return;
+    
+    try {
+      const [adminResponse, teacherResponse] = await Promise.all([
+        adminService.getAllUsers({ role: 'admin' }),
+        adminService.getAllUsers({ role: 'teacher' })
+      ]);
+
+      const organizers = [
+        ...(adminResponse?.data || []).map(user => ({
+          id: user.id,
+          name: user.name,
+          role: 'Admin'
+        })),
+        ...(teacherResponse?.data || []).map(user => ({
+          id: user.id,
+          name: user.name,
+          role: 'Teacher'
+        }))
+      ];
+
+      setAvailableOrganizers(organizers);
+    } catch (e) {
+      console.error('Failed to load organizers:', e);
+      // Fallback to current user if available
+      if (currentUser && (isAdmin || isTeacher)) {
+        setAvailableOrganizers([{
+          id: currentUser.id,
+          name: currentUser.name || currentUser.email,
+          role: isAdmin ? 'Admin' : 'Teacher'
+        }]);
+      }
     }
   };
 
@@ -880,6 +1116,52 @@ const EventsPage = () => {
                             </Typography>
                           </Box>
                         )}
+                        
+                        {/* Action Buttons for Parents and Students */}
+                        {!isAdmin && !isTeacher && canInteractWithEvent(ev) && (
+                          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                            <Button 
+                              size="small" 
+                              variant="outlined"
+                              startIcon={<HowToRegIcon />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(ev);
+                                setRsvpDialogOpen(true);
+                              }}
+                            >
+                              RSVP
+                            </Button>
+                            {ev.sponsorshipEnabled && (
+                              <Button 
+                                size="small" 
+                                variant="outlined"
+                                color="secondary"
+                                startIcon={<AttachMoneyIcon />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(ev);
+                                  setSponsorshipDialogOpen(true);
+                                }}
+                              >
+                                Sponsor
+                              </Button>
+                            )}
+                            <Button 
+                              size="small" 
+                              variant="contained"
+                              startIcon={<VolunteerActivismIcon />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(ev);
+                                setVolunteerDialogOpen(true);
+                              }}
+                              disabled={hasUserSignedUp()}
+                            >
+                              {hasUserSignedUp() ? 'Signed Up' : 'Volunteer'}
+                            </Button>
+                          </Stack>
+                        )}
                       </Stack>
                     </CardContent>
                   </Card>
@@ -921,7 +1203,9 @@ const EventsPage = () => {
             <Stack spacing={2}>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                 <Chip label={deriveStatus(selectedEvent)} color={getStatusColor(deriveStatus(selectedEvent))} size="small" />
+                {selectedEvent.eventType && <Chip label={selectedEvent.eventType} size="small" variant="outlined" />}
                 {selectedEvent.location ? <Chip label={selectedEvent.location} size="small" variant="outlined" /> : null}
+                {selectedEvent.sponsorshipEnabled && <Chip label="Sponsorship Enabled" size="small" color="secondary" />}
               </Stack>
 
               <Box>
@@ -933,6 +1217,24 @@ const EventsPage = () => {
                 </Typography>
               </Box>
 
+              {selectedEvent.organizer && (
+                <Box>
+                  <Typography variant="subtitle2">Organizer</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {availableOrganizers.find(o => o.id === selectedEvent.organizer)?.name || selectedEvent.organizer}
+                  </Typography>
+                </Box>
+              )}
+
+              {selectedEvent.maxAttendees && (
+                <Box>
+                  <Typography variant="subtitle2">Capacity</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedEvent.maxAttendees} attendees maximum
+                  </Typography>
+                </Box>
+              )}
+
               {selectedEvent.description ? (
                 <Box>
                   <Typography variant="subtitle2">Description</Typography>
@@ -941,6 +1243,154 @@ const EventsPage = () => {
                   </Typography>
                 </Box>
               ) : null}
+
+              {/* Enhanced Action Buttons for Parents and Students */}
+              {!isAdmin && !isTeacher && canInteractWithEvent(selectedEvent) && (
+                <>
+                  <Divider />
+                  <Typography variant="subtitle1">Participate in Event</Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Button
+                      variant="outlined"
+                      startIcon={<HowToRegIcon />}
+                      onClick={() => setRsvpDialogOpen(true)}
+                      sx={{ minHeight: 44 }}
+                    >
+                      {getUserRSVP() ? `Update RSVP (${getUserRSVP().response})` : 'RSVP'}
+                    </Button>
+                    {selectedEvent.sponsorshipEnabled && (
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<AttachMoneyIcon />}
+                        onClick={() => setSponsorshipDialogOpen(true)}
+                        sx={{ minHeight: 44 }}
+                      >
+                        Sponsor Event
+                      </Button>
+                    )}
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<VolunteerActivismIcon />}
+                      onClick={() => setVolunteerDialogOpen(true)}
+                      disabled={hasUserSignedUp()}
+                      sx={{ minHeight: 44 }}
+                    >
+                      {hasUserSignedUp() ? 'Already Signed Up' : 'Volunteer'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ShareIcon />}
+                      onClick={() => setShareDialogOpen(true)}
+                      sx={{ minHeight: 44 }}
+                    >
+                      Share
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DownloadIcon />}
+                      onClick={handleExport}
+                      sx={{ minHeight: 44 }}
+                    >
+                      Export
+                    </Button>
+                  </Stack>
+                </>
+              )}
+
+              {/* Event Statistics */}
+              {selectedEvent && (
+                <>
+                  <Divider />
+                  <Typography variant="subtitle1">Event Statistics</Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={4}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6" color="primary.main">
+                          {selectedEvent.rsvps?.filter(r => r.response === 'attending').length || 0}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Attending
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={4}>
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="h6" color="success.main">
+                          {selectedEvent.roles?.reduce((total, role) => total + (role.takenSlots || 0), 0) || 0}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Volunteers
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    {selectedEvent.sponsorshipEnabled && (
+                      <Grid item xs={4}>
+                        <Box sx={{ textAlign: 'center' }}>
+                          <Typography variant="h6" color="secondary.main">
+                            {selectedEvent.sponsorships?.length || 0}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Sponsors
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+
+                  {/* Detailed Statistics for Admins */}
+                  {(isAdmin || isTeacher) && (
+                    <>
+                      <Grid container spacing={2} sx={{ mt: 1 }}>
+                        <Grid item xs={6}>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Total RSVPs: {selectedEvent.rsvps?.length || 0}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              (Attending: {selectedEvent.rsvps?.filter(r => r.response === 'attending').length || 0}, 
+                              Declined: {selectedEvent.rsvps?.filter(r => r.response === 'declined').length || 0}, 
+                              Maybe: {selectedEvent.rsvps?.filter(r => r.response === 'maybe').length || 0})
+                            </Typography>
+                          </Box>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Volunteer Slots: {selectedEvent.roles?.reduce((total, role) => total + (role.takenSlots || 0), 0) || 0} / 
+                              {selectedEvent.roles?.reduce((total, role) => total + (role.slotLimit || 0), 0) || 0}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {selectedEvent.roles?.length || 0} roles available
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+
+                      {/* Sponsorship Details */}
+                      {selectedEvent.sponsorshipEnabled && selectedEvent.sponsorships && selectedEvent.sponsorships.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2">Recent Sponsorships</Typography>
+                          <Stack spacing={1}>
+                            {selectedEvent.sponsorships.slice(0, 3).map((sponsorship) => (
+                              <Typography key={sponsorship.id} variant="caption" color="text.secondary">
+                                • {sponsorship.isAnonymous ? 'Anonymous' : sponsorship.parentName || 'Unknown'}: 
+                                {sponsorship.pledgeType === 'monetary' ? ` R${sponsorship.pledgeAmount || 0}` : ` ${sponsorship.pledgeDescription || 'Goods/Services'}`}
+                              </Typography>
+                            ))}
+                            {selectedEvent.sponsorships.length > 3 && (
+                              <Typography variant="caption" color="text.secondary">
+                                ... and {selectedEvent.sponsorships.length - 3} more
+                              </Typography>
+                            )}
+                          </Stack>
+                        </Box>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
 
               {isParent && (
                 <>
@@ -1129,6 +1579,67 @@ const EventsPage = () => {
                 </Grid>
 
                 <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Organizer</InputLabel>
+                    <Select
+                      value={formData.organizer}
+                      label="Organizer"
+                      onChange={(e) => setFormData((p) => ({ ...p, organizer: e.target.value }))}
+                    >
+                      {availableOrganizers.map((organizer) => (
+                        <MenuItem key={organizer.id} value={organizer.id}>
+                          {organizer.name} ({organizer.role})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Event Type</InputLabel>
+                    <Select
+                      value={formData.eventType}
+                      label="Event Type"
+                      onChange={(e) => setFormData((p) => ({ ...p, eventType: e.target.value }))}
+                    >
+                      <MenuItem value="">Select Type</MenuItem>
+                      <MenuItem value="academic">Academic</MenuItem>
+                      <MenuItem value="sports">Sports</MenuItem>
+                      <MenuItem value="cultural">Cultural</MenuItem>
+                      <MenuItem value="social">Social</MenuItem>
+                      <MenuItem value="fundraising">Fundraising</MenuItem>
+                      <MenuItem value="meeting">Meeting</MenuItem>
+                      <MenuItem value="other">Other</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Maximum Attendees"
+                    type="number"
+                    value={formData.maxAttendees || ''}
+                    onChange={(e) => setFormData((p) => ({ ...p, maxAttendees: e.target.value ? parseInt(e.target.value) : null }))}
+                    inputProps={{ min: 1 }}
+                    helperText="Leave empty for unlimited attendees"
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.sponsorshipEnabled}
+                        onChange={(e) => setFormData((p) => ({ ...p, sponsorshipEnabled: e.target.checked }))}
+                      />
+                    }
+                    label="Enable Sponsorship Pledges"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
                     label="Status"
@@ -1217,6 +1728,263 @@ const EventsPage = () => {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+
+  // RSVP Dialog
+  const renderRSVPDialog = () => (
+    <Dialog open={rsvpDialogOpen} onClose={() => setRsvpDialogOpen(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>RSVP for {selectedEvent?.title}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Will you attend?</InputLabel>
+            <Select
+              value={rsvpData.response}
+              label="Will you attend?"
+              onChange={(e) => setRsvpData({ ...rsvpData, response: e.target.value })}
+            >
+              <MenuItem value="attending">Yes, I'll be there</MenuItem>
+              <MenuItem value="declined">No, I can't make it</MenuItem>
+              <MenuItem value="maybe">Maybe</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <TextField
+            fullWidth
+            label="Number of Guests"
+            type="number"
+            value={rsvpData.numberOfGuests}
+            onChange={(e) => setRsvpData({ ...rsvpData, numberOfGuests: parseInt(e.target.value) || 0 })}
+            inputProps={{ min: 0 }}
+          />
+          
+          <TextField
+            fullWidth
+            label="Dietary Requirements"
+            multiline
+            rows={2}
+            value={rsvpData.dietaryRequirements}
+            onChange={(e) => setRsvpData({ ...rsvpData, dietaryRequirements: e.target.value })}
+          />
+          
+          <TextField
+            fullWidth
+            label="Special Requests"
+            multiline
+            rows={2}
+            value={rsvpData.specialRequests}
+            onChange={(e) => setRsvpData({ ...rsvpData, specialRequests: e.target.value })}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setRsvpDialogOpen(false)}>Cancel</Button>
+        <Button onClick={handleRSVP} variant="contained">Submit RSVP</Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Sponsorship Dialog
+  const renderSponsorshipDialog = () => (
+    <Dialog open={sponsorshipDialogOpen} onClose={() => setSponsorshipDialogOpen(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>Sponsor {selectedEvent?.title}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Pledge Type</InputLabel>
+            <Select
+              value={sponsorshipData.pledgeType}
+              label="Pledge Type"
+              onChange={(e) => setSponsorshipData({ ...sponsorshipData, pledgeType: e.target.value })}
+            >
+              <MenuItem value="monetary">Monetary Donation</MenuItem>
+              <MenuItem value="goods">Goods/Products</MenuItem>
+              <MenuItem value="services">Services</MenuItem>
+            </Select>
+          </FormControl>
+          
+          {sponsorshipData.pledgeType === 'monetary' && (
+            <TextField
+              fullWidth
+              label="Amount (R)"
+              type="number"
+              value={sponsorshipData.pledgeAmount}
+              onChange={(e) => setSponsorshipData({ ...sponsorshipData, pledgeAmount: e.target.value })}
+              inputProps={{ min: 0 }}
+            />
+          )}
+          
+          <TextField
+            fullWidth
+            label="Description"
+            multiline
+            rows={3}
+            value={sponsorshipData.pledgeDescription}
+            onChange={(e) => setSponsorshipData({ ...sponsorshipData, pledgeDescription: e.target.value })}
+            placeholder={
+              sponsorshipData.pledgeType === 'monetary' 
+                ? 'Describe your sponsorship (optional)'
+                : 'Describe the goods or services you can provide'
+            }
+          />
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={sponsorshipData.isAnonymous}
+                onChange={(e) => setSponsorshipData({ ...sponsorshipData, isAnonymous: e.target.checked })}
+              />
+            }
+            label="Make this pledge anonymous"
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setSponsorshipDialogOpen(false)}>Cancel</Button>
+        <Button onClick={handleSponsorship} variant="contained">Submit Pledge</Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Volunteer Dialog
+  const renderVolunteerDialog = () => (
+    <Dialog open={volunteerDialogOpen} onClose={() => setVolunteerDialogOpen(false)} maxWidth="md" fullWidth>
+      <DialogTitle>Volunteer for {selectedEvent?.title}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Select Role</InputLabel>
+            <Select
+              value={volunteerData.roleId}
+              label="Select Role"
+              onChange={(e) => setVolunteerData({ ...volunteerData, roleId: e.target.value })}
+            >
+              {selectedEvent?.roles?.filter(role => {
+                const taken = role.takenSlots || 0;
+                const limit = role.slotLimit || 0;
+                return taken < limit;
+              }).map((role) => (
+                <MenuItem key={role.id} value={role.id}>
+                  {role.roleName} ({role.takenSlots || 0}/{role.slotLimit || 0} slots filled)
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Relevant Experience"
+                multiline
+                rows={3}
+                value={volunteerData.notes}
+                onChange={(e) => setVolunteerData({ ...volunteerData, notes: e.target.value })}
+                placeholder="Tell us about your relevant experience or skills for this role"
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Skills & Qualifications"
+                multiline
+                rows={3}
+                value={volunteerData.skills || ''}
+                onChange={(e) => setVolunteerData({ ...volunteerData, skills: e.target.value })}
+                placeholder="List any relevant skills, certifications, or qualifications"
+              />
+            </Grid>
+          </Grid>
+          
+          <FormControl fullWidth>
+            <InputLabel>Time Preferences</InputLabel>
+            <Select
+              multiple
+              value={volunteerData.timePreferences || []}
+              label="Time Preferences"
+              onChange={(e) => setVolunteerData({ ...volunteerData, timePreferences: e.target.value })}
+              renderValue={(selected) => selected.join(', ')}
+            >
+              <MenuItem value="morning">Morning (6AM - 12PM)</MenuItem>
+              <MenuItem value="afternoon">Afternoon (12PM - 6PM)</MenuItem>
+              <MenuItem value="evening">Evening (6PM - 10PM)</MenuItem>
+              <MenuItem value="flexible">Flexible</MenuItem>
+              <MenuItem value="weekend">Weekend Only</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <TextField
+            fullWidth
+            label="Emergency Contact"
+            value={volunteerData.emergencyContact}
+            onChange={(e) => setVolunteerData({ ...volunteerData, emergencyContact: e.target.value })}
+            placeholder="Name and phone number"
+          />
+          
+          <TextField
+            fullWidth
+            label="Special Requirements or Notes"
+            multiline
+            rows={2}
+            value={volunteerData.specialRequirements || ''}
+            onChange={(e) => setVolunteerData({ ...volunteerData, specialRequirements: e.target.value })}
+            placeholder="Any special requirements, dietary needs, or additional notes"
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setVolunteerDialogOpen(false)}>Cancel</Button>
+        <Button onClick={handleVolunteerSignup} variant="contained">Sign Up</Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Share Dialog
+  const renderShareDialog = () => (
+    <Dialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>Share Event</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <TextField
+            fullWidth
+            label="Event Link"
+            value={window.location.href}
+            InputProps={{
+              readOnly: true,
+              endAdornment: (
+                <Button onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  enqueueSnackbar('Link copied to clipboard', { variant: 'success' });
+                }}>
+                  Copy
+                </Button>
+              )
+            }}
+          />
+          
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            Share this event with other parents, teachers, and students
+          </Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setShareDialogOpen(false)}>Close</Button>
+        <Button onClick={handleShare} variant="contained" startIcon={<ShareIcon />}>
+          Share
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  return (
+    <>
+      {content}
+      {renderRSVPDialog()}
+      {renderSponsorshipDialog()}
+      {renderVolunteerDialog()}
+      {renderShareDialog()}
+    </>
   );
 };
 
