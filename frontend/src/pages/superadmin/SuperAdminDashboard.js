@@ -126,7 +126,7 @@ const SuperAdminDashboard = () => {
   const [adminPage, setAdminPage] = useState(1);
   const [hasMoreSchools, setHasMoreSchools] = useState(true);
   const [hasMoreAdmins, setHasMoreAdmins] = useState(true);
-  const [pageSize] = useState(50); // Load 50 items at a time
+  const [pageSize] = useState(25); // Load 25 items at a time for faster initial load
   const [activeTab, setActiveTab] = useState('schools');
   const [submitting, setSubmitting] = useState(false);
 
@@ -254,29 +254,33 @@ const SuperAdminDashboard = () => {
   });
   // ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const resolveUserLocation = async () => {
-      if (!currentUser?.province) return;
-      try {
-        const provinces = await regionService.getAllProvinces();
-        const matched = normalizeArray(provinces).find(p =>
-          String(typeof p === 'object' ? p.id : p) === String(currentUser.province)
-        );
-        const provinceName = typeof matched === 'object' ? matched.name : (matched || '');
-        setCurrentUserProvinceName(provinceName);
-
-        if (currentUser?.region) {
-          const regions = await regionService.getRegionsByProvinceId(currentUser.province);
-          const matchedRegion = normalizeArray(regions).find(r =>
-            String(r.id) === String(currentUser.region)
+    // Only resolve location if we have user data, but don't block initial load
+    if (currentUser?.province) {
+      const resolveUserLocation = async () => {
+        try {
+          const provinces = await regionService.getAllProvinces();
+          const matched = normalizeArray(provinces).find(p =>
+            String(typeof p === 'object' ? p.id : p) === String(currentUser.province)
           );
-          setCurrentUserRegionName(matchedRegion?.name || '');
+          const provinceName = typeof matched === 'object' ? matched.name : (matched || '');
+          setCurrentUserProvinceName(provinceName);
+
+          if (currentUser?.region) {
+            const regions = await regionService.getRegionsByProvinceId(currentUser.province);
+            const matchedRegion = normalizeArray(regions).find(r =>
+              String(r.id) === String(currentUser.region)
+            );
+            setCurrentUserRegionName(matchedRegion?.name || '');
+          }
+        } catch (e) {
+          console.error('Failed to resolve user location names:', e);
         }
-      } catch (e) {
-        console.error('Failed to resolve user location names:', e);
-      }
-    };
-    resolveUserLocation();
-  }, [currentUser]);
+      };
+      
+      // Run in background without blocking
+      resolveUserLocation();
+    }
+  }, [currentUser?.province]); // Only run when province changes
 
   // Resolve province/region names on demand (fallback at submit time)
   const resolveLocationNames = async () => {
@@ -311,15 +315,19 @@ const SuperAdminDashboard = () => {
   // Effects
   // ─────────────────────────────────────────────────────────────
 
-  // Initial data load - with performance optimization
+  // Initial data load - optimized for performance
   useEffect(() => {
-    // Add a small delay to prevent blocking the UI
-    const timer = setTimeout(() => {
-      fetchData(true); // Reset for initial load
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    // Load data immediately without delay for faster UX
+    // Only delay if we don't have user data yet
+    if (!currentUser?.email) {
+      const timer = setTimeout(() => {
+        if (currentUser?.email) fetchData(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      fetchData(true);
+    }
+  }, [currentUser?.email]); // Depend on user being available
 
   // Load regions for the school form whenever provinceId changes
   useEffect(() => {
