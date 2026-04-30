@@ -25,7 +25,9 @@ import {
   Grid,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  InputAdornment,
+  Stack
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,7 +35,11 @@ import {
   Delete as DeleteIcon,
   School as SchoolIcon,
   AdminPanelSettings as AdminIcon,
-  SupervisorAccount as MasterIcon
+  SupervisorAccount as MasterIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
+  Clear as ClearIcon,
+  UploadFile as UploadFileIcon
 } from '@mui/icons-material';
 import PageTitle from '../../components/common/PageTitle';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
@@ -197,6 +203,7 @@ const SuperAdminDashboard = () => {
   const [filterRegion, setFilterRegion] = useState('');
   const [filterRegionOptions, setFilterRegionOptions] = useState([]);
   const [loadingFilterRegions, setLoadingFilterRegions] = useState(false);
+  const [searchSchoolName, setSearchSchoolName] = useState('');
 
   // Only National SuperAdmin and Master see multiple provinces — show filter for them
   const showFilter = isNationalSuperAdmin() || isMaster();
@@ -232,6 +239,7 @@ const SuperAdminDashboard = () => {
   const filteredSchools = safeFilter(schools, s => {
     if (filterProvince && s.province !== filterProvince) return false;
     if (filterRegion && s.region !== filterRegion) return false;
+    if (searchSchoolName && !s.name?.toLowerCase().includes(searchSchoolName.toLowerCase())) return false;
     return true;
   });
 
@@ -814,62 +822,212 @@ const SuperAdminDashboard = () => {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Schools tab */}
       {activeTab === 'schools' && (
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                <Typography variant="h6">School Management</Typography>
-                {showFilter && (
-                  <>
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
+            <Box sx={{ mb: 3 }}>
+              {/* ── Row 1: Title + action buttons ── */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={1.5}
+                sx={{ mb: showFilter ? 2 : 0 }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Typography variant="h6" fontWeight={600}>
+                    School Management
+                  </Typography>
+                  {(filterProvince || filterRegion || searchSchoolName) && (
+                    <Chip
+                      label={`${[filterProvince, filterRegion, searchSchoolName].filter(Boolean).length} filter${[filterProvince, filterRegion, searchSchoolName].filter(Boolean).length > 1 ? 's' : ''} active`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ height: 22, fontSize: 11 }}
+                    />
+                  )}
+                </Stack>
+
+                <Stack direction="row" spacing={1}>
+                  {isNationalSuperAdmin() && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<UploadFileIcon fontSize="small" />}
+                      onClick={() => setBulkUploadDialogOpen(true)}
+                      sx={{ minHeight: 40, borderRadius: 2, fontWeight: 600 }}
+                    >
+                      Bulk Upload
+                    </Button>
+                  )}
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon fontSize="small" />}
+                    onClick={() => openSchoolDialog()}
+                    sx={{ minHeight: 40, borderRadius: 2, fontWeight: 600 }}
+                  >
+                    Add School
+                  </Button>
+                </Stack>
+              </Stack>
+
+              {/* ── Row 2: Filters (National / Master only) ── */}
+              {showFilter && (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: 'grey.50',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <FilterListIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5} textTransform="uppercase">
+                      Filters
+                    </Typography>
+                  </Stack>
+
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    {/* Province */}
+                    <FormControl size="small" sx={{ minWidth: 180, flex: '0 0 auto' }}>
                       <InputLabel>Province</InputLabel>
                       <Select
                         value={filterProvince}
                         label="Province"
                         onChange={(e) => { setFilterProvince(e.target.value); setFilterRegion(''); }}
+                        sx={{ borderRadius: 2, bgcolor: 'background.paper' }}
                       >
                         <MenuItem value="">All Provinces</MenuItem>
-                        {filterProvinceOptions.map(p => (
+                        {filterProvinceOptions.map((p) => (
                           <MenuItem key={p} value={p}>{p}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={!filterProvince || loadingFilterRegions}>
-                      <InputLabel>Region</InputLabel>
+
+                    {/* Region */}
+                    <FormControl
+                      size="small"
+                      sx={{ minWidth: 220, flex: '0 0 auto' }}
+                      disabled={!filterProvince || loadingFilterRegions}
+                    >
+                      <InputLabel>
+                        {loadingFilterRegions ? 'Loading regions…' : 'Region'}
+                      </InputLabel>
                       <Select
                         value={filterRegion}
-                        label="Region"
+                        label={loadingFilterRegions ? 'Loading regions…' : 'Region'}
                         onChange={(e) => setFilterRegion(e.target.value)}
+                        sx={{ borderRadius: 2, bgcolor: 'background.paper' }}
                       >
                         <MenuItem value="">All Regions</MenuItem>
-                        {filterRegionOptions.map(r => (
-                          <MenuItem key={typeof r === 'object' ? r.id : r} value={typeof r === 'object' ? r.name : r}>
-                            {typeof r === 'object' ? r.name : r}
-                          </MenuItem>
-                        ))}
+                        {filterRegionOptions.map((r) => {
+                          const val = typeof r === 'object' ? r.name : r;
+                          const key = typeof r === 'object' ? r.id : r;
+                          return <MenuItem key={key} value={val}>{val}</MenuItem>;
+                        })}
                       </Select>
                     </FormControl>
-                    {(filterProvince || filterRegion) && (
-                      <Button size="small" variant="text" onClick={() => { setFilterProvince(''); setFilterRegion(''); }}>
-                        Clear
+
+                    {/* School name search */}
+                    <TextField
+                      size="small"
+                      placeholder="Search by school name…"
+                      value={searchSchoolName}
+                      onChange={(e) => setSearchSchoolName(e.target.value)}
+                      sx={{
+                        flex: '1 1 220px',
+                        minWidth: 200,
+                        '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'background.paper' },
+                      }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: searchSchoolName ? (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              onClick={() => setSearchSchoolName('')}
+                              edge="end"
+                              aria-label="Clear search"
+                            >
+                              <ClearIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </InputAdornment>
+                        ) : null,
+                      }}
+                    />
+
+                    {/* Clear all */}
+                    {(filterProvince || filterRegion || searchSchoolName) && (
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="inherit"
+                        onClick={() => { setFilterProvince(''); setFilterRegion(''); setSearchSchoolName(''); }}
+                        startIcon={<ClearIcon fontSize="small" />}
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          px: 1.5,
+                          borderRadius: 2,
+                          whiteSpace: 'nowrap',
+                          flex: '0 0 auto',
+                          '&:hover': { bgcolor: 'error.50', color: 'error.main' },
+                        }}
+                      >
+                        Clear all
                       </Button>
                     )}
-                  </>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                {isNationalSuperAdmin() && (
-                  <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setBulkUploadDialogOpen(true)}>
-                    Bulk Upload
-                  </Button>
-                )}
-                <Button variant="contained" startIcon={<AddIcon />} onClick={() => openSchoolDialog()}>
-                  Add School
-                </Button>
-              </Box>
+                  </Stack>
+
+                  {/* Active filter chips */}
+                  {(filterProvince || filterRegion || searchSchoolName) && (
+                    <Stack direction="row" spacing={0.75} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+                      {filterProvince && (
+                        <Chip
+                          label={`Province: ${filterProvince}`}
+                          size="small"
+                          onDelete={() => setFilterProvince('')}
+                          sx={{ height: 24, fontSize: 12 }}
+                        />
+                      )}
+                      {filterRegion && (
+                        <Chip
+                          label={`Region: ${filterRegion}`}
+                          size="small"
+                          onDelete={() => setFilterRegion('')}
+                          sx={{ height: 24, fontSize: 12 }}
+                        />
+                      )}
+                      {searchSchoolName && (
+                        <Chip
+                          label={`Name: "${searchSchoolName}"`}
+                          size="small"
+                          onDelete={() => setSearchSchoolName('')}
+                          sx={{ height: 24, fontSize: 12 }}
+                        />
+                      )}
+                    </Stack>
+                  )}
+                </Box>
+              )}
             </Box>
 
             {/* Top scrollbar — mirrors the bottom one */}
@@ -932,50 +1090,157 @@ const SuperAdminDashboard = () => {
       {activeTab === 'admins' && (
         <Card>
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                <Typography variant="h6">Administrator Management</Typography>
-                {showFilter && (
-                  <>
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
+            <Box sx={{ mb: 3 }}>
+              {/* ── Row 1: Title + action buttons ── */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={1.5}
+                sx={{ mb: showFilter ? 2 : 0 }}
+              >
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                  <Typography variant="h6" fontWeight={600}>
+                    Administrator Management
+                  </Typography>
+                  {(filterProvince || filterRegion) && (
+                    <Chip
+                      label={`${[filterProvince, filterRegion].filter(Boolean).length} filter${[filterProvince, filterRegion].filter(Boolean).length > 1 ? 's' : ''} active`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ height: 22, fontSize: 11 }}
+                    />
+                  )}
+                </Stack>
+
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={() => openAdminDialog(null)}
+                  sx={{ minHeight: 40, borderRadius: 2, fontWeight: 600 }}
+                >
+                  Add Administrator
+                </Button>
+              </Stack>
+
+              {/* ── Row 2: Filters (National / Master only) ── */}
+              {showFilter && (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: 'grey.50',
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                  }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={0.75}
+                    alignItems="center"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <FilterListIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5} textTransform="uppercase">
+                      Filters
+                    </Typography>
+                  </Stack>
+
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    {/* Province */}
+                    <FormControl size="small" sx={{ minWidth: 180, flex: '0 0 auto' }}>
                       <InputLabel>Province</InputLabel>
                       <Select
                         value={filterProvince}
                         label="Province"
                         onChange={(e) => { setFilterProvince(e.target.value); setFilterRegion(''); }}
+                        sx={{ borderRadius: 2, bgcolor: 'background.paper' }}
                       >
                         <MenuItem value="">All Provinces</MenuItem>
-                        {filterProvinceOptions.map(p => (
+                        {filterProvinceOptions.map((p) => (
                           <MenuItem key={p} value={p}>{p}</MenuItem>
                         ))}
                       </Select>
                     </FormControl>
-                    <FormControl size="small" sx={{ minWidth: 200 }} disabled={!filterProvince || loadingFilterRegions}>
-                      <InputLabel>Region</InputLabel>
+
+                    {/* Region */}
+                    <FormControl
+                      size="small"
+                      sx={{ minWidth: 220, flex: '0 0 auto' }}
+                      disabled={!filterProvince || loadingFilterRegions}
+                    >
+                      <InputLabel>
+                        {loadingFilterRegions ? 'Loading regions…' : 'Region'}
+                      </InputLabel>
                       <Select
                         value={filterRegion}
-                        label="Region"
+                        label={loadingFilterRegions ? 'Loading regions…' : 'Region'}
                         onChange={(e) => setFilterRegion(e.target.value)}
+                        sx={{ borderRadius: 2, bgcolor: 'background.paper' }}
                       >
                         <MenuItem value="">All Regions</MenuItem>
-                        {filterRegionOptions.map(r => (
-                          <MenuItem key={typeof r === 'object' ? r.id : r} value={typeof r === 'object' ? r.name : r}>
-                            {typeof r === 'object' ? r.name : r}
-                          </MenuItem>
-                        ))}
+                        {filterRegionOptions.map((r) => {
+                          const val = typeof r === 'object' ? r.name : r;
+                          const key = typeof r === 'object' ? r.id : r;
+                          return <MenuItem key={key} value={val}>{val}</MenuItem>;
+                        })}
                       </Select>
                     </FormControl>
+
+                    {/* Clear all */}
                     {(filterProvince || filterRegion) && (
-                      <Button size="small" variant="text" onClick={() => { setFilterProvince(''); setFilterRegion(''); }}>
-                        Clear
+                      <Button
+                        size="small"
+                        variant="text"
+                        color="inherit"
+                        onClick={() => { setFilterProvince(''); setFilterRegion(''); }}
+                        startIcon={<ClearIcon fontSize="small" />}
+                        sx={{
+                          color: 'text.secondary',
+                          fontWeight: 600,
+                          fontSize: 13,
+                          px: 1.5,
+                          borderRadius: 2,
+                          whiteSpace: 'nowrap',
+                          flex: '0 0 auto',
+                          '&:hover': { bgcolor: 'error.50', color: 'error.main' },
+                        }}
+                      >
+                        Clear all
                       </Button>
                     )}
-                  </>
-                )}
-              </Box>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => openAdminDialog(null)}>
-                Add Administrator
-              </Button>
+                  </Stack>
+
+                  {/* Active filter chips */}
+                  {(filterProvince || filterRegion) && (
+                    <Stack direction="row" spacing={0.75} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
+                      {filterProvince && (
+                        <Chip
+                          label={`Province: ${filterProvince}`}
+                          size="small"
+                          onDelete={() => setFilterProvince('')}
+                          sx={{ height: 24, fontSize: 12 }}
+                        />
+                      )}
+                      {filterRegion && (
+                        <Chip
+                          label={`Region: ${filterRegion}`}
+                          size="small"
+                          onDelete={() => setFilterRegion('')}
+                          sx={{ height: 24, fontSize: 12 }}
+                        />
+                      )}
+                    </Stack>
+                  )}
+                </Box>
+              )}
             </Box>
 
             <ScrollableTable>
