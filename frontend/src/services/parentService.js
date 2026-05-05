@@ -202,7 +202,7 @@ const parentService = {
 
   /**
    * Fetches attendance records for a specific child
-   * @param {string} studentId - The ID of the student
+   * @param {string} studentId - The ID of the student/child
    * @param {Object} [options] - Optional query options
    * @param {Date|string} [options.startDate] - Start date (YYYY-MM-DD or Date)
    * @param {Date|string} [options.endDate] - End date (YYYY-MM-DD or Date)
@@ -212,11 +212,14 @@ const parentService = {
     try {
       const storedUser = localStorage.getItem('user');
       const userData = storedUser ? JSON.parse(storedUser) : null;
-      const schoolId =
-        localStorage.getItem('schoolId') ||
-        userData?.school?.id ||
-        userData?.schoolId ||
-        null;
+      
+      // Get parent's phone number for parent-specific endpoint
+      const parentPhoneNumber = userData?.phoneNumber;
+      
+      if (!parentPhoneNumber) {
+        console.error('Parent phone number not found for attendance fetch');
+        return [];
+      }
 
       const formatDateParam = (value) => {
         if (!value) return null;
@@ -229,14 +232,18 @@ const parentService = {
       const endDate = formatDateParam(options?.endDate);
 
       const params = {
-        ...(schoolId ? { schoolId } : {}),
         ...(startDate ? { startDate } : {}),
         ...(endDate ? { endDate } : {})
       };
 
-      const response = await api.get(`/attendance/student/${studentId}`, {
+      console.log(`parentService.getChildAttendance - Fetching attendance for child ${studentId} with parent ${parentPhoneNumber}`);
+
+      // Use parent-specific endpoint
+      const response = await api.get(`/api/parent/children/${studentId}/attendance`, {
         params: Object.keys(params).length > 0 ? params : undefined
       });
+      
+      console.log('parentService.getChildAttendance - Response:', response.data);
       
       // Handle string response from backend
       let data = response.data;
@@ -259,6 +266,12 @@ const parentService = {
             return {
               ...r,
               studentId: sid,
+              // Ensure we have the required fields for display
+              date: r.date || r.attendanceDate,
+              status: r.status || r.attendanceStatus,
+              subject: r.subject || r.subjectName || 'N/A',
+              teacherName: r.teacherName || r.teacher || 'N/A',
+              remarks: r.remarks || r.comment || ''
             };
           })
           .filter(Boolean);
@@ -272,9 +285,21 @@ const parentService = {
         return normalizeRecords(data.details);
       }
 
+      if (data && Array.isArray(data.attendance)) {
+        return normalizeRecords(data.attendance);
+      }
+
       return [];
     } catch (error) {
       console.error(`Failed to fetch attendance for student ${studentId}:`, error);
+      console.error('Error response:', error.response?.data);
+      
+      // Treat "no records" as empty rather than a hard error
+      if (error.response?.status === 404 || error.response?.status === 403) {
+        console.log('No attendance records found or access denied');
+        return [];
+      }
+      
       return []; // Return empty array instead of throwing to prevent UI breakage
     }
   },

@@ -14,9 +14,11 @@ import {
   Stack,
   Paper,
   Chip,
-  useMediaQuery
+  useMediaQuery,
+  Button
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { getChildAttendance } from '../../services/parentService';
 import { formatDisplayDate } from '../../utils/date';
 
@@ -57,14 +59,20 @@ const AttendanceView = ({ childId }) => {
           return;
         }
 
+        console.log(`AttendanceView - Fetching attendance for child: ${childId}`);
+        console.log(`AttendanceView - Date range: ${startDate} to ${endDate}`);
+
         const data = await getChildAttendance(childId, {
           startDate,
           endDate,
         });
-        setAttendance(data);
+        
+        console.log(`AttendanceView - Received ${Array.isArray(data) ? data.length : 0} attendance records:`, data);
+        setAttendance(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError('Failed to fetch attendance records.');
-        console.error(err);
+        console.error('AttendanceView - Error fetching attendance:', err);
+        setError('Failed to fetch attendance records. Please try again.');
+        setAttendance([]);
       } finally {
         setLoading(false);
       }
@@ -108,10 +116,29 @@ const AttendanceView = ({ childId }) => {
           sx={{ minWidth: 200 }}
           disabled={loading}
         />
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => {
+            // Trigger refetch by resetting attendance
+            setAttendance([]);
+          }}
+          disabled={loading}
+          size="small"
+        >
+          Refresh
+        </Button>
       </Stack>
 
       {attendance.length === 0 ? (
-        <Typography sx={{ my: 2 }}>No attendance records found for this child.</Typography>
+        <Alert severity="info" sx={{ my: 2 }}>
+          <Typography variant="body2">
+            No attendance records found for this child in the selected date range.
+          </Typography>
+          <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+            Try adjusting the date range or check back later for updated records.
+          </Typography>
+        </Alert>
       ) : (
         isMobile ? (
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -153,14 +180,26 @@ const AttendanceView = ({ childId }) => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {attendance.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>{formatDisplayDate(record.date)}</TableCell>
-                    <TableCell>{record.subject}</TableCell>
-                    <TableCell>{record.status}</TableCell>
-                    <TableCell>{record.teacherName}</TableCell>
-                  </TableRow>
-                ))}
+                {attendance.map((record, index) => {
+                  const status = (record.status || '').toString();
+                  const statusLower = status.toLowerCase();
+                  const chipColor = statusLower === 'present' ? 'success' : statusLower === 'late' ? 'warning' : 'error';
+                  
+                  return (
+                    <TableRow key={record.id || index}>
+                      <TableCell>{formatDisplayDate(record.date)}</TableCell>
+                      <TableCell>{record.subject || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={status || 'Unknown'} 
+                          color={chipColor} 
+                          size="small" 
+                        />
+                      </TableCell>
+                      <TableCell>{record.teacherName || 'N/A'}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
