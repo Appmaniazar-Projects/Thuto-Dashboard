@@ -54,6 +54,10 @@ const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDash
 const SuperAdminProfile = lazy(() => import('./pages/superadmin/SuperAdminProfile'));
 const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSettings'));
 
+// Parent Registration
+const ParentRegistration = lazy(() => import('./pages/auth/ParentRegistration'));
+const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
+
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
     <CircularProgress />
@@ -77,6 +81,7 @@ export const publicRoutes = [
   { path: '/superadmin/forgot-password', element: <ForgotPassword /> },
   { path: '/superadmin/reset-password', element: <ResetPassword /> },
   { path: '/superadmin/register', element: <SuperAdminRegister /> },
+  { path: '/parent/register', element: <ParentRegistration /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
@@ -122,6 +127,7 @@ const protectedRoutes = [
   { path: '/admin/attendance', element: <AdminAttendancePage /> },
   { path: '/admin/grades', element: <GradeManagement /> },
   { path: '/admin/subjects', element: <SubjectManagement /> },
+  { path: '/admin/parent-approval', element: <ParentApproval /> },
 
 
   // Redirects

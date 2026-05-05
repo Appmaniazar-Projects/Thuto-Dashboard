@@ -425,6 +425,26 @@ const LandingPage = () => {
             pt: { xs: 2, sm: 3, md: 4 }
           }}
         >
+          {/* Parent Registration Link */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              New to the platform? Register as a parent
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/parent/register')}
+              sx={{
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                '&:hover': {
+                  borderColor: theme.palette.primary.dark,
+                  backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                }
+              }}
+            >
+              Register as Parent
+            </Button>
+          </Box>
           <Box
             sx={{
               display: 'inline-block',

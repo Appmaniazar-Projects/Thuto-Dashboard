@@ -303,6 +303,94 @@ const parentService = {
 
       return [];
     }
+  },
+
+  // Parent Registration API calls
+  registerParent: async (parentData) => {
+    try {
+      const response = await api.post('/auth/register-parent', parentData);
+      return response.data;
+    } catch (error) {
+      console.error('Error registering parent:', error);
+      throw error;
+    }
+  },
+
+  // Get pending parent registrations (admin only)
+  getPendingParents: async () => {
+    try {
+      const response = await api.get('/admin/parents/pending');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching pending parents:', error);
+      throw error;
+    }
+  },
+
+  // Get approved parents (admin only)
+  getApprovedParents: async () => {
+    try {
+      const response = await api.get('/admin/parents/approved');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching approved parents:', error);
+      throw error;
+    }
+  },
+
+  // Get rejected parents (admin only)
+  getRejectedParents: async () => {
+    try {
+      const response = await api.get('/admin/parents/rejected');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching rejected parents:', error);
+      throw error;
+    }
+  },
+
+  // Approve parent registration (admin only)
+  approveParent: async (parentId) => {
+    try {
+      const response = await api.post(`/admin/parents/${parentId}/approve`);
+      return response.data;
+    } catch (error) {
+      console.error('Error approving parent:', error);
+      throw error;
+    }
+  },
+
+  // Reject parent registration (admin only)
+  rejectParent: async (parentId, reason) => {
+    try {
+      const response = await api.post(`/admin/parents/${parentId}/reject`, { reason });
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting parent:', error);
+      throw error;
+    }
+  },
+
+  // Resend approval email (admin only)
+  resendApprovalEmail: async (parentId) => {
+    try {
+      const response = await api.post(`/admin/parents/${parentId}/resend-approval`);
+      return response.data;
+    } catch (error) {
+      console.error('Error resending approval email:', error);
+      throw error;
+    }
+  },
+
+  // Get public schools list (for registration form)
+  getPublicSchools: async () => {
+    try {
+      const response = await api.get('/schools/public');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching public schools:', error);
+      throw error;
+    }
   }
 };
 

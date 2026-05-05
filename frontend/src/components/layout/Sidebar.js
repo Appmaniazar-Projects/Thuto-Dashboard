@@ -31,8 +31,9 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import SchoolIcon from '@mui/icons-material/School';
 import SubjectIcon from '@mui/icons-material/Subject';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
 import SchoolLogo from '../common/SchoolLogo';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isParentRole, isSponsorRole, isHelperRole } from '../../context/AuthContext';
 
 const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
   const { user, logout } = useAuth();
@@ -68,6 +69,7 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
     const roleItems = {
       admin: [
         { path: '/admin/users', icon: <PeopleIcon />, text: 'User Management' },
+        { path: '/admin/parent-approval', icon: <HowToRegIcon />, text: 'Parent Approval' },
         { path: '/admin/grades', icon: <SchoolIcon />, text: 'Grade Management' },
         { path: '/admin/subjects', icon: <SubjectIcon />, text: 'Subject Management' },
         { path: '/admin/reports', icon: <AssessmentIcon />, text: 'Reports' },
@@ -80,10 +82,21 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
         { path: '/teacher/notes', icon: <NoteAltIcon />, text: 'Notes' },
       ],
       parent: [
-        { path: '/parent/children', icon: <PeopleIcon />, text: 'My Children' },
-        { path: '/parent/academic', icon: <AssessmentIcon />, text: 'Academic Reports' },
-        { path: '/parent/reports', icon: <AssignmentIcon />, text: 'Attendance' },
-        { path: '/parent/resources', icon: <FolderIcon />, text: 'Resources' },
+        // Dynamic menu items based on parent role
+        ...(isSponsorRole(user?.role) ? [
+          { path: '/parent/children', icon: <PeopleIcon />, text: 'Sponsored Students' },
+          { path: '/parent/academic', icon: <AssessmentIcon />, text: 'Academic Reports' },
+          { path: '/parent/reports', icon: <AssignmentIcon />, text: 'Attendance' },
+        ] : isHelperRole(user?.role) ? [
+          { path: '/parent/children', icon: <PeopleIcon />, text: 'Assigned Students' },
+          { path: '/parent/academic', icon: <AssessmentIcon />, text: 'Academic Reports' },
+          { path: '/parent/reports', icon: <AssignmentIcon />, text: 'Attendance' },
+        ] : [
+          { path: '/parent/children', icon: <PeopleIcon />, text: 'My Children' },
+          { path: '/parent/academic', icon: <AssessmentIcon />, text: 'Academic Reports' },
+          { path: '/parent/reports', icon: <AssignmentIcon />, text: 'Attendance' },
+          { path: '/parent/resources', icon: <FolderIcon />, text: 'Resources' },
+        ]),
       ],
       student: [
         { path: '/student/subjects', icon: <LibraryBooksIcon />, text: 'My Subjects' },

@@ -9,6 +9,35 @@ const auth = getAuth(app);
 
 const AuthContext = createContext();
 
+// Role utility functions
+export const isParentRole = (role) => ['parent', 'guardian', 'sponsor', 'helper'].includes(role?.toLowerCase());
+
+export const isGuardianRole = (role) => ['parent', 'guardian'].includes(role?.toLowerCase());
+
+export const isSponsorRole = (role) => role?.toLowerCase() === 'sponsor';
+
+export const isHelperRole = (role) => role?.toLowerCase() === 'helper';
+
+export const getParentRoleLabel = (role) => {
+  const roleLabels = {
+    'parent': 'Parent',
+    'guardian': 'Guardian',
+    'sponsor': 'Sponsor',
+    'helper': 'Temporary Guardian'
+  };
+  return roleLabels[role?.toLowerCase()] || 'Parent';
+};
+
+export const getParentRolePermissions = (role) => {
+  const permissions = {
+    'parent': ['full_access', 'attendance', 'reports', 'resources', 'communication'],
+    'guardian': ['full_access', 'attendance', 'reports', 'resources', 'communication'],
+    'sponsor': ['attendance', 'reports', 'limited_profile'],
+    'helper': ['attendance', 'reports', 'temporary_access']
+  };
+  return permissions[role?.toLowerCase()] || permissions['parent'];
+};
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
