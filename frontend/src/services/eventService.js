@@ -349,7 +349,7 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
 // RSVP Management
 export const submitRSVP = async (eventId, rsvpData) => {
   try {
-    const response = await api.post(`/events/rsvps/${eventId}/remind`, rsvpData);
+    const response = await api.post(`/rsvps/${eventId}/rsvps`, rsvpData);
     return response.data;
   } catch (error) {
     console.error('Error submitting RSVP:', error);
@@ -359,9 +359,9 @@ export const submitRSVP = async (eventId, rsvpData) => {
 
 export const getEventRSVPs = async (eventId, responseFilter = null) => {
   try {
-    const params = responseFilter ? { response: responseFilter } : {};
-    const response = await api.get(`/events/rsvps/${eventId}`, { params });
-    return response.data; 
+    const params = responseFilter ? { responseFilter } : undefined;
+    const response = await api.get(`/rsvps/${eventId}/rsvps`, { params });
+    return response.data;
   } catch (error) {
     console.error('Error fetching RSVPs:', error);
     throw error;
@@ -380,7 +380,7 @@ export const updateRSVP = async (rsvpId, rsvpData) => {
 
 export const getAdminRSVPList = async (eventId) => {
   try {
-    const response = await api.get(`/admin/events/rsvps/${eventId}`);
+    const response = await api.get(`/admin/rsvps/${eventId}/rsvps`);
     return response.data;
   } catch (error) {
     console.error('Error fetching admin RSVP list:', error);
@@ -390,7 +390,7 @@ export const getAdminRSVPList = async (eventId) => {
 
 export const sendRSVPReminders = async (eventId, message) => {
   try {
-    const response = await api.post(`/admin/events/rsvps/${eventId}/rsvps/remind`, { message });
+    const response = await api.post(`/admin/rsvps/${eventId}/rsvps/remind`, { message });
     return response.data;
   } catch (error) {
     console.error('Error sending RSVP reminders:', error);
@@ -401,7 +401,7 @@ export const sendRSVPReminders = async (eventId, message) => {
 // Sponsorship Management
 export const createSponsorship = async (eventId, sponsorshipData) => {
   try {
-    const response = await api.post(`${EVENTS_BASE}/${eventId}/sponsorships`, sponsorshipData);
+    const response = await api.post(`/sponsorships/${eventId}/sponsorships`, sponsorshipData);
     return response.data;
   } catch (error) {
     console.error('Error creating sponsorship:', error);
@@ -411,8 +411,8 @@ export const createSponsorship = async (eventId, sponsorshipData) => {
 
 export const getEventSponsorships = async (eventId, statusFilter = null) => {
   try {
-    const params = statusFilter ? { status: statusFilter } : {};
-    const response = await api.get(`${EVENTS_BASE}/${eventId}/sponsorships`, { params });
+    const params = statusFilter ? { statusFilter } : undefined;
+    const response = await api.get(`/sponsorships/${eventId}/sponsorships`, { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching sponsorships:', error);
@@ -440,12 +440,12 @@ export const cancelSponsorship = async (sponsorshipId) => {
   }
 };
 
-export const getAdminPledgeLog = async (eventId) => {
+export const getAdminSponsorshipList = async (eventId) => {
   try {
-    const response = await api.get(`/admin/events/${eventId}/sponsorships`);
+    const response = await api.get(`/admin/sponsorships/${eventId}/sponsorships`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching admin pledge log:', error);
+    console.error('Error fetching admin sponsorship list:', error);
     throw error;
   }
 };
