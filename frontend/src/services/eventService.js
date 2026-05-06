@@ -49,16 +49,28 @@ const coerceEventsArray = (data) => {
 const normalizeEventDates = (event) => {
   if (!event) return event;
   
+  const normalizedEvent = { ...event };
+  
   // If backend returns separate LocalDate and LocalTime fields, combine them
   if (event.startDate && event.startTime && !event.startDate.includes('T')) {
-    return {
-      ...event,
-      startDate: `${event.startDate}T${event.startTime}`,
-      endDate: `${event.endDate}T${event.endTime}`,
-    };
+    normalizedEvent.startDate = `${event.startDate}T${event.startTime}`;
+    normalizedEvent.endDate = `${event.endDate}T${event.endTime}`;
   }
   
-  return event;
+  // If backend returns combined ISO datetime, split into separate date and time for frontend forms
+  if (normalizedEvent.startDate && normalizedEvent.startDate.includes('T')) {
+    const [date, time] = normalizedEvent.startDate.split('T');
+    normalizedEvent.startDate = date;
+    normalizedEvent.startTime = time ? time.substring(0, 8) : '00:00:00'; // HH:MM:SS format
+  }
+  
+  if (normalizedEvent.endDate && normalizedEvent.endDate.includes('T')) {
+    const [date, time] = normalizedEvent.endDate.split('T');
+    normalizedEvent.endDate = date;
+    normalizedEvent.endTime = time ? time.substring(0, 8) : '00:00:00'; // HH:MM:SS format
+  }
+  
+  return normalizedEvent;
 };
 
 const normalizeEventPayload = (eventData) => {
@@ -72,6 +84,20 @@ const normalizeEventPayload = (eventData) => {
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
     return s;
   };
+
+  // Handle separate date and time fields by combining them
+  // This is needed for both create and update operations
+  if (payload.startDate && payload.startTime) {
+    // Combine date and time into ISO format
+    payload.startDate = `${payload.startDate}T${payload.startTime}`;
+    delete payload.startTime; // Remove separate time field to avoid confusion
+  }
+  
+  if (payload.endDate && payload.endTime) {
+    // Combine date and time into ISO format
+    payload.endDate = `${payload.endDate}T${payload.endTime}`;
+    delete payload.endTime; // Remove separate time field to avoid confusion
+  }
 
   if (payload.startDate instanceof Date) payload.startDate = payload.startDate.toISOString();
   if (payload.endDate instanceof Date) payload.endDate = payload.endDate.toISOString();
