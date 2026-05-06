@@ -383,6 +383,34 @@ export const submitRSVP = async (eventId, rsvpData) => {
   }
 };
 
+// Teacher RSVP
+export const submitTeacherRSVP = async (eventId, teacherId, rsvpData) => {
+  try {
+    const response = await api.post(
+      `/rsvps/${eventId}/teachers/${teacherId}/rsvp`, 
+      rsvpData  // { status: 'ACCEPTED'|'DECLINED'|'MAYBE'|'PENDING', comment: '' }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting teacher RSVP:', error);
+    throw error;
+  }
+};
+
+// Parent RSVP
+export const submitParentRSVP = async (eventId, parentId, rsvpData) => {
+  try {
+    const response = await api.post(
+      `/rsvps/${eventId}/parents/${parentId}/rsvp`, 
+      rsvpData
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error submitting parent RSVP:', error);
+    throw error;
+  }
+};
+
 export const getEventRSVPs = async (eventId, responseFilter = null) => {
   try {
     const params = responseFilter ? { responseFilter } : undefined;
@@ -448,10 +476,32 @@ export const getEventSponsorships = async (eventId, statusFilter = null) => {
 
 export const updateSponsorship = async (sponsorshipId, sponsorshipData) => {
   try {
-    const response = await api.put(`/sponsorships/${sponsorshipId}`, sponsorshipData);
+    const response = await api.patch(`/sponsorships/${sponsorshipId}`, sponsorshipData);
     return response.data;
   } catch (error) {
     console.error('Error updating sponsorship:', error);
+    throw error;
+  }
+};
+
+// Approve sponsorship
+export const approveSponsorship = async (sponsorshipId) => {
+  try {
+    const response = await api.patch(`/sponsorships/${sponsorshipId}/approve`);
+    return response.data;
+  } catch (error) {
+    console.error('Error approving sponsorship:', error);
+    throw error;
+  }
+};
+
+// Reject sponsorship
+export const rejectSponsorship = async (sponsorshipId, reason = '') => {
+  try {
+    const response = await api.patch(`/sponsorships/${sponsorshipId}/reject`, { reason });
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting sponsorship:', error);
     throw error;
   }
 };
