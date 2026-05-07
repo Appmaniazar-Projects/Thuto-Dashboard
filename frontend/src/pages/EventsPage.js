@@ -6607,7 +6607,7 @@ const EventsPage = () => {
 
 
 
-                        onChange={(e) => setFormData((p) => ({ ...p, sponsorshipEnabled: e.target.checked })))
+                        onChange={(e) => setFormData((p) => ({ ...p, sponsorshipEnabled: e.target.checked }))}
 
 
 
