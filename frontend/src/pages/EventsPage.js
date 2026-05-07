@@ -1048,6 +1048,26 @@ const EventsPage = () => {
 
 
 
+    // Recurring event fields
+
+
+
+    isRecurring: false,
+
+
+
+    recurringPattern: 'weekly',
+
+
+
+    recurringEndDate: '',
+
+
+
+    recurringNotes: '',
+
+
+
   });
 
 
@@ -1601,21 +1621,9 @@ const EventsPage = () => {
 
 
     setFormData({
-
-
-
       id: null,
-
-
-
       title: '',
-
-
-
       description: '',
-
-
-
       startDate: slotInfo?.start ? toDateTimeLocalInputValue(slotInfo.start) : '',
 
 
@@ -1649,6 +1657,22 @@ const EventsPage = () => {
 
 
       roles: [],
+
+
+
+      isRecurring: false,
+
+
+
+      recurringPattern: 'weekly',
+
+
+
+      recurringEndDate: '',
+
+
+
+      recurringNotes: '',
 
 
 
@@ -1728,12 +1752,15 @@ const EventsPage = () => {
 
 
 
+      isRecurring: ev.isRecurring || false,
+
+
+
+      recurringPattern: ev.recurringPattern || 'weekly',
+      recurringEndDate: ev.recurringEndDate || '',
+      recurringNotes: ev.recurringNotes || '',
     });
-
-
-
     setEditOpen(true);
-
 
 
   };
@@ -6400,103 +6427,27 @@ const EventsPage = () => {
 
 
 
-                  <FormControl fullWidth>
+                  <TextField
 
 
 
-                    <InputLabel>Organizer</InputLabel>
+                    fullWidth
 
 
 
-                    <Select
+                    label="Organizer"
 
 
+                    value={formData.organizer}
 
-                      value={formData.organizer}
 
+                    onChange={(e) => setFormData((p) => ({ ...p, organizer: e.target.value }))}
 
 
-                      label="Organizer"
+                    placeholder="Enter organizer name"
 
 
-
-                      onChange={(e) => setFormData((p) => ({ ...p, organizer: e.target.value }))}
-
-
-
-                    >
-
-
-
-                      {availableOrganizers.length === 0 ? (
-
-
-
-                        <MenuItem value="">
-
-
-
-                          <em>No organizers available (Debug: {availableOrganizers.length} items)</em>
-
-
-
-                        </MenuItem>
-
-
-
-                      ) : (
-
-
-
-                        availableOrganizers.map((organizer) => (
-
-
-
-                          <MenuItem key={organizer.id} value={organizer.id}>
-
-
-
-                            {organizer.name} ({organizer.role})
-
-
-
-                          </MenuItem>
-
-
-
-                        ))
-
-
-
-                      )}
-
-
-
-                      {currentUser && (isAdmin || isTeacher) && (
-
-
-
-                        <MenuItem value={currentUser.id}>
-
-
-
-                          {currentUser.name || currentUser.email} (You)
-
-
-
-                        </MenuItem>
-
-
-
-                      )}
-
-
-
-                    </Select>
-
-
-
-                  </FormControl>
+                  />
 
 
 
@@ -6656,7 +6607,7 @@ const EventsPage = () => {
 
 
 
-                        onChange={(e) => setFormData((p) => ({ ...p, sponsorshipEnabled: e.target.checked }))}
+                        onChange={(e) => setFormData((p) => ({ ...p, sponsorshipEnabled: e.target.checked })))
 
 
 
@@ -6671,7 +6622,6 @@ const EventsPage = () => {
                     label="Enable Sponsorship Pledges"
 
 
-
                   />
 
 
@@ -6682,6 +6632,67 @@ const EventsPage = () => {
 
 
 
+
+
+                <Grid item xs={12}>
+
+
+                  <Typography variant="subtitle2" gutterBottom>
+                    Recurring Event Pattern (Optional)
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.isRecurring || false}
+                        onChange={(e) => setFormData((p) => ({ ...p, isRecurring: e.target.checked }))}
+                      />
+                    }
+                    label="This is a recurring event"
+                  />
+                </Grid>
+
+                {formData.isRecurring && (
+                  <>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel>Repeat Pattern</InputLabel>
+                        <Select
+                          value={formData.recurringPattern || 'weekly'}
+                          label="Repeat Pattern"
+                          onChange={(e) => setFormData((p) => ({ ...p, recurringPattern: e.target.value }))}
+                        >
+                          <MenuItem value="daily">Daily</MenuItem>
+                          <MenuItem value="weekly">Weekly</MenuItem>
+                          <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                          <MenuItem value="monthly">Monthly</MenuItem>
+                          <MenuItem value="yearly">Yearly</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="End Date"
+                        type="date"
+                        value={formData.recurringEndDate || ''}
+                        onChange={(e) => setFormData((p) => ({ ...p, recurringEndDate: e.target.value }))}
+                        InputLabelProps={{ shrink: true }}
+                        helperText="When should the recurring events end?"
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="Recurring Event Notes"
+                        multiline
+                        rows={2}
+                        value={formData.recurringNotes || ''}
+                        onChange={(e) => setFormData((p) => ({ ...p, recurringNotes: e.target.value }))}
+                        placeholder="e.g., Every Monday at 3 PM, except holidays"
+                      />
+                    </Grid>
+                  </>
+                )}
 
 
                 <Grid item xs={12} sm={6}>

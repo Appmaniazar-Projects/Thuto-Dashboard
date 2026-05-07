@@ -232,14 +232,7 @@ export const getEventById = async (eventId) => {
 export const createEvent = async (eventData) => {
   try {
     const payload = normalizeEventPayload(eventData);
-    if (payload && typeof payload === 'object' && !payload.schoolId) {
-      try {
-        payload.schoolId = getCurrentSchoolId();
-      } catch (e) {
-        // ignore
-      }
-    }
-
+    
     if (payload && typeof payload === 'object' && !payload.userId) {
       try {
         payload.userId = getCurrentUserId();
