@@ -85,24 +85,58 @@ const normalizeEventPayload = (eventData) => {
     return s;
   };
 
-  // Handle separate date and time fields by combining them
-  // This is needed for both create and update operations
-  if (payload.startDate && payload.startTime) {
-    // Combine date and time into ISO format
-    payload.startDate = `${payload.startDate}T${payload.startTime}`;
-    delete payload.startTime; // Remove separate time field to avoid confusion
+  // Handle date/time fields - convert to database format (separate date/time fields)
+  if (payload.startDate) {
+    // Extract date and time from ISO format or use separate fields
+    if (payload.startDate.includes('T')) {
+      // ISO format: split into date and time
+      const [date, time] = payload.startDate.split('T');
+      payload.start_date = date;
+      payload.start_time = time ? time.substring(0, 8) : '00:00:00';
+    } else {
+      // Already just date, add default time
+      payload.start_date = payload.startDate;
+      payload.start_time = payload.startTime || '00:00:00';
+    }
+    delete payload.startDate; // Remove camelCase field
   }
   
-  if (payload.endDate && payload.endTime) {
-    // Combine date and time into ISO format
-    payload.endDate = `${payload.endDate}T${payload.endTime}`;
-    delete payload.endTime; // Remove separate time field to avoid confusion
+  if (payload.startTime && !payload.start_date) {
+    // If only time is provided, we need a date
+    payload.start_time = payload.startTime;
+    delete payload.startTime;
+  }
+  
+  if (payload.endDate) {
+    // Extract date and time from ISO format or use separate fields
+    if (payload.endDate.includes('T')) {
+      // ISO format: split into date and time
+      const [date, time] = payload.endDate.split('T');
+      payload.end_date = date;
+      payload.end_time = time ? time.substring(0, 8) : '00:00:00';
+    } else {
+      // Already just date, add default time
+      payload.end_date = payload.endDate;
+      payload.end_time = payload.endTime || '00:00:00';
+    }
+    delete payload.endDate; // Remove camelCase field
+  }
+  
+  if (payload.endTime && !payload.end_date) {
+    // If only time is provided, we need a date
+    payload.end_time = payload.endTime;
+    delete payload.endTime;
   }
 
-  if (payload.startDate instanceof Date) payload.startDate = payload.startDate.toISOString();
-  if (payload.endDate instanceof Date) payload.endDate = payload.endDate.toISOString();
-  if (typeof payload.startDate === 'string') payload.startDate = normalizeDateString(payload.startDate);
-  if (typeof payload.endDate === 'string') payload.endDate = normalizeDateString(payload.endDate);
+  // Handle Date objects
+  if (payload.start_date instanceof Date) {
+    payload.start_date = payload.start_date.toISOString().split('T')[0];
+    payload.start_time = payload.start_date.toISOString().split('T')[1].substring(0, 8);
+  }
+  if (payload.end_date instanceof Date) {
+    payload.end_date = payload.end_date.toISOString().split('T')[0];
+    payload.end_time = payload.end_date.toISOString().split('T')[1].substring(0, 8);
+  }
 
   // Handle new event fields
   if (payload.organizer !== undefined) {
@@ -209,6 +243,15 @@ export const createEvent = async (eventData) => {
     if (payload && typeof payload === 'object' && !payload.userId) {
       try {
         payload.userId = getCurrentUserId();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Add created_by_user_id for database
+    if (payload && typeof payload === 'object' && !payload.created_by_user_id) {
+      try {
+        payload.created_by_user_id = getCurrentUserId();
       } catch (e) {
         // ignore
       }
@@ -536,6 +579,7 @@ export const getVolunteerRoles = async (eventId) => {
     throw error;
   }
 };
+
 
 export const signUpForVolunteerRole = async (eventId, roleId, signupData) => {
   try {

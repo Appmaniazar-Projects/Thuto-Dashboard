@@ -44,6 +44,7 @@ const AdminAttendancePage = lazy(() => import('./pages/admin/AdminAttendancePage
 const GradeManagement = lazy(() => import('./components/admin/GradeManagement'));
 const SubjectManagement = lazy(() => import('./components/admin/SubjectManagement'));
 const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
+const SponsorshipPledgePage = lazy(() => import('./pages/events/SponsorshipPledgePage'));
 const AnnouncementsPage = lazy(() => import('./pages/common/AnnouncementsPage'));
 const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncementPage'));
 
@@ -93,6 +94,7 @@ const protectedRoutes = [
   { path: '/profile', element: <ProfilePage /> },
   { path: '/settings', element: <SettingsPage /> },
   { path: '/events/create', element: <CreateEventPage /> },
+  { path: '/events/:eventId/pledge', element: <SponsorshipPledgePage />, roles: ['parent'] },
   { path: '/calendar/event/new', element: <Navigate to="/events/create" replace /> },
   { path: '/announcements', element: <AnnouncementsPage /> },
   { path: '/announcements/create', element: <CreateAnnouncementPage /> },
