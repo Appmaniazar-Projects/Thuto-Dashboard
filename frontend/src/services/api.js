@@ -50,7 +50,8 @@ api.interceptors.request.use(
       '/api/parent/',
       '/users/',
       '/subjects/',
-      '/student/'
+      '/student/',
+      '/events/'
 
     ];
 
