@@ -418,7 +418,6 @@ const EventsPage = () => {
       if (!start || !end || !isValid(start) || !isValid(end)) { enqueueSnackbar('Start and end dates are required', { variant: 'warning' }); return; }
       if (isAfter(start, end)) { enqueueSnackbar('End date must be after start date', { variant: 'warning' }); return; }
 
-      // FIX 4: Send null instead of empty string for organizer
       const payload = {
         title: formData.title.trim(),
         description: formData.description || null,
@@ -431,7 +430,9 @@ const EventsPage = () => {
         organizer: formData.organizer?.trim() || null,
         eventType: formData.eventType || null,
         sponsorshipEnabled: formData.sponsorshipEnabled || false,
-        maxAttendees: formData.maxAttendees || null,
+        maxAttendees: (formData.maxAttendees && formData.maxAttendees > 0)
+          ? formData.maxAttendees
+          : null,
         roles: (formData.roles || [])
           .map((r) => ({ id: r.id, roleName: (r.roleName || '').trim(), slotLimit: Number(r.slotLimit) || 0 }))
           .filter((r) => r.roleName),
