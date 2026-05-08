@@ -85,26 +85,18 @@ const normalizeEventPayload = (eventData) => {
     return s;
   };
 
-  // Handle date/time fields - convert to database format (separate date/time fields)
+  // Handle date/time fields - backend expects separate LocalDate and LocalTime fields
   if (payload.startDate) {
     // Extract date and time from ISO format or use separate fields
     if (payload.startDate.includes('T')) {
       // ISO format: split into date and time
       const [date, time] = payload.startDate.split('T');
-      payload.start_date = date;
-      payload.start_time = time ? time.substring(0, 8) : '00:00:00';
+      payload.startDate = date;                    // LocalDate format: YYYY-MM-DD
+      payload.startTime = time ? time.substring(0, 8) : '00:00:00'; // LocalTime format: HH:MM:SS
     } else {
       // Already just date, add default time
-      payload.start_date = payload.startDate;
-      payload.start_time = payload.startTime || '00:00:00';
+      payload.startTime = payload.startTime || '00:00:00';
     }
-    delete payload.startDate; // Remove camelCase field
-  }
-  
-  if (payload.startTime && !payload.start_date) {
-    // If only time is provided, we need a date
-    payload.start_time = payload.startTime;
-    delete payload.startTime;
   }
   
   if (payload.endDate) {
@@ -112,30 +104,22 @@ const normalizeEventPayload = (eventData) => {
     if (payload.endDate.includes('T')) {
       // ISO format: split into date and time
       const [date, time] = payload.endDate.split('T');
-      payload.end_date = date;
-      payload.end_time = time ? time.substring(0, 8) : '00:00:00';
+      payload.endDate = date;                      // LocalDate format: YYYY-MM-DD
+      payload.endTime = time ? time.substring(0, 8) : '00:00:00';   // LocalTime format: HH:MM:SS
     } else {
       // Already just date, add default time
-      payload.end_date = payload.endDate;
-      payload.end_time = payload.endTime || '00:00:00';
+      payload.endTime = payload.endTime || '00:00:00';
     }
-    delete payload.endDate; // Remove camelCase field
-  }
-  
-  if (payload.endTime && !payload.end_date) {
-    // If only time is provided, we need a date
-    payload.end_time = payload.endTime;
-    delete payload.endTime;
   }
 
   // Handle Date objects
-  if (payload.start_date instanceof Date) {
-    payload.start_date = payload.start_date.toISOString().split('T')[0];
-    payload.start_time = payload.start_date.toISOString().split('T')[1].substring(0, 8);
+  if (payload.startDate instanceof Date) {
+    payload.startDate = payload.startDate.toISOString().split('T')[0];
+    payload.startTime = payload.startDate.toISOString().split('T')[1].substring(0, 8);
   }
-  if (payload.end_date instanceof Date) {
-    payload.end_date = payload.end_date.toISOString().split('T')[0];
-    payload.end_time = payload.end_date.toISOString().split('T')[1].substring(0, 8);
+  if (payload.endDate instanceof Date) {
+    payload.endDate = payload.endDate.toISOString().split('T')[0];
+    payload.endTime = payload.endDate.toISOString().split('T')[1].substring(0, 8);
   }
 
   // Handle new event fields
@@ -241,15 +225,7 @@ export const createEvent = async (eventData) => {
       }
     }
 
-    // Add created_by_user_id for database
-    if (payload && typeof payload === 'object' && !payload.created_by_user_id) {
-      try {
-        payload.created_by_user_id = getCurrentUserId();
-      } catch (e) {
-        // ignore
-      }
-    }
-
+    
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
