@@ -220,10 +220,13 @@ export const createEvent = async (eventData) => {
     if (payload && typeof payload === 'object') {
       try {
         payload.userId = getCurrentUserId(); // Always set userId
+         payload.schoolId = user?.school?.id || user?.schoolId || 1; // Use user's school or default
         console.log('Set userId in payload:', payload.userId);
+        console.log('Set schoolId in payload:', payload.schoolId);
       } catch (e) {
         console.error('Failed to get current userId:', e);
         payload.userId = null; // Set to null if failed
+        payload.schoolId = 1;
       }
     }
 
