@@ -217,15 +217,17 @@ export const createEvent = async (eventData) => {
   try {
     const payload = normalizeEventPayload(eventData);
     
-    if (payload && typeof payload === 'object' && !payload.userId) {
+    if (payload && typeof payload === 'object') {
       try {
-        payload.userId = getCurrentUserId();
+        payload.userId = getCurrentUserId(); // Always set userId
+        console.log('Set userId in payload:', payload.userId);
       } catch (e) {
-        // ignore
+        console.error('Failed to get current userId:', e);
+        payload.userId = null; // Set to null if failed
       }
     }
 
-    
+    console.log('Final payload being sent:', payload);
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
