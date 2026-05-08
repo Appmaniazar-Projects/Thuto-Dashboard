@@ -2,39 +2,6 @@ import api from './api';
 
 const EVENTS_BASE = '/events';
 
-const getCurrentUserId = () => {
-  const storedUser = localStorage.getItem('user');
-
-  try {
-    const userInfo = storedUser ? JSON.parse(storedUser) : null;
-    const id = userInfo?.id ?? userInfo?.userId ?? userInfo?.phoneNumber ?? null;
-    if (!id) {
-      throw new Error('User ID not found. Please log in again.');
-    }
-    return id;
-  } catch (e) {
-    throw new Error('User ID not found. Please log in again.');
-  }
-};
-
-const getCurrentSchoolId = () => {
-  const storedUser = localStorage.getItem('user');
-  let schoolId = localStorage.getItem('schoolId');
-
-  try {
-    const userInfo = storedUser ? JSON.parse(storedUser) : null;
-    if (userInfo?.schoolId) schoolId = userInfo.schoolId;
-  } catch (e) {
-    // ignore
-  }
-
-  if (!schoolId) {
-    throw new Error('School ID not found. Please log in again.');
-  }
-
-  return schoolId;
-};
-
 const coerceEventsArray = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.events)) return data.events;
@@ -47,28 +14,28 @@ const coerceEventsArray = (data) => {
 
 const normalizeEventDates = (event) => {
   if (!event) return event;
-  
+
   const normalizedEvent = { ...event };
-  
+
   // If backend returns separate LocalDate and LocalTime fields, combine them
   if (event.startDate && event.startTime && !event.startDate.includes('T')) {
     normalizedEvent.startDate = `${event.startDate}T${event.startTime}`;
     normalizedEvent.endDate = `${event.endDate}T${event.endTime}`;
   }
-  
+
   // If backend returns combined ISO datetime, split into separate date and time for frontend forms
   if (normalizedEvent.startDate && normalizedEvent.startDate.includes('T')) {
     const [date, time] = normalizedEvent.startDate.split('T');
     normalizedEvent.startDate = date;
-    normalizedEvent.startTime = time ? time.substring(0, 8) : '00:00:00'; // HH:MM:SS format
+    normalizedEvent.startTime = time ? time.substring(0, 8) : '00:00:00';
   }
-  
+
   if (normalizedEvent.endDate && normalizedEvent.endDate.includes('T')) {
     const [date, time] = normalizedEvent.endDate.split('T');
     normalizedEvent.endDate = date;
-    normalizedEvent.endTime = time ? time.substring(0, 8) : '00:00:00'; // HH:MM:SS format
+    normalizedEvent.endTime = time ? time.substring(0, 8) : '00:00:00';
   }
-  
+
   return normalizedEvent;
 };
 
@@ -77,36 +44,23 @@ const normalizeEventPayload = (eventData) => {
 
   const payload = { ...eventData };
 
-  const normalizeDateString = (value) => {
-    if (!value) return value;
-    const s = String(value);
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)) return `${s}:00`;
-    return s;
-  };
-
   // Handle date/time fields - backend expects separate LocalDate and LocalTime fields
   if (payload.startDate) {
-    // Extract date and time from ISO format or use separate fields
     if (payload.startDate.includes('T')) {
-      // ISO format: split into date and time
       const [date, time] = payload.startDate.split('T');
-      payload.startDate = date;                    // LocalDate format: YYYY-MM-DD
-      payload.startTime = time ? time.substring(0, 8) : '00:00:00'; // LocalTime format: HH:MM:SS
+      payload.startDate = date;
+      payload.startTime = time ? time.substring(0, 8) : '00:00:00';
     } else {
-      // Already just date, add default time
       payload.startTime = payload.startTime || '00:00:00';
     }
   }
-  
+
   if (payload.endDate) {
-    // Extract date and time from ISO format or use separate fields
     if (payload.endDate.includes('T')) {
-      // ISO format: split into date and time
       const [date, time] = payload.endDate.split('T');
-      payload.endDate = date;                      // LocalDate format: YYYY-MM-DD
-      payload.endTime = time ? time.substring(0, 8) : '00:00:00';   // LocalTime format: HH:MM:SS
+      payload.endDate = date;
+      payload.endTime = time ? time.substring(0, 8) : '00:00:00';
     } else {
-      // Already just date, add default time
       payload.endTime = payload.endTime || '00:00:00';
     }
   }
@@ -121,7 +75,6 @@ const normalizeEventPayload = (eventData) => {
     payload.endTime = payload.endDate.toISOString().split('T')[1].substring(0, 8);
   }
 
-  // Handle new event fields
   if (payload.organizer !== undefined) {
     payload.organizer = (payload.organizer ?? '').toString().trim();
   }
@@ -163,17 +116,19 @@ const normalizeEventPayload = (eventData) => {
       .filter(r => r.roleName);
   }
 
+  // Strip userId and schoolId — these must not be sent to the backend
+  delete payload.userId;
+  delete payload.schoolId;
+
   return payload;
 };
 
 // Get all events for a specific date range
 export const getEvents = async (startDate, endDate) => {
   try {
-    const schoolId = getCurrentSchoolId();
-    const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
+    const response = await api.get(EVENTS_BASE);
     const events = coerceEventsArray(response.data);
-    
-    // Normalize dates if backend returns separate LocalDate/LocalTime
+
     const normalizedEvents = events.map(normalizeEventDates);
 
     if (!startDate && !endDate) return normalizedEvents;
@@ -231,8 +186,6 @@ export const createEvent = async (eventData) => {
 export const updateEvent = async (eventId, eventData) => {
   try {
     const payload = normalizeEventPayload({ ...eventData, id: eventId });
-    // Don't automatically append schoolId or userId - let backend handle it
-
     const response = await api.put(`/events/update/${eventId}`, payload);
     
     // Normalize dates if backend returns separate LocalDate/LocalTime
@@ -256,7 +209,7 @@ export const cancelEvent = async (eventId) => {
   }
 };
 
-// Delete an event (mapped to cancel endpoint)
+// Delete an event
 export const deleteEvent = async (eventId) => {
   try {
     await api.delete(`${EVENTS_BASE}/remove/${eventId}`);
@@ -267,14 +220,14 @@ export const deleteEvent = async (eventId) => {
   }
 };
 
-// Get event types (if they're dynamic)
+// Get event types
 export const getEventTypes = async () => {
   try {
     const response = await api.get(`${EVENTS_BASE}/event-types`);
     return response.data;
   } catch (error) {
     console.error('Error fetching event types:', error);
-    return []; // Return default event types if API fails
+    return [];
   }
 };
 
@@ -302,48 +255,12 @@ export const cancelEventSignup = async (eventId) => {
 // Teacher attendance status
 export const setTeacherAttendanceStatus = async (eventId, status) => {
   try {
-    // Get required IDs with fallback
-    let schoolId = localStorage.getItem('schoolId');
-    let userId = null;
-    
-    // Try to get schoolId and userId from user object
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      schoolId = schoolId || user?.schoolId;
-      userId = user?.id || user?.userId || user?.phoneNumber;
-    } catch (e) {
-      console.warn('Failed to parse user from localStorage:', e);
-    }
-    
-    if (!schoolId) {
-      throw new Error('School ID is required for teacher attendance update');
-    }
-    
-    if (!userId) {
-      throw new Error('User ID is required for teacher attendance update');
-    }
-    
     const endpoint = `/events/${eventId}/teacher-attendance`;
-    
-    try {
-      const response = await api.put(endpoint, { 
-        status: status,
-        teacherId: userId
-      });
-      return response.data;
-    } catch (err) {
-      console.error('Failed to update teacher attendance:', err.response?.status, err.response?.data);
-      throw err;
-    }
-    
+    const response = await api.put(endpoint, { status });
+    console.log('Teacher attendance updated successfully:', response.data);
+    return response.data;
   } catch (error) {
     console.error('Error updating teacher attendance:', error);
-    console.error('Request details:', {
-      eventId,
-      status,
-      errorStatus: error?.response?.status,
-      errorData: error?.response?.data
-    });
     throw error;
   }
 };
@@ -359,12 +276,11 @@ export const submitRSVP = async (eventId, rsvpData) => {
   }
 };
 
-// Teacher RSVP
 export const submitTeacherRSVP = async (eventId, teacherId, rsvpData) => {
   try {
     const response = await api.post(
-      `/rsvps/${eventId}/teachers/${teacherId}/rsvp`, 
-      rsvpData  // { status: 'ACCEPTED'|'DECLINED'|'MAYBE'|'PENDING', comment: '' }
+      `/rsvps/${eventId}/teachers/${teacherId}/rsvp`,
+      rsvpData
     );
     return response.data;
   } catch (error) {
@@ -373,11 +289,10 @@ export const submitTeacherRSVP = async (eventId, teacherId, rsvpData) => {
   }
 };
 
-// Parent RSVP
 export const submitParentRSVP = async (eventId, parentId, rsvpData) => {
   try {
     const response = await api.post(
-      `/rsvps/${eventId}/parents/${parentId}/rsvp`, 
+      `/rsvps/${eventId}/parents/${parentId}/rsvp`,
       rsvpData
     );
     return response.data;
@@ -460,7 +375,6 @@ export const updateSponsorship = async (sponsorshipId, sponsorshipData) => {
   }
 };
 
-// Approve sponsorship
 export const approveSponsorship = async (sponsorshipId) => {
   try {
     const response = await api.patch(`/sponsorships/${sponsorshipId}/approve`);
@@ -471,7 +385,6 @@ export const approveSponsorship = async (sponsorshipId) => {
   }
 };
 
-// Reject sponsorship
 export const rejectSponsorship = async (sponsorshipId, reason = '') => {
   try {
     const response = await api.patch(`/sponsorships/${sponsorshipId}/reject`, { reason });
@@ -502,7 +415,7 @@ export const getAdminSponsorshipList = async (eventId) => {
   }
 };
 
-// Enhanced Volunteer Management
+// Volunteer Management
 export const getVolunteerRoles = async (eventId) => {
   try {
     const response = await api.get(`${EVENTS_BASE}/${eventId}/volunteer-roles`);
@@ -512,7 +425,6 @@ export const getVolunteerRoles = async (eventId) => {
     throw error;
   }
 };
-
 
 export const signUpForVolunteerRole = async (eventId, roleId, signupData) => {
   try {
@@ -562,8 +474,7 @@ export const exportEvent = async (eventId, format = 'ics') => {
 // Event Search
 export const searchEvents = async (query, filters = {}) => {
   try {
-    const schoolId = getCurrentSchoolId();
-    const params = { ...filters, query, schoolId };
+    const params = { ...filters, query };
     const response = await api.get(`${EVENTS_BASE}/search`, { params });
     return response.data;
   } catch (error) {
