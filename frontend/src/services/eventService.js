@@ -42,7 +42,6 @@ const coerceEventsArray = (data) => {
   if (Array.isArray(data?.result)) return data.result;
   if (Array.isArray(data?.items)) return data.items;
   // Add more potential response formats as needed
-  console.log('Unable to extract events array from response:', data);
   return [];
 };
 
@@ -176,7 +175,6 @@ export const getEvents = async (startDate, endDate) => {
     
     // Normalize dates if backend returns separate LocalDate/LocalTime
     const normalizedEvents = events.map(normalizeEventDates);
-    console.log('Normalized events:', normalizedEvents);
 
     if (!startDate && !endDate) return normalizedEvents;
 
@@ -216,21 +214,7 @@ export const getEventById = async (eventId) => {
 export const createEvent = async (eventData) => {
   try {
     const payload = normalizeEventPayload(eventData);
-    
-    if (payload && typeof payload === 'object') {
-      try {
-        payload.userId = getCurrentUserId(); // Always set userId
-         payload.schoolId = user?.school?.id || user?.schoolId || 1; // Use user's school or default
-        console.log('Set userId in payload:', payload.userId);
-        console.log('Set schoolId in payload:', payload.schoolId);
-      } catch (e) {
-        console.error('Failed to get current userId:', e);
-        payload.userId = null; // Set to null if failed
-        payload.schoolId = 1;
-      }
-    }
-
-    console.log('Final payload being sent:', payload);
+  
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
@@ -247,29 +231,12 @@ export const createEvent = async (eventData) => {
 export const updateEvent = async (eventId, eventData) => {
   try {
     const payload = normalizeEventPayload({ ...eventData, id: eventId });
-    if (payload && typeof payload === 'object' && !payload.schoolId) {
-      try {
-        payload.schoolId = getCurrentSchoolId();
-      } catch (e) {
-        // ignore
-      }
-    }
-
-    if (payload && typeof payload === 'object' && !payload.userId) {
-      try {
-        payload.userId = getCurrentUserId();
-      } catch (e) {
-        // ignore
-      }
-    }
+    // Don't automatically append schoolId or userId - let backend handle it
 
     const response = await api.put(`/events/update/${eventId}`, payload);
-    console.log('Update event request successful:', response.status);
-    console.log('Updated event data from backend:', response.data);
     
     // Normalize dates if backend returns separate LocalDate/LocalTime
     const normalizedEvent = normalizeEventDates(response.data);
-    console.log('Normalized updated event:', normalizedEvent);
     
     return normalizedEvent;
   } catch (error) {
@@ -278,9 +245,9 @@ export const updateEvent = async (eventId, eventData) => {
   }
 };
 
-export const cancelEvent = async (eventId, schoolIdOverride = null) => {
+export const cancelEvent = async (eventId) => {
   try {
-    const schoolId = schoolIdOverride || getCurrentSchoolId();
+    const schoolId = getCurrentSchoolId();
     const response = await api.put(`${EVENTS_BASE}/${eventId}/${schoolId}/cancel`);
     return response.data;
   } catch (error) {
@@ -314,10 +281,7 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
-    console.log('signUpForEventRole - Using UPDATED code without manual schoolId');
-    console.log('signUpForEventRole - Endpoint:', `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
     const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
-    console.log('signUpForEventRole - Success:', response.status);
     return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
@@ -359,9 +323,6 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
       throw new Error('User ID is required for teacher attendance update');
     }
     
-    console.log('Updating teacher attendance:', { eventId, status, schoolId, userId });
-    
-  
     const endpoint = `/events/${eventId}/teacher-attendance`;
     
     try {
@@ -369,8 +330,6 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
         status: status,
         teacherId: userId
       });
-      
-      console.log('Teacher attendance updated successfully:', response.data);
       return response.data;
     } catch (err) {
       console.error('Failed to update teacher attendance:', err.response?.status, err.response?.data);

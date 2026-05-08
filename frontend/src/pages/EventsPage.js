@@ -3691,7 +3691,7 @@ const EventsPage = () => {
 
 
 
-          const canParentClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
+          const canParentClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && (available > 0 || !roleId);
 
 
 
@@ -4951,19 +4951,21 @@ const EventsPage = () => {
 
 
 
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '1rem', fontWeight: 500 }}>
 
 
 
-                  {toSafeDate(selectedEvent.startDate) ? format(toSafeDate(selectedEvent.startDate), 'dd/MM/yyyy, HH:mm') : '—'}
-
-
-
-                  {' '}–{' '}
-
-
-
-                  {toSafeDate(selectedEvent.endDate) ? format(toSafeDate(selectedEvent.endDate), 'dd/MM/yyyy, HH:mm') : '—'}
+                  {toSafeDate(selectedEvent.startDate) && toSafeDate(selectedEvent.endDate) ? (
+                    <>
+                      {format(toSafeDate(selectedEvent.startDate), 'dd MMM yyyy, HH:mm')}
+                      <br />
+                      <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                        until {format(toSafeDate(selectedEvent.endDate), 'dd MMM yyyy, HH:mm')}
+                      </span>
+                    </>
+                  ) : (
+                    toSafeDate(selectedEvent.startDate) ? format(toSafeDate(selectedEvent.startDate), 'dd MMM yyyy, HH:mm') : '—'
+                  )}
 
 
 
@@ -5305,8 +5307,6 @@ const EventsPage = () => {
 
 
 
-
-
               {/* Event Statistics */}
 
 
@@ -5323,23 +5323,23 @@ const EventsPage = () => {
 
 
 
-                  <Typography variant="subtitle1">Event Statistics</Typography>
+                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>Event Statistics</Typography>
 
 
 
-                  <Grid container spacing={2}>
+                  <Grid container spacing={3}>
 
 
 
-                    <Grid item xs={4}>
+                    <Grid item xs={12} sm={4}>
 
 
 
-                      <Box sx={{ textAlign: 'center' }}>
+                      <Card sx={{ textAlign: 'center', py: 2, boxShadow: 1, borderRadius: 2 }}>
 
 
 
-                        <Typography variant="h6" color="primary.main">
+                        <Typography variant="h4" color="primary.main" fontWeight="bold">
 
 
 
@@ -5351,11 +5351,11 @@ const EventsPage = () => {
 
 
 
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
 
 
 
-                          Attending
+                          🎯 Attending
 
 
 
@@ -5363,11 +5363,15 @@ const EventsPage = () => {
 
 
 
-                      </Box>
+                      </Card>
 
 
 
                     </Grid>
+
+
+
+
 
 
 
@@ -5404,6 +5408,46 @@ const EventsPage = () => {
 
 
                       </Box>
+
+
+
+                    </Grid>
+
+
+
+                    <Grid item xs={12} sm={4}>
+
+
+
+                      <Card sx={{ textAlign: 'center', py: 2, boxShadow: 1, borderRadius: 2 }}>
+
+
+
+                        <Typography variant="h4" color="success.main" fontWeight="bold">
+
+
+
+                          {selectedEvent.roles?.reduce((total, role) => total + (role.takenSlots || 0), 0) || 0}
+
+
+
+                        </Typography>
+
+
+
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+
+
+
+                          🤝 Volunteers
+
+
+
+                        </Typography>
+
+
+
+                      </Card>
 
 
 
