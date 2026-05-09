@@ -116,9 +116,7 @@ const normalizeEventPayload = (eventData) => {
       .filter(r => r.roleName);
   }
 
-  // Strip userId and schoolId — these must not be sent to the backend
-  delete payload.userId;
-  delete payload.schoolId;
+  // Preserve userId and schoolId when explicitly provided in eventData
 
   return payload;
 };
