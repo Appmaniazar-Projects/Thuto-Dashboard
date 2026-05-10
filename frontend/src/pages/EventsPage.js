@@ -437,6 +437,8 @@ const EventsPage = () => {
           .map((r) => ({ id: r.id, roleName: (r.roleName || '').trim(), slotLimit: Number(r.slotLimit) || 0 }))
           .filter((r) => r.roleName),
         notificationSchedule: null, // explicitly null on create
+        userId: currentUser?.id || currentUser?.userId || currentUser?.phoneNumber,
+        schoolId: currentUser?.school?.id || currentUser?.schoolId || localStorage.getItem('schoolId'),
       };
 
       if (editMode === 'create') {
