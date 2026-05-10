@@ -2,6 +2,29 @@ import api from './api';
 
 const EVENTS_BASE = '/events';
 
+// Helper function to get current school ID from localStorage
+const getCurrentSchoolId = () => {
+  const storedUser = localStorage.getItem('user');
+  const storedSuperAdmin = localStorage.getItem('superAdmin');
+  let schoolId = localStorage.getItem('schoolId');
+
+  try {
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    if (userInfo?.schoolId) schoolId = userInfo.schoolId;
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    const superAdminInfo = storedSuperAdmin ? JSON.parse(storedSuperAdmin) : null;
+    if (superAdminInfo?.schoolId) schoolId = superAdminInfo.schoolId;
+  } catch (e) {
+    // ignore
+  }
+
+  return schoolId;
+};
+
 const coerceEventsArray = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.events)) return data.events;
@@ -124,7 +147,8 @@ const normalizeEventPayload = (eventData) => {
 // Get all events for a specific date range
 export const getEvents = async (startDate, endDate) => {
   try {
-    const response = await api.get(EVENTS_BASE);
+    const schoolId = getCurrentSchoolId();
+    const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
     const events = coerceEventsArray(response.data);
 
     const normalizedEvents = events.map(normalizeEventDates);
