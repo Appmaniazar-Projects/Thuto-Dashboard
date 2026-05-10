@@ -436,6 +436,8 @@ const EventsPage = () => {
         roles: (formData.roles || [])
           .map((r) => ({ id: r.id, roleName: (r.roleName || '').trim(), slotLimit: Number(r.slotLimit) || 0 }))
           .filter((r) => r.roleName),
+        userId: currentUser?.id || currentUser?.userId || currentUser?.phoneNumber,
+        schoolId: currentUser?.school?.id || currentUser?.schoolId || localStorage.getItem('schoolId'),
       };
 
       if (editMode === 'create') {
