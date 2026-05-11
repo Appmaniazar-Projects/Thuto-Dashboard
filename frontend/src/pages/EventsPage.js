@@ -340,18 +340,28 @@ const EventsPage = () => {
       console.log('========================');
 
       let recurringPatternDTO = null;
-      if (formData.isRecurring && (formData.recurringPattern || 'weekly')) {
+      if (formData.isRecurring) {
         const pattern = formData.recurringPattern || 'weekly';
-        const endDate = formData.recurringEndDate ? new Date(formData.recurringEndDate) : null;
-        
+        const endDate = formData.recurringEndDate || null;
+
+        const frequencyMap = {
+          daily:    { frequency: 'DAILY',   interval: '1' },
+          weekly:   { frequency: 'WEEKLY',  interval: '1' },
+          biweekly: { frequency: 'WEEKLY',  interval: '2' }, // bi-weekly = every 2 weeks
+          monthly:  { frequency: 'MONTHLY', interval: '1' },
+          yearly:   { frequency: 'YEARLY',  interval: '1' },
+        };
+
+        const { frequency, interval } = frequencyMap[pattern] ?? { frequency: 'WEEKLY', interval: '1' };
+
         recurringPatternDTO = {
           id: null,
-          frequency: pattern.toUpperCase(), // DAILY, WEEKLY, MONTHLY, YEARLY
-          dayOfWeek: pattern === 'weekly' ? 'MONDAY' : null, // Default to Monday for weekly
-          dayOfMonth: pattern === 'monthly' ? '1' : null, // Default to 1st for monthly
-          interval: '1', // Every 1 week/month/year
-          endDate: endDate ? endDate.toISOString().split('T')[0] : null, // Convert to YYYY-MM-DD
-          occurences: 0 // 0 means no limit, use endDate instead
+          frequency,
+          dayOfWeek:  pattern === 'weekly' || pattern === 'biweekly' ? 'MONDAY' : null,
+          dayOfMonth: pattern === 'monthly' ? '1' : null,
+          interval,
+          endDate:    endDate || null,   // plain YYYY-MM-DD string — normalizeEventPayload cleans it
+          occurences: 0,
         };
       }
 

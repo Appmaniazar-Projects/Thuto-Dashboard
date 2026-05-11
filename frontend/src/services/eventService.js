@@ -120,7 +120,17 @@ const normalizeEventPayload = (eventData) => {
 
   if (payload.recurringPattern !== undefined) {
     if (payload.recurringPattern && typeof payload.recurringPattern === 'object') {
-      payload.recurringPattern = JSON.stringify(payload.recurringPattern);
+      // Leave as object - Spring/Jackson will map it to RecurringPatternDTO
+      // Just ensure endDate is a plain YYYY-MM-DD string, not a full ISO timestamp
+      const rp = payload.recurringPattern;
+      payload.recurringPattern = {
+        ...rp,
+        endDate: rp.endDate
+          ? (rp.endDate instanceof Date
+              ? rp.endDate.toISOString().split('T')[0]
+              : String(rp.endDate).split('T')[0])
+          : null,
+      };
     } else {
       payload.recurringPattern = null;
     }
@@ -179,7 +189,7 @@ export const getEvents = async (startDate, endDate) => {
 // Get a single event (with roles/signups/attendance if backend supports it)
 export const getEventById = async (eventId) => {
   try {
-    const response = await api.get(`${EVENTS_BASE}/${eventId}`);
+    const response = await api.get(`${EVENTS_BASE}/${eventId}/details`);
     return response.data;
   } catch (error) {
     console.error('Error fetching event:', error);
@@ -256,7 +266,16 @@ export const getEventTypes = async () => {
 // Parent sign up for a role slot
 export const signUpForEventRole = async (eventId, roleId) => {
   try {
-    const response = await api.post(`${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`);
+    const schoolId = getCurrentSchoolId();
+    const storedUser = localStorage.getItem('user');
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    const userId = userInfo?.id || userInfo?.userId || userInfo?.phoneNumber;
+
+    const response = await api.post(
+      `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`,
+      null,                          // no request body
+      { params: { schoolId, userId } }
+    );
     return response.data;
   } catch (error) {
     console.error('Error signing up for event role:', error);
