@@ -35,7 +35,7 @@ import adminService from '../services/adminService';
 import {
   cancelEventSignup, cancelEvent as cancelEventById, createEvent, deleteEvent,
   getEventById, getEvents, signUpForEventRole, updateEvent, submitRSVP,
-  createSponsorship, exportEvent,
+  submitTeacherRSVP, submitParentRSVP, createSponsorship, exportEvent,
 } from '../services/eventService';
 import { useSnackbar } from 'notistack';
 
@@ -323,12 +323,21 @@ const EventsPage = () => {
       if (!start || !end || !isValid(start) || !isValid(end)) { enqueueSnackbar('Start and end dates are required', { variant: 'warning' }); return; }
       if (isAfter(start, end)) { enqueueSnackbar('End date must be after start date', { variant: 'warning' }); return; }
 
+      console.log('=== EVENT SUBMIT DEBUG ===');
       console.log('Form data before submit:', {
         isRecurring: formData.isRecurring,
         recurringPattern: formData.recurringPattern,
         recurringEndDate: formData.recurringEndDate,
         recurringNotes: formData.recurringNotes
       });
+      console.log('Full formData object:', formData);
+      console.log('Payload recurring fields:', {
+        isRecurring: formData.isRecurring || false,
+        recurringPattern: formData.isRecurring ? (formData.recurringPattern || 'weekly') : null,
+        recurringEndDate: formData.isRecurring ? (formData.recurringEndDate || null) : null,
+        recurringNotes: formData.isRecurring ? (formData.recurringNotes || null) : null,
+      });
+      console.log('========================');
 
       const payload = {
         title: formData.title.trim(),
@@ -453,12 +462,35 @@ const EventsPage = () => {
 
   const handleRSVP = async () => {
     try {
-      await submitRSVP(selectedEvent.id, rsvpData);
+      const userId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
+      
+      if (!userId) {
+        enqueueSnackbar('User ID not found', { variant: 'error' });
+        return;
+      }
+
+      // Prepare RSVP data for backend
+      const rsvpPayload = {
+        status: rsvpData.response.toUpperCase(), // Convert to uppercase for backend enum
+        comment: `${rsvpData.dietaryRequirements ? 'Dietary: ' + rsvpData.dietaryRequirements : ''}${rsvpData.specialRequests ? ' | Requests: ' + rsvpData.specialRequests : ''}`.trim() || null
+      };
+
+      let response;
+      if (isTeacher) {
+        response = await submitTeacherRSVP(selectedEvent.id, userId, rsvpPayload);
+      } else if (isParent) {
+        response = await submitParentRSVP(selectedEvent.id, userId, rsvpPayload);
+      } else {
+        // Fallback for students or other roles
+        response = await submitRSVP(selectedEvent.id, rsvpPayload);
+      }
+
       enqueueSnackbar('RSVP submitted successfully', { variant: 'success' });
       setRsvpDialogOpen(false);
       await loadEvents();
       await refreshSelectedEvent();
     } catch (e) {
+      console.error('RSVP Error:', e);
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit RSVP', { variant: 'error' });
     }
   };
@@ -728,8 +760,8 @@ const EventsPage = () => {
                   </>
                 )}
 
-                {/* ADMIN / TEACHER: stats + roles + RSVP */}
-                {(isAdmin || isTeacher) && (
+                {/* ADMIN: stats + roles */}
+                {isAdmin && (
                   <>
                     <Divider />
                     <Grid container spacing={2}>
@@ -779,6 +811,42 @@ const EventsPage = () => {
 
                     {/* Teacher: RSVP + share + export */}
                     {isTeacher && canInteractWithEvent(selectedEvent) && (
+                      <>
+                        <Divider />
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                          <Button variant="outlined" startIcon={<HowToRegIcon />}
+                            onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
+                            {getUserRSVP() ? `RSVP (${getUserRSVP().response})` : 'RSVP'}
+                          </Button>
+                          <Button variant="outlined" startIcon={<ShareIcon />}
+                            onClick={() => setShareDialogOpen(true)} sx={{ minHeight: 44 }}>Share</Button>
+                          <Button variant="outlined" startIcon={<DownloadIcon />}
+                            onClick={handleExport} sx={{ minHeight: 44 }}>Export</Button>
+                        </Stack>
+                        {getTeacherSignupRoleId(selectedEvent) && (
+                          <Button variant="outlined" color="error" size="small"
+                            onClick={() => teacherCancelSignup(selectedEvent)} sx={{ minHeight: 44, alignSelf: 'flex-start' }}>
+                            Cancel role participation
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+
+                {/* TEACHER: roles + RSVP */}
+                {isTeacher && (
+                  <>
+                    {selectedEvent.roles?.length > 0 && (
+                      <>
+                        <Divider />
+                        <Typography variant="subtitle2">Role Slots</Typography>
+                        {renderEventRoles(selectedEvent)}
+                      </>
+                    )}
+                    
+                    {/* Teacher: RSVP + share + export */}
+                    {canInteractWithEvent(selectedEvent) && (
                       <>
                         <Divider />
                         <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -950,7 +1018,13 @@ const EventsPage = () => {
                       <Grid item xs={12} sm={6}>
                         <FormControl fullWidth>
                           <InputLabel>Repeat Pattern</InputLabel>
-                          <Select value={formData.recurringPattern || 'weekly'} label="Repeat Pattern" onChange={(e) => setFormData((p) => ({ ...p, recurringPattern: e.target.value }))}>
+                          <Select value={formData.recurringPattern || 'weekly'} label="Repeat Pattern" onChange={(e) => {
+                              console.log('=== RECURRING PATTERN CHANGE ===');
+                              console.log('Previous value:', formData.recurringPattern);
+                              console.log('New value:', e.target.value);
+                              console.log('===============================');
+                              setFormData((p) => ({ ...p, recurringPattern: e.target.value }));
+                            }}>
                             <MenuItem value="daily">Daily</MenuItem>
                             <MenuItem value="weekly">Weekly</MenuItem>
                             <MenuItem value="biweekly">Bi-weekly</MenuItem>
