@@ -340,6 +340,10 @@ const EventsPage = () => {
           .map((r) => ({ id: r.id, roleName: (r.roleName || '').trim(), slotLimit: Number(r.slotLimit) || 0 }))
           .filter((r) => r.roleName),
         notificationSchedule: null,
+        isRecurring: formData.isRecurring || false,
+        recurringPattern: formData.recurringPattern || null,
+        recurringEndDate: formData.recurringEndDate || null,
+        recurringNotes: formData.recurringNotes || null,
         userId: currentUser?.id || currentUser?.userId || currentUser?.phoneNumber,
         schoolId: currentUser?.school?.id || currentUser?.schoolId || localStorage.getItem('schoolId'),
       };
