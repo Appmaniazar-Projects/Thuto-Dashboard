@@ -341,9 +341,9 @@ const EventsPage = () => {
           .filter((r) => r.roleName),
         notificationSchedule: null,
         isRecurring: formData.isRecurring || false,
-        recurringPattern: formData.recurringPattern || null,
-        recurringEndDate: formData.recurringEndDate || null,
-        recurringNotes: formData.recurringNotes || null,
+        recurringPattern: formData.isRecurring ? (formData.recurringPattern || 'weekly') : null,
+        recurringEndDate: formData.isRecurring ? (formData.recurringEndDate || null) : null,
+        recurringNotes: formData.isRecurring ? (formData.recurringNotes || null) : null,
         userId: currentUser?.id || currentUser?.userId || currentUser?.phoneNumber,
         schoolId: currentUser?.school?.id || currentUser?.schoolId || localStorage.getItem('schoolId'),
       };
