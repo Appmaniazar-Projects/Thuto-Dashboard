@@ -339,6 +339,22 @@ const EventsPage = () => {
       });
       console.log('========================');
 
+      let recurringPatternDTO = null;
+      if (formData.isRecurring && (formData.recurringPattern || 'weekly')) {
+        const pattern = formData.recurringPattern || 'weekly';
+        const endDate = formData.recurringEndDate ? new Date(formData.recurringEndDate) : null;
+        
+        recurringPatternDTO = {
+          id: null,
+          frequency: pattern.toUpperCase(), // DAILY, WEEKLY, MONTHLY, YEARLY
+          dayOfWeek: pattern === 'weekly' ? 'MONDAY' : null, // Default to Monday for weekly
+          dayOfMonth: pattern === 'monthly' ? '1' : null, // Default to 1st for monthly
+          interval: '1', // Every 1 week/month/year
+          endDate: endDate ? endDate.toISOString().split('T')[0] : null, // Convert to YYYY-MM-DD
+          occurences: 0 // 0 means no limit, use endDate instead
+        };
+      }
+
       const payload = {
         title: formData.title.trim(),
         description: formData.description || null,
@@ -356,10 +372,7 @@ const EventsPage = () => {
           .map((r) => ({ id: r.id, roleName: (r.roleName || '').trim(), slotLimit: Number(r.slotLimit) || 0 }))
           .filter((r) => r.roleName),
         notificationSchedule: null,
-        isRecurring: formData.isRecurring || false,
-        recurringPattern: formData.isRecurring ? (formData.recurringPattern || 'weekly') : null,
-        recurringEndDate: formData.isRecurring ? (formData.recurringEndDate || null) : null,
-        recurringNotes: formData.isRecurring ? (formData.recurringNotes || null) : null,
+        recurringPattern: recurringPatternDTO,
         userId: currentUser?.id || currentUser?.userId || currentUser?.phoneNumber,
         schoolId: currentUser?.school?.id || currentUser?.schoolId || localStorage.getItem('schoolId'),
       };
