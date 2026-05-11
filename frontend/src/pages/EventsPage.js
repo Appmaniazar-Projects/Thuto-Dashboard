@@ -271,21 +271,43 @@ const EventsPage = () => {
 
   const openEdit = (ev) => {
     setEditMode('edit');
+
+    // Extract recurring fields from the nested recurringPattern object
+    const rp = ev.recurringPattern;
+    const hasRecurring = !!(rp && (rp.frequency || rp.interval));
+
+    // Map backend frequency + interval back to the frontend pattern string
+    let recurringPattern = 'weekly';
+    if (rp?.frequency) {
+      const freq = rp.frequency.toLowerCase();
+      if (freq === 'daily')   recurringPattern = 'daily';
+      else if (freq === 'monthly') recurringPattern = 'monthly';
+      else if (freq === 'yearly')  recurringPattern = 'yearly';
+      else if (freq === 'weekly' && String(rp.interval) === '2') recurringPattern = 'biweekly';
+      else recurringPattern = 'weekly';
+    }
+
     setFormData({
-      id: ev.id, title: ev.title || '', description: ev.description || '',
+      id: ev.id,
+      title: ev.title || '',
+      description: ev.description || '',
       startDate: toDateTimeLocalInputValue(ev.startDate),
       endDate: toDateTimeLocalInputValue(ev.endDate),
-      location: ev.location || '', status: ev.status || '',
-      organizer: ev.organizer || '', eventType: ev.eventType || '',
+      location: ev.location || '',
+      status: ev.status || '',
+      organizer: ev.organizer || '',
+      eventType: ev.eventType || '',
       sponsorshipEnabled: ev.sponsorshipEnabled || false,
       maxAttendees: ev.maxAttendees || null,
       roles: Array.isArray(ev.roles)
         ? ev.roles.map((r) => buildRoleDraft({ id: r.id, roleName: r.roleName || '', slotLimit: r.slotLimit ?? 0 }))
         : [],
-      isRecurring: ev.isRecurring || false,
-      recurringPattern: ev.recurringPattern || 'weekly',
-      recurringEndDate: ev.recurringEndDate || '',
-      recurringNotes: ev.recurringNotes || '',
+      isRecurring: hasRecurring,
+      recurringPattern,
+      recurringEndDate: rp?.endDate
+        ? (typeof rp.endDate === 'string' ? rp.endDate.split('T')[0] : rp.endDate)
+        : '',
+      recurringNotes: ev.recurringNotes || rp?.notes || '',
     });
     setEditOpen(true);
   };
@@ -448,22 +470,34 @@ const EventsPage = () => {
   };
 
   const getHasTeacherSignup = (ev, roleId) => {
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    const teacherId = u?.id || u?.userId || u?.phoneNumber;
+    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
     if (!ev.roles || !teacherId) return false;
-    return ev.roles.some(r =>
-      r.id === roleId &&
-      Array.isArray(r.signups) &&
-      r.signups.some(s => s.userId === teacherId || s.id === teacherId || s.phoneNumber === teacherId)
+    return ev.roles.some(
+      (r) =>
+        r.id === roleId &&
+        Array.isArray(r.signups) &&
+        r.signups.some(
+          (s) =>
+            String(s.userId) === String(teacherId) ||
+            String(s.id) === String(teacherId) ||
+            String(s.phoneNumber) === String(teacherId)
+        )
     );
   };
 
   const getTeacherSignupRoleId = (ev) => {
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    const teacherId = u?.id || u?.userId || u?.phoneNumber;
-    if (!ev.roles || !teacherId) return null;
+    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
+    if (!ev?.roles || !teacherId) return null;
     for (const r of ev.roles) {
-      if (Array.isArray(r.signups) && r.signups.some(s => s.userId === teacherId || s.id === teacherId || s.phoneNumber === teacherId)) {
+      if (
+        Array.isArray(r.signups) &&
+        r.signups.some(
+          (s) =>
+            String(s.userId) === String(teacherId) ||
+            String(s.id) === String(teacherId) ||
+            String(s.phoneNumber) === String(teacherId)
+        )
+      ) {
         return r.id;
       }
     }
@@ -474,7 +508,7 @@ const EventsPage = () => {
     try {
       const roleId = getTeacherSignupRoleId(ev);
       if (!roleId) throw new Error('No role signup found to cancel');
-      await cancelEventSignup(ev.id);
+      await cancelEventSignup(ev.id, roleId);   // ← pass roleId
       enqueueSnackbar('Role signup cancelled', { variant: 'info' });
       await loadEvents();
       await refreshSelectedEvent();
@@ -492,10 +526,12 @@ const EventsPage = () => {
         return;
       }
 
-      // Prepare RSVP data for backend
+      // Prepare RSVP data for backend - align with EventRSVPRequest structure
       const rsvpPayload = {
-        status: rsvpData.response.toUpperCase(), // Convert to uppercase for backend enum
-        comment: `${rsvpData.dietaryRequirements ? 'Dietary: ' + rsvpData.dietaryRequirements : ''}${rsvpData.specialRequests ? ' | Requests: ' + rsvpData.specialRequests : ''}`.trim() || null
+        status: rsvpData.response.toUpperCase(), // ATTENDING, DECLINED, MAYBE
+        numberOfGuests: rsvpData.numberOfGuests || 0,
+        dietaryRequirements: rsvpData.dietaryRequirements || null,
+        specialRequests: rsvpData.specialRequests || null
       };
 
       let response;

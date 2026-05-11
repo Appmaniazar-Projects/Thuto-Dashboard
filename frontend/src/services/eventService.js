@@ -283,9 +283,21 @@ export const signUpForEventRole = async (eventId, roleId) => {
   }
 };
 
-export const cancelEventSignup = async (eventId) => {
+export const cancelEventSignup = async (eventId, roleId = null) => {
   try {
-    const response = await api.post(`${EVENTS_BASE}/${eventId}/signup/cancel`);
+    const schoolId = getCurrentSchoolId();
+    const storedUser = localStorage.getItem('user');
+    const userInfo = storedUser ? JSON.parse(storedUser) : null;
+    const userId = userInfo?.id || userInfo?.userId || userInfo?.phoneNumber;
+
+    // If we have a roleId, cancel that specific role signup
+    const url = roleId
+      ? `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup/cancel` 
+      : `${EVENTS_BASE}/${eventId}/signup/cancel`;
+
+    const response = await api.delete(url, {
+      params: { schoolId, userId },
+    });
     return response.data;
   } catch (error) {
     console.error('Error cancelling event signup:', error);
