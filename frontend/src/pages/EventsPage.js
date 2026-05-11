@@ -323,6 +323,13 @@ const EventsPage = () => {
       if (!start || !end || !isValid(start) || !isValid(end)) { enqueueSnackbar('Start and end dates are required', { variant: 'warning' }); return; }
       if (isAfter(start, end)) { enqueueSnackbar('End date must be after start date', { variant: 'warning' }); return; }
 
+      console.log('Form data before submit:', {
+        isRecurring: formData.isRecurring,
+        recurringPattern: formData.recurringPattern,
+        recurringEndDate: formData.recurringEndDate,
+        recurringNotes: formData.recurringNotes
+      });
+
       const payload = {
         title: formData.title.trim(),
         description: formData.description || null,
