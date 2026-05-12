@@ -345,7 +345,7 @@ export const submitTeacherRSVP = async (eventId, teacherId, rsvpData) => {
 export const submitParentRSVP = async (eventId, parentId, rsvpData) => {
   try {
     const response = await api.post(
-      `/rsvps/${eventId}/parents/${parentId}/rsvp`,
+      `/rsvps/${eventId}/parents/${parentId}/rsvp/parent`,
       rsvpData
     );
     return response.data;
