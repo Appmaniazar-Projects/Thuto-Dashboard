@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
-import { 
-  Box, 
+import {
+  Box,
   Autocomplete,
-  CircularProgress, 
-  Typography, 
-  Paper, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Button, 
+  CircularProgress,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
   Alert,
   Dialog,
   DialogTitle,
@@ -27,18 +27,23 @@ import {
   Tab,
   Grid,
   Card,
-  CardContent
+  CardContent,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Person as PersonIcon,
-  AdminPanelSettings as AdminIcon,
-  School as TeacherIcon,
-  Download as DownloadIcon,
   UploadFile as UploadFileIcon,
-  Note as NoteIcon
+  Download as DownloadIcon,
+  Refresh as RefreshIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
@@ -63,6 +68,13 @@ const Users = () => {
     const [formErrors, setFormErrors] = useState({});
 
     const [bulkUploadDialogOpen, setBulkUploadDialogOpen] = useState(false);
+
+    // Bulk upload states
+    const [bulkUploadFile, setBulkUploadFile] = useState(null);
+    const [bulkUploadProgress, setBulkUploadProgress] = useState(0);
+    const [bulkUploadResults, setBulkUploadResults] = useState(null);
+    const [bulkUploadLoading, setBulkUploadLoading] = useState(false);
+    const [bulkUploadErrors, setBulkUploadErrors] = useState([]);
 
     const [newParents, setNewParents] = useState([]);
     const [parentLookupPhone, setParentLookupPhone] = useState('');
@@ -610,40 +622,213 @@ const Users = () => {
 
     const downloadBulkUploadTemplate = () => {
         const headers = [
-            'role',
-            'name',
+            'firstName',
             'lastName',
             'email',
             'phoneNumber',
-            'username',
+            'role',
+            'schoolId',
+            'parentRole',
+            'relationshipToStudent',
+            'studentNames',
             'grade',
             'subjects',
-            'parentName',
-            'parentLastName',
-            'parentPhoneNumber',
-            'parentEmail'
+            'password'
         ];
 
         const sampleRows = [
+            // Student example
             {
-                role: 'STUDENT',
-                name: 'TheStudent',
-                lastName: 'Surname',
-                email: 'student@gmail.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                email: 'john.doe@student.school.com',
                 phoneNumber: '0761234567',
-                username: 'ST10283',
+                role: 'student',
+                schoolId: 'SCH001',
+                parentRole: '',
+                relationshipToStudent: '',
+                studentNames: '',
                 grade: '8',
+                subjects: 'Mathematics,English,Science',
+                password: 'TempPass123'
+            },
+            // Parent example
+            {
+                firstName: 'Jane',
+                lastName: 'Doe',
+                email: 'jane.doe@parent.com',
+                phoneNumber: '0767654321',
+                role: 'parent',
+                schoolId: 'SCH001',
+                parentRole: 'parent',
+                relationshipToStudent: 'Mother',
+                studentNames: 'John Doe',
+                grade: '',
                 subjects: '',
-                parentName: 'Name',
-                parentLastName: 'Surname',
-                parentPhoneNumber: '0765078112',
-                parentEmail: 'guard@gmail.com'
+                password: 'TempPass123'
+            },
+            // Teacher example
+            {
+                firstName: 'Sarah',
+                lastName: 'Johnson',
+                email: 'sarah.johnson@school.com',
+                phoneNumber: '0712345678',
+                role: 'teacher',
+                schoolId: 'SCH001',
+                parentRole: '',
+                relationshipToStudent: '',
+                studentNames: '',
+                grade: '',
+                subjects: 'Mathematics,Physics',
+                password: 'TempPass123'
             }
         ];
 
         const csv = Papa.unparse(sampleRows, { header: true, columns: headers });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         saveAs(blob, `user_bulk_upload_template_${new Date().toISOString().split('T')[0]}.csv`);
+    };
+
+    const handleBulkUploadFileChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            setBulkUploadFile(file);
+            setBulkUploadErrors([]);
+            setBulkUploadResults(null);
+        }
+    };
+
+    const validateBulkUploadData = (data) => {
+        const errors = [];
+        const requiredFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'role'];
+
+        data.forEach((row, index) => {
+            const rowNum = index + 2; // +2 because of 0-index and header row
+
+            // Check required fields
+            requiredFields.forEach(field => {
+                if (!row[field] || row[field].trim() === '') {
+                    errors.push(`Row ${rowNum}: ${field} is required`);
+                }
+            });
+
+            // Validate email format
+            if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+                errors.push(`Row ${rowNum}: Invalid email format`);
+            }
+
+            // Validate phone number (South African format)
+            if (row.phoneNumber && !/^(\+27|0)[0-9]{9}$/.test(row.phoneNumber.replace(/\s/g, ''))) {
+                errors.push(`Row ${rowNum}: Invalid phone number format`);
+            }
+
+            // Validate role
+            const validRoles = ['student', 'teacher', 'parent', 'admin'];
+            if (row.role && !validRoles.includes(row.role.toLowerCase())) {
+                errors.push(`Row ${rowNum}: Invalid role. Must be one of: ${validRoles.join(', ')}`);
+            }
+
+            // Validate parent role if role is parent
+            if (row.role && row.role.toLowerCase() === 'parent') {
+                const validParentRoles = ['parent', 'guardian', 'sponsor', 'helper'];
+                if (row.parentRole && !validParentRoles.includes(row.parentRole.toLowerCase())) {
+                    errors.push(`Row ${rowNum}: Invalid parent role. Must be one of: ${validParentRoles.join(', ')}`);
+                }
+            }
+        });
+
+        return errors;
+    };
+
+    const handleBulkUpload = async () => {
+        if (!bulkUploadFile) {
+            setBulkUploadErrors(['Please select a file to upload']);
+            return;
+        }
+
+        setBulkUploadLoading(true);
+        setBulkUploadProgress(0);
+        setBulkUploadErrors([]);
+        setBulkUploadResults(null);
+
+        try {
+            // Parse CSV file
+            const fileContent = await bulkUploadFile.text();
+            const parsed = Papa.parse(fileContent, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: (header) => header.trim()
+            });
+
+            if (parsed.errors.length > 0) {
+                setBulkUploadErrors(parsed.errors.map(err => `CSV Parse Error: ${err.message}`));
+                return;
+            }
+
+            // Validate data
+            const validationErrors = validateBulkUploadData(parsed.data);
+            if (validationErrors.length > 0) {
+                setBulkUploadErrors(validationErrors);
+                return;
+            }
+
+            setBulkUploadProgress(25);
+
+            // Process the data - normalize and prepare for upload
+            const processedData = parsed.data.map(row => ({
+                ...row,
+                role: row.role.toLowerCase(),
+                parentRole: row.parentRole ? row.parentRole.toLowerCase() : '',
+                firstName: row.firstName.trim(),
+                lastName: row.lastName.trim(),
+                email: row.email.trim().toLowerCase(),
+                phoneNumber: row.phoneNumber.replace(/\s/g, ''),
+                name: `${row.firstName.trim()} ${row.lastName.trim()}`,
+                status: row.role === 'parent' ? 'pending_approval' : 'active'
+            }));
+
+            setBulkUploadProgress(50);
+
+            // Upload to Firebase Storage first
+            const fileName = `bulk_users_${Date.now()}.csv`;
+            const formData = new FormData();
+            formData.append('file', bulkUploadFile);
+            formData.append('fileName', fileName);
+
+            // Import the upload service
+            const { default: fileUploadService } = await import('../../services/fileUploadService');
+
+            const uploadResult = await fileUploadService.uploadFile(formData, 'bulk-uploads');
+            setBulkUploadProgress(75);
+
+            // Send to backend for processing
+            const bulkDataPayload = {
+                dataType: 'users',
+                fileName: uploadResult.fileName,
+                fileUrl: uploadResult.downloadURL,
+                filePath: uploadResult.filePath,
+                uploadDate: uploadResult.uploadDate,
+                recordCount: processedData.length
+            };
+
+            const response = await adminService.uploadBulkData(bulkDataPayload);
+            setBulkUploadProgress(100);
+
+            setBulkUploadResults({
+                success: true,
+                message: `Successfully uploaded ${response.created || 0} users`,
+                details: response
+            });
+
+            // Refresh the user lists
+            fetchUsers();
+
+        } catch (error) {
+            console.error('Bulk upload error:', error);
+            setBulkUploadErrors([error.response?.data?.message || error.message || 'Upload failed']);
+        } finally {
+            setBulkUploadLoading(false);
+        }
     };
 
     const getRoleColor = (role) => {
@@ -714,7 +899,7 @@ const Users = () => {
                             startIcon={<UploadFileIcon />}
                             onClick={() => setBulkUploadDialogOpen(true)}
                         >
-                            Bulk Upload (Coming Soon)
+                            Bulk Upload
                         </Button>
                         <Button
                             variant="outlined"
@@ -1275,28 +1460,97 @@ const Users = () => {
                 </DialogActions>
             </Dialog>
 
-            <Dialog open={bulkUploadDialogOpen} onClose={() => setBulkUploadDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Bulk Upload Users (Coming Soon)</DialogTitle>
+            <Dialog open={bulkUploadDialogOpen} onClose={() => setBulkUploadDialogOpen(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Bulk Upload Users</DialogTitle>
                 <DialogContent>
                     <Alert severity="info" sx={{ mb: 2 }}>
-                        Bulk uploads are being added to support a smooth transition. For now, you can download a CSV template.
+                        Upload a CSV file with user data. Download the template first to see the required format.
                     </Alert>
-                    <TextField
-                        fullWidth
-                        disabled
-                        label="Upload CSV"
-                        margin="dense"
-                        placeholder="Coming soon"
-                        sx={{ mb: 2 }}
-                    />
+
+                    {bulkUploadErrors.length > 0 && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>Upload Errors:</Typography>
+                            <List dense>
+                                {bulkUploadErrors.map((error, index) => (
+                                    <ListItem key={index}>
+                                        <ListItemText primary={error} />
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Alert>
+                    )}
+
+                    {bulkUploadResults && (
+                        <Alert severity={bulkUploadResults.success ? "success" : "warning"} sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                {bulkUploadResults.success ? "Upload Successful" : "Upload Completed with Issues"}
+                            </Typography>
+                            <Typography>{bulkUploadResults.message}</Typography>
+                            {bulkUploadResults.details && (
+                                <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body2">
+                                        Created: {bulkUploadResults.details.created || 0} |
+                                        Updated: {bulkUploadResults.details.updated || 0} |
+                                        Failed: {bulkUploadResults.details.failed || 0}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Alert>
+                    )}
+
+                    {bulkUploadLoading && (
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="body2" gutterBottom>Processing upload...</Typography>
+                            <LinearProgress variant="determinate" value={bulkUploadProgress} />
+                        </Box>
+                    )}
+
+                    <Box sx={{ mb: 2 }}>
+                        <input
+                            accept=".csv"
+                            style={{ display: 'none' }}
+                            id="bulk-upload-file"
+                            type="file"
+                            onChange={handleBulkUploadFileChange}
+                        />
+                        <label htmlFor="bulk-upload-file">
+                            <Button
+                                variant="outlined"
+                                component="span"
+                                startIcon={<UploadFileIcon />}
+                                disabled={bulkUploadLoading}
+                                fullWidth
+                            >
+                                {bulkUploadFile ? bulkUploadFile.name : 'Select CSV File'}
+                            </Button>
+                        </label>
+                    </Box>
+
+                    {bulkUploadFile && (
+                        <Alert severity="success" sx={{ mb: 2 }}>
+                            File selected: {bulkUploadFile.name} ({(bulkUploadFile.size / 1024).toFixed(1)} KB)
+                        </Alert>
+                    )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setBulkUploadDialogOpen(false)}>Close</Button>
-                    <Button variant="outlined" onClick={downloadBulkUploadTemplate}>
-                        Download CSV Template
+                    <Button onClick={() => setBulkUploadDialogOpen(false)} disabled={bulkUploadLoading}>
+                        Close
                     </Button>
-                    <Button variant="contained" disabled startIcon={<UploadFileIcon />}>
-                        Upload (Coming Soon)
+                    <Button
+                        variant="outlined"
+                        onClick={downloadBulkUploadTemplate}
+                        startIcon={<DownloadIcon />}
+                        disabled={bulkUploadLoading}
+                    >
+                        Download Template
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleBulkUpload}
+                        disabled={!bulkUploadFile || bulkUploadLoading}
+                        startIcon={bulkUploadLoading ? <CircularProgress size={20} /> : <UploadFileIcon />}
+                    >
+                        {bulkUploadLoading ? 'Uploading...' : 'Upload Users'}
                     </Button>
                 </DialogActions>
             </Dialog>

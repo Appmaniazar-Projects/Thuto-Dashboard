@@ -28,7 +28,8 @@ import {
   IconButton,
   Tooltip,
   Tabs,
-  Tab
+  Tab,
+  Checkbox
 } from '@mui/material';
 import {
   Check as ApproveIcon,
@@ -60,6 +61,12 @@ const ParentApproval = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // Bulk selection states
+  const [selectedParents, setSelectedParents] = useState([]);
+  const [bulkActionDialogOpen, setBulkActionDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState(''); // 'approve' or 'reject'
+  const [bulkRejectionReason, setBulkRejectionReason] = useState('');
 
   useEffect(() => {
     fetchPendingRegistrations();
@@ -158,6 +165,64 @@ const ParentApproval = () => {
     }
   };
 
+  const handleParentSelect = (parentId) => {
+    setSelectedParents(prev =>
+      prev.includes(parentId)
+        ? prev.filter(id => id !== parentId)
+        : [...prev, parentId]
+    );
+  };
+
+  const handleSelectAll = (parents) => {
+    if (selectedParents.length === parents.length) {
+      setSelectedParents([]);
+    } else {
+      setSelectedParents(parents.map(p => p.id));
+    }
+  };
+
+  const handleBulkApprove = () => {
+    if (selectedParents.length === 0) return;
+    setBulkActionType('approve');
+    setBulkActionDialogOpen(true);
+  };
+
+  const handleBulkReject = () => {
+    if (selectedParents.length === 0) return;
+    setBulkActionType('reject');
+    setBulkRejectionReason('');
+    setBulkActionDialogOpen(true);
+  };
+
+  const executeBulkAction = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+
+      if (bulkActionType === 'approve') {
+        await Promise.all(selectedParents.map(id => parentService.approveParent(id)));
+        setSuccess(`Successfully approved ${selectedParents.length} parent(s)`);
+      } else if (bulkActionType === 'reject') {
+        await Promise.all(selectedParents.map(id =>
+          parentService.rejectParent(id, bulkRejectionReason)
+        ));
+        setSuccess(`Successfully rejected ${selectedParents.length} parent(s)`);
+      }
+
+      setBulkActionDialogOpen(false);
+      setSelectedParents([]);
+      fetchPendingRegistrations();
+      fetchApprovedParents();
+      fetchRejectedParents();
+
+    } catch (err) {
+      setError(err.response?.data?.message || `Failed to ${bulkActionType} selected parents`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusChip = (status) => {
     const statusConfig = {
       pending_approval: { color: 'warning', label: 'Pending Approval' },
@@ -172,9 +237,45 @@ const ParentApproval = () => {
 
   const renderParentTable = (parents, showApproveReject = true) => (
     <TableContainer component={Paper}>
+      {showApproveReject && parents.length > 0 && (
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h6" gutterBottom>Pending Parent Approvals</Typography>
+          {selectedParents.length > 0 && (
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Button
+                variant="contained"
+                color="success"
+                size="small"
+                onClick={handleBulkApprove}
+                startIcon={<ApproveIcon />}
+              >
+                Approve Selected ({selectedParents.length})
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                onClick={handleBulkReject}
+                startIcon={<RejectIcon />}
+              >
+                Reject Selected ({selectedParents.length})
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
       <Table>
         <TableHead>
           <TableRow>
+            {showApproveReject && (
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={parents.length > 0 && selectedParents.length === parents.length}
+                  indeterminate={selectedParents.length > 0 && selectedParents.length < parents.length}
+                  onChange={() => handleSelectAll(parents)}
+                />
+              </TableCell>
+            )}
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
             <TableCell>Phone</TableCell>
@@ -188,7 +289,7 @@ const ParentApproval = () => {
         <TableBody>
           {parents.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} align="center">
+              <TableCell colSpan={showApproveReject ? 9 : 8} align="center">
                 <Typography color="text.secondary">
                   No parents found
                 </Typography>
@@ -197,6 +298,14 @@ const ParentApproval = () => {
           ) : (
             parents.map((parent) => (
               <TableRow key={parent.id}>
+                {showApproveReject && (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedParents.includes(parent.id)}
+                      onChange={() => handleParentSelect(parent.id)}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <Typography fontWeight="medium">
                     {parent.firstName} {parent.lastName}
@@ -484,6 +593,44 @@ const ParentApproval = () => {
             disabled={!rejectionReason.trim() || loading}
           >
             {loading ? <CircularProgress size={20} /> : 'Reject Registration'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Action Dialog */}
+      <Dialog open={bulkActionDialogOpen} onClose={() => setBulkActionDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {bulkActionType === 'approve' ? 'Bulk Approve Parents' : 'Bulk Reject Parents'}
+        </DialogTitle>
+        <DialogContent>
+          <Typography gutterBottom>
+            Are you sure you want to {bulkActionType} {selectedParents.length} parent(s)?
+          </Typography>
+
+          {bulkActionType === 'reject' && (
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Rejection Reason"
+              value={bulkRejectionReason}
+              onChange={(e) => setBulkRejectionReason(e.target.value)}
+              required
+              sx={{ mt: 2 }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkActionDialogOpen(false)} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={executeBulkAction}
+            color={bulkActionType === 'approve' ? 'success' : 'error'}
+            variant="contained"
+            disabled={loading || (bulkActionType === 'reject' && !bulkRejectionReason.trim())}
+          >
+            {loading ? <CircularProgress size={20} /> : `${bulkActionType === 'approve' ? 'Approve' : 'Reject'} ${selectedParents.length} Parent(s)`}
           </Button>
         </DialogActions>
       </Dialog>

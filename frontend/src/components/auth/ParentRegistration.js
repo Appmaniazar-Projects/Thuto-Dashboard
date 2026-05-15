@@ -36,7 +36,6 @@ const ParentRegistration = () => {
     lastName: '',
     email: '',
     phoneNumber: '',
-    idNumber: '',
     
     // Address Information
     address: '',
@@ -223,15 +222,6 @@ const ParentRegistration = () => {
                 value={formData.phoneNumber}
                 onChange={handleInputChange('phoneNumber')}
                 required
-                disabled={loading}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="ID Number"
-                value={formData.idNumber}
-                onChange={handleInputChange('idNumber')}
                 disabled={loading}
               />
             </Grid>
