@@ -35,7 +35,7 @@ const coerceEventsArray = (data) => {
   return [];
 };
 
-const normalizeEventDates = (event) => {
+const normalizeEventDates = (event, keepCombined = false) => {
   if (!event) return event;
 
   const normalizedEvent = { ...event };
@@ -44,19 +44,33 @@ const normalizeEventDates = (event) => {
   if (event.startDate && event.startTime && !event.startDate.includes('T')) {
     normalizedEvent.startDate = `${event.startDate}T${event.startTime}`;
     normalizedEvent.endDate = `${event.endDate}T${event.endTime}`;
+    
+    // Keep original separate fields for form editing if needed
+    if (!keepCombined) {
+      const [sDate, sTime] = normalizedEvent.startDate.split('T');
+      const [eDate, eTime] = normalizedEvent.endDate.split('T');
+      normalizedEvent.startDateOriginal = sDate;
+      normalizedEvent.startTimeOriginal = sTime ? sTime.substring(0, 8) : '00:00:00';
+      normalizedEvent.endDateOriginal = eDate;
+      normalizedEvent.endTimeOriginal = eTime ? eTime.substring(0, 8) : '00:00:00';
+    }
   }
 
-  // If backend returns combined ISO datetime, split into separate date and time for frontend forms
+  // If backend returns combined ISO datetime, keep it for display
+  // Don't split it - let the display code use it as-is
   if (normalizedEvent.startDate && normalizedEvent.startDate.includes('T')) {
-    const [date, time] = normalizedEvent.startDate.split('T');
-    normalizedEvent.startDate = date;
-    normalizedEvent.startTime = time ? time.substring(0, 8) : '00:00:00';
-  }
-
-  if (normalizedEvent.endDate && normalizedEvent.endDate.includes('T')) {
-    const [date, time] = normalizedEvent.endDate.split('T');
-    normalizedEvent.endDate = date;
-    normalizedEvent.endTime = time ? time.substring(0, 8) : '00:00:00';
+    // Already combined - keep as is for display
+    // Extract original fields for form editing if needed
+    if (!keepCombined && !normalizedEvent.startTimeOriginal) {
+      const [date, time] = normalizedEvent.startDate.split('T');
+      normalizedEvent.startDateOriginal = date;
+      normalizedEvent.startTimeOriginal = time ? time.substring(0, 8) : '00:00:00';
+    }
+    if (!keepCombined && !normalizedEvent.endTimeOriginal) {
+      const [date, time] = normalizedEvent.endDate.split('T');
+      normalizedEvent.endDateOriginal = date;
+      normalizedEvent.endTimeOriginal = time ? time.substring(0, 8) : '00:00:00';
+    }
   }
 
   return normalizedEvent;
@@ -161,7 +175,8 @@ export const getEvents = async (startDate, endDate) => {
     const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
     const events = coerceEventsArray(response.data);
 
-    const normalizedEvents = events.map(normalizeEventDates);
+    // Normalize dates - keep combined format for display
+    const normalizedEvents = events.map((ev) => normalizeEventDates(ev, true));
 
     if (!startDate && !endDate) return normalizedEvents;
 
@@ -190,7 +205,8 @@ export const getEvents = async (startDate, endDate) => {
 export const getEventById = async (eventId) => {
   try {
     const response = await api.get(`${EVENTS_BASE}/${eventId}/details`);
-    return response.data;
+    // Normalize dates - keep combined format for display
+    return normalizeEventDates(response.data, true);
   } catch (error) {
     console.error('Error fetching event:', error);
     throw error;
@@ -220,8 +236,8 @@ export const updateEvent = async (eventId, eventData) => {
     const payload = normalizeEventPayload({ ...eventData, id: eventId });
     const response = await api.put(`/events/update/${eventId}`, payload);
     
-    // Normalize dates if backend returns separate LocalDate/LocalTime
-    const normalizedEvent = normalizeEventDates(response.data);
+    // Normalize dates - split them for form editing after update
+    const normalizedEvent = normalizeEventDates(response.data, false);
     
     return normalizedEvent;
   } catch (error) {

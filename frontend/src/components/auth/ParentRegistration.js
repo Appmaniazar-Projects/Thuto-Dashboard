@@ -28,6 +28,9 @@ const ParentRegistration = () => {
   const [success, setSuccess] = useState('');
   const [schools, setSchools] = useState([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
+  const [schoolSearchInput, setSchoolSearchInput] = useState('');
+  const [filteredSchools, setFilteredSchools] = useState([]);
+  const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -89,6 +92,74 @@ const ParentRegistration = () => {
       [field]: event.target.value
     });
     setError('');
+  };
+
+  const handleRelationshipRoleChange = (event) => {
+    const value = event.target.value;
+    // Map combined value to separate relationship and role
+    const mappings = {
+      'mother-parent': { relationshipToStudent: 'mother', parentRole: 'parent' },
+      'father-parent': { relationshipToStudent: 'father', parentRole: 'parent' },
+      'guardian-guardian': { relationshipToStudent: 'guardian', parentRole: 'guardian' },
+      'grandmother-parent': { relationshipToStudent: 'grandmother', parentRole: 'parent' },
+      'grandfather-parent': { relationshipToStudent: 'grandfather', parentRole: 'parent' },
+      'other-parent': { relationshipToStudent: 'other', parentRole: 'parent' },
+      'sponsor': { relationshipToStudent: 'other', parentRole: 'sponsor' },
+      'helper': { relationshipToStudent: 'other', parentRole: 'helper' },
+    };
+    
+    const mapping = mappings[value] || {};
+    setFormData({
+      ...formData,
+      relationshipToStudent: mapping.relationshipToStudent || formData.relationshipToStudent,
+      parentRole: mapping.parentRole || formData.parentRole,
+      combinedRole: value
+    });
+    setError('');
+  };
+
+  const getCombinedRoleValue = () => {
+    if (formData.relationshipToStudent === 'mother' && formData.parentRole === 'parent') return 'mother-parent';
+    if (formData.relationshipToStudent === 'father' && formData.parentRole === 'parent') return 'father-parent';
+    if (formData.relationshipToStudent === 'guardian' && formData.parentRole === 'guardian') return 'guardian-guardian';
+    if (formData.relationshipToStudent === 'grandmother' && formData.parentRole === 'parent') return 'grandmother-parent';
+    if (formData.relationshipToStudent === 'grandfather' && formData.parentRole === 'parent') return 'grandfather-parent';
+    if (formData.parentRole === 'sponsor') return 'sponsor';
+    if (formData.parentRole === 'helper') return 'helper';
+    return 'other-parent';
+  };
+
+  const handleSchoolSearch = (event) => {
+    const input = event.target.value;
+    setSchoolSearchInput(input);
+
+    if (input.trim().length === 0) {
+      setFilteredSchools([]);
+      setShowSchoolSuggestions(false);
+      setFormData({
+        ...formData,
+        schoolId: ''
+      });
+    } else {
+      // Filter schools by name or province
+      const matches = schools.filter((school) =>
+        school.name?.toLowerCase().includes(input.toLowerCase()) ||
+        school.province?.toLowerCase().includes(input.toLowerCase())
+      );
+      setFilteredSchools(matches);
+      setShowSchoolSuggestions(true);
+    }
+    setError('');
+  };
+
+  const handleSelectSchool = (school) => {
+    setFormData({
+      ...formData,
+      schoolId: school.id,
+      schoolName: school.name
+    });
+    setSchoolSearchInput(school.name);
+    setShowSchoolSuggestions(false);
   };
 
   const validateStep = (step) => {
@@ -268,45 +339,91 @@ const ParentRegistration = () => {
         return (
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <FormControl fullWidth required disabled={loading}>
-                <InputLabel>Select School</InputLabel>
-                <Select
-                  value={formData.schoolId}
-                  onChange={handleInputChange('schoolId')}
-                  label="Select School"
-                >
-                  {loadingSchools ? (
-                    <MenuItem value="">
-                      <CircularProgress size={20} />
-                      Loading schools...
-                    </MenuItem>
-                  ) : (
-                    schools.map((school) => (
-                      <MenuItem key={school.id} value={school.id}>
-                        {school.name} - {school.province}
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-              </FormControl>
+              <Box sx={{ position: 'relative' }}>
+                <TextField
+                  fullWidth
+                  label="Type School Name"
+                  value={schoolSearchInput}
+                  onChange={handleSchoolSearch}
+                  onFocus={() => schoolSearchInput && setShowSchoolSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSchoolSuggestions(false), 200)}
+                  placeholder="Start typing school name..."
+                  disabled={loading}
+                  helperText={formData.schoolId ? `Selected: ${formData.schoolName || schools.find(s => s.id === formData.schoolId)?.name}` : 'Type to search schools'}
+                  required
+                />
+                {showSchoolSuggestions && filteredSchools.length > 0 && (
+                  <Paper
+                    sx={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 10,
+                      maxHeight: 300,
+                      overflowY: 'auto',
+                      mt: 1
+                    }}
+                  >
+                    {filteredSchools.map((school) => (
+                      <Box
+                        key={school.id}
+                        onClick={() => handleSelectSchool(school)}
+                        sx={{
+                          p: 2,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: '#f5f5f5'
+                          },
+                          borderBottom: '1px solid #eee'
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {school.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {school.province}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Paper>
+                )}
+              </Box>
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth required disabled={loading}>
-                <InputLabel>Relationship to Student</InputLabel>
+                <InputLabel>Your Role & Relationship</InputLabel>
                 <Select
-                  value={formData.relationshipToStudent}
-                  onChange={handleInputChange('relationshipToStudent')}
-                  label="Relationship to Student"
+                  value={getCombinedRoleValue()}
+                  onChange={handleRelationshipRoleChange}
+                  label="Your Role & Relationship"
                 >
-                  <MenuItem value="mother">Mother</MenuItem>
-                  <MenuItem value="father">Father</MenuItem>
-                  <MenuItem value="guardian">Guardian</MenuItem>
-                  <MenuItem value="grandmother">Grandmother</MenuItem>
-                  <MenuItem value="grandfather">Grandfather</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
+                  <MenuItem value="mother-parent">Mother (Full Access)</MenuItem>
+                  <MenuItem value="father-parent">Father (Full Access)</MenuItem>
+                  <MenuItem value="grandmother-parent">Grandmother (Full Access)</MenuItem>
+                  <MenuItem value="grandfather-parent">Grandfather (Full Access)</MenuItem>
+                  <MenuItem value="guardian-guardian">Legal Guardian (Full Access)</MenuItem>
+                  <MenuItem value="other-parent">Other Relationship (Full Access)</MenuItem>
+                  <MenuItem value="sponsor">Sponsor (View Attendance & Reports Only)</MenuItem>
+                  <MenuItem value="helper">Temporary Guardian (Limited Time Access)</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
+            {formData.parentRole === 'helper' && (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Access Expiry Date"
+                  type="date"
+                  value={formData.helperExpiryDate}
+                  onChange={handleInputChange('helperExpiryDate')}
+                  required
+                  disabled={loading}
+                  InputLabelProps={{ shrink: true }}
+                  helperText="Choose the date when this temporary guardian access will expire"
+                />
+              </Grid>
+            )}
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -330,36 +447,6 @@ const ParentRegistration = () => {
                 helperText="Optional: Specify the grade(s) of your child/children"
               />
             </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth required disabled={loading}>
-                <InputLabel>Account Type</InputLabel>
-                <Select
-                  value={formData.parentRole}
-                  onChange={handleInputChange('parentRole')}
-                  label="Account Type"
-                >
-                  <MenuItem value="parent">Parent - Full access to child's information</MenuItem>
-                  <MenuItem value="guardian">Guardian - Full legal access to child's information</MenuItem>
-                  <MenuItem value="sponsor">Sponsor - Can view attendance and reports only</MenuItem>
-                  <MenuItem value="helper">Temporary Guardian - Limited time access</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            {formData.parentRole === 'helper' && (
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Access Expiry Date"
-                  type="date"
-                  value={formData.helperExpiryDate}
-                  onChange={handleInputChange('helperExpiryDate')}
-                  disabled={loading}
-                  required
-                  InputLabelProps={{ shrink: true }}
-                  helperText="When will temporary access expire?"
-                />
-              </Grid>
-            )}
           </Grid>
         );
 

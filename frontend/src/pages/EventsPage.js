@@ -287,12 +287,18 @@ const EventsPage = () => {
       else recurringPattern = 'weekly';
     }
 
+    // Handle both combined datetime format and separate date/time format
+    // If event has the original separate fields (from normalization), use those for form editing
+    // Otherwise, parse the combined datetime format
+    const startDateValue = toDateTimeLocalInputValue(ev.startDateOriginal || ev.startDate);
+    const endDateValue = toDateTimeLocalInputValue(ev.endDateOriginal || ev.endDate);
+
     setFormData({
       id: ev.id,
       title: ev.title || '',
       description: ev.description || '',
-      startDate: toDateTimeLocalInputValue(ev.startDate),
-      endDate: toDateTimeLocalInputValue(ev.endDate),
+      startDate: startDateValue,
+      endDate: endDateValue,
       location: ev.location || '',
       status: ev.status || '',
       organizer: ev.organizer || '',
