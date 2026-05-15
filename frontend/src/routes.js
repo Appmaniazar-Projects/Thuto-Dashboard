@@ -56,7 +56,7 @@ const SuperAdminProfile = lazy(() => import('./pages/superadmin/SuperAdminProfil
 const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSettings'));
 
 // Parent Registration
-const ParentRegistration = lazy(() => import('./pages/auth/ParentRegistration'));
+const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
 
 const Loading = () => (
