@@ -405,6 +405,8 @@ const EventsPage = () => {
       } else {
         await updateEvent(formData.id, payload);
         enqueueSnackbar('Event updated', { variant: 'success' });
+        // Refresh the selected event details so changes are visible immediately
+        await refreshSelectedEvent(formData.id);
       }
       closeEdit();
       await loadEvents();
@@ -567,7 +569,6 @@ const EventsPage = () => {
       // FIX 5: reload after RSVP using captured eventId
       await reloadAfterAction(eventId);
     } catch (e) {
-      console.error('RSVP Error:', e);
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit RSVP', { variant: 'error' });
     }
   };
