@@ -36,6 +36,7 @@ import {
   cancelEventSignup, cancelEvent as cancelEventById, createEvent, deleteEvent,
   getEventById, getEvents, signUpForEventRole, updateEvent, submitRSVP,
   submitTeacherRSVP, submitParentRSVP, createSponsorship, exportEvent,
+  getEventSponsorships, updateSponsorship,
 } from '../services/eventService';
 import { useSnackbar } from 'notistack';
 
@@ -148,6 +149,8 @@ const EventsPage = () => {
   const [sponsorshipData, setSponsorshipData] = useState({
     pledgeType: 'monetary', pledgeAmount: '', pledgeDescription: '', isAnonymous: false
   });
+  const [sponsorships, setSponsorships] = useState([]);
+  const [sponsorshipsLoading, setSponsorshipsLoading] = useState(false);
 
   const [availableOrganizers, setAvailableOrganizers] = useState([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -268,11 +271,15 @@ const EventsPage = () => {
           if (!prev || String(prev.id) !== String(eventId)) return prev;
           return { ...prev, ...details };
         });
+        // Load sponsorships for admins
+        if (isAdmin) {
+          await loadSponsorships(eventId);
+        }
       } catch (e) { /* ignore */ }
     })();
   };
 
-  const closeDetails = () => { setDetailsOpen(false); setSelectedEvent(null); };
+  const closeDetails = () => { setDetailsOpen(false); setSelectedEvent(null); setSponsorships([]); };
 
   const openEdit = (ev) => {
     setEditMode('edit');
@@ -584,6 +591,41 @@ const EventsPage = () => {
       await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit sponsorship', { variant: 'error' });
+    }
+  };
+
+  const loadSponsorships = async (eventId) => {
+    if (!eventId) return;
+    try {
+      setSponsorshipsLoading(true);
+      const data = await getEventSponsorships(eventId);
+      setSponsorships(Array.isArray(data) ? data : data?.sponsorships || []);
+    } catch (e) {
+      console.error('Error loading sponsorships:', e);
+    } finally {
+      setSponsorshipsLoading(false);
+    }
+  };
+
+  const handleApproveSponsor = async (sponsorshipId) => {
+    try {
+      await updateSponsorship(sponsorshipId, { status: 'approved' });
+      enqueueSnackbar('Sponsorship approved', { variant: 'success' });
+      await loadSponsorships(selectedEvent?.id);
+      loadEvents();
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || 'Failed to approve sponsorship', { variant: 'error' });
+    }
+  };
+
+  const handleRejectSponsor = async (sponsorshipId) => {
+    try {
+      await updateSponsorship(sponsorshipId, { status: 'rejected' });
+      enqueueSnackbar('Sponsorship rejected', { variant: 'success' });
+      await loadSponsorships(selectedEvent?.id);
+      loadEvents();
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || 'Failed to reject sponsorship', { variant: 'error' });
     }
   };
 
@@ -907,39 +949,72 @@ const EventsPage = () => {
                         </Box>
                       </Grid>
                       {selectedEvent.sponsorshipEnabled && (
-                        <>
-                          <Grid item xs={3}>
-                            <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
-                              <Typography variant="h5" color="secondary.main" fontWeight="bold">
-                                {adminSponsors}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">Sponsors</Typography>
-                            </Box>
-                          </Grid>
-                          {/* FIX 4: show approved sponsors count */}
-                          <Grid item xs={3}>
-                            <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
-                              <Typography variant="h5" color="warning.main" fontWeight="bold">
-                                {adminApprovedSponsors}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">Approved</Typography>
-                            </Box>
-                          </Grid>
-                        </>
+                        <Grid item xs={6}>
+                          <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+                            <Typography variant="h5" color="secondary.main" fontWeight="bold">
+                              {adminApprovedSponsors}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Sponsors</Typography>
+                          </Box>
+                        </Grid>
                       )}
                     </Grid>
 
-                    {(adminAttending + adminDeclined + adminMaybe) > 0 && (
-                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
-                        {adminAttending} attending · {adminDeclined} declined · {adminMaybe} maybe
-                      </Typography>
-                    )}
+
 
                     {selectedEvent.roles?.length > 0 && (
                       <>
                         <Divider />
                         <Typography variant="subtitle2">Role Slots</Typography>
                         {renderEventRoles(selectedEvent)}
+                      </>
+                    )}
+
+                    {selectedEvent.sponsorshipEnabled && sponsorships.length > 0 && (
+                      <>
+                        <Divider />
+                        <Typography variant="subtitle2">Sponsorships</Typography>
+                        {sponsorshipsLoading ? (
+                          <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                        ) : (
+                          <Stack spacing={1}>
+                            {sponsorships.map((sp) => {
+                              const status = (sp.status || sp.approvalStatus || 'pending').toLowerCase();
+                              return (
+                                <Card key={sp.id} variant="outlined" sx={{ p: 1.5 }}>
+                                  <Stack spacing={1}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                                      <Box>
+                                        <Typography variant="body2" fontWeight="600">
+                                          {sp.sponsorName || sp.name || (sp.isAnonymous ? 'Anonymous' : 'Unknown')}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {sp.pledgeType || 'Monetary'} • {sp.pledgeAmount ? `$${sp.pledgeAmount}` : 'Amount TBD'}
+                                        </Typography>
+                                      </Box>
+                                      <Chip label={status} size="small" color={status === 'approved' ? 'success' : status === 'rejected' ? 'error' : 'default'} />
+                                    </Stack>
+                                    {sp.pledgeDescription && (
+                                      <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {sp.pledgeDescription}
+                                      </Typography>
+                                    )}
+                                    {status === 'pending' && (
+                                      <Stack direction="row" spacing={1}>
+                                        <Button size="small" variant="contained" color="success" onClick={() => handleApproveSponsor(sp.id)} sx={{ minHeight: 36 }}>
+                                          Approve
+                                        </Button>
+                                        <Button size="small" variant="outlined" color="error" onClick={() => handleRejectSponsor(sp.id)} sx={{ minHeight: 36 }}>
+                                          Reject
+                                        </Button>
+                                      </Stack>
+                                    )}
+                                  </Stack>
+                                </Card>
+                              );
+                            })}
+                          </Stack>
+                        )}
                       </>
                     )}
                   </>
@@ -1022,12 +1097,6 @@ const EventsPage = () => {
                         onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
                         {getUserRSVP() ? `RSVP (${getRsvpResponse(getUserRSVP())})` : 'RSVP'}
                       </Button>
-                      {selectedEvent.sponsorshipEnabled && (
-                        <Button variant="outlined" color="secondary" startIcon={<AttachMoneyIcon />}
-                          onClick={() => setSponsorshipDialogOpen(true)} sx={{ minHeight: 44 }}>
-                          Sponsor
-                        </Button>
-                      )}
                       <Button variant="outlined" startIcon={<ShareIcon />}
                         onClick={() => setShareDialogOpen(true)} sx={{ minHeight: 44 }}>Share</Button>
                       <Button variant="outlined" startIcon={<DownloadIcon />}
