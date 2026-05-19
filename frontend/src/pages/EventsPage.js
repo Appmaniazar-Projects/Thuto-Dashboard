@@ -111,6 +111,10 @@ const getHasParentSignup = (event) => {
   return Boolean(event.mySignup || event.isSignedUp || event.signedUp || event.signedUpRoleId || event.parentSignup);
 };
 
+// ─── FIX 2: normalise RSVP response field — backend may send `status` or `response` ───
+const getRsvpResponse = (rsvp) =>
+  (rsvp?.status || rsvp?.response || '').toString().toLowerCase();
+
 const EventsPage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -255,6 +259,7 @@ const EventsPage = () => {
     setDetailsOpen(true);
     const eventId = ev?.id;
     if (!eventId) return;
+    // FIX 1: use eventId captured in this closure, not selectedEvent.id (stale ref)
     (async () => {
       try {
         const details = await getEventById(eventId);
@@ -272,11 +277,9 @@ const EventsPage = () => {
   const openEdit = (ev) => {
     setEditMode('edit');
 
-    // Extract recurring fields from the nested recurringPattern object
     const rp = ev.recurringPattern;
     const hasRecurring = !!(rp && (rp.frequency || rp.interval));
 
-    // Map backend frequency + interval back to the frontend pattern string
     let recurringPattern = 'weekly';
     if (rp?.frequency) {
       const freq = rp.frequency.toLowerCase();
@@ -287,9 +290,6 @@ const EventsPage = () => {
       else recurringPattern = 'weekly';
     }
 
-    // Handle both combined datetime format and separate date/time format
-    // If event has the original separate fields (from normalization), use those for form editing
-    // Otherwise, parse the combined datetime format
     const startDateValue = toDateTimeLocalInputValue(ev.startDateOriginal || ev.startDate);
     const endDateValue = toDateTimeLocalInputValue(ev.endDateOriginal || ev.endDate);
 
@@ -351,22 +351,6 @@ const EventsPage = () => {
       if (!start || !end || !isValid(start) || !isValid(end)) { enqueueSnackbar('Start and end dates are required', { variant: 'warning' }); return; }
       if (isAfter(start, end)) { enqueueSnackbar('End date must be after start date', { variant: 'warning' }); return; }
 
-      console.log('=== EVENT SUBMIT DEBUG ===');
-      console.log('Form data before submit:', {
-        isRecurring: formData.isRecurring,
-        recurringPattern: formData.recurringPattern,
-        recurringEndDate: formData.recurringEndDate,
-        recurringNotes: formData.recurringNotes
-      });
-      console.log('Full formData object:', formData);
-      console.log('Payload recurring fields:', {
-        isRecurring: formData.isRecurring || false,
-        recurringPattern: formData.isRecurring ? (formData.recurringPattern || 'weekly') : null,
-        recurringEndDate: formData.isRecurring ? (formData.recurringEndDate || null) : null,
-        recurringNotes: formData.isRecurring ? (formData.recurringNotes || null) : null,
-      });
-      console.log('========================');
-
       let recurringPatternDTO = null;
       if (formData.isRecurring) {
         const pattern = formData.recurringPattern || 'weekly';
@@ -375,7 +359,7 @@ const EventsPage = () => {
         const frequencyMap = {
           daily:    { frequency: 'DAILY',   interval: '1' },
           weekly:   { frequency: 'WEEKLY',  interval: '1' },
-          biweekly: { frequency: 'WEEKLY',  interval: '2' }, // bi-weekly = every 2 weeks
+          biweekly: { frequency: 'WEEKLY',  interval: '2' },
           monthly:  { frequency: 'MONTHLY', interval: '1' },
           yearly:   { frequency: 'YEARLY',  interval: '1' },
         };
@@ -388,7 +372,7 @@ const EventsPage = () => {
           dayOfWeek:  pattern === 'weekly' || pattern === 'biweekly' ? 'MONDAY' : null,
           dayOfMonth: pattern === 'monthly' ? '1' : null,
           interval,
-          endDate:    endDate || null,   // plain YYYY-MM-DD string — normalizeEventPayload cleans it
+          endDate:    endDate || null,
           occurences: 0,
         };
       }
@@ -442,34 +426,65 @@ const EventsPage = () => {
     }
   };
 
-  const parentSignup = async (ev, roleId) => {
+  // ─── FIX 5: reload event detail AFTER loadEvents settles, capture eventId up-front ───
+  const reloadAfterAction = useCallback(async (eventId) => {
+    await loadEvents();
+    if (!eventId) return;
     try {
-      await signUpForEventRole(ev.id, roleId);
+      const details = await getEventById(eventId);
+      if (!details) return;
+      setSelectedEvent((prev) => {
+        if (!prev || String(prev.id) !== String(eventId)) return prev;
+        return { ...prev, ...details };
+      });
+    } catch (e) { /* ignore */ }
+  }, [loadEvents]);
+
+  const parentSignup = async (ev) => {
+    const eventId = ev.id;
+    // find first available role, or pass undefined if none (service handles it)
+    const firstRoleId = ev.roles?.find(r => {
+      const slots = Number(r.slotLimit ?? 0);
+      const taken = Number(r.takenSlots ?? r.signups?.length ?? 0);
+      return slots === 0 || taken < slots;
+    })?.id;
+    try {
+      await signUpForEventRole(eventId, firstRoleId);
       enqueueSnackbar('Signed up', { variant: 'success' });
-      await loadEvents();
-      await refreshSelectedEvent();
+      await reloadAfterAction(eventId);
+    } catch (e) {
+      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up', { variant: 'error' });
+    }
+  };
+
+  const parentSignupRole = async (ev, roleId) => {
+    const eventId = ev.id;
+    try {
+      await signUpForEventRole(eventId, roleId);
+      enqueueSnackbar('Signed up', { variant: 'success' });
+      await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up', { variant: 'error' });
     }
   };
 
   const parentCancel = async (ev) => {
+    const eventId = ev.id;
     try {
-      await cancelEventSignup(ev.id);
+      await cancelEventSignup(eventId);
       enqueueSnackbar('Signup cancelled', { variant: 'info' });
-      await loadEvents();
-      await refreshSelectedEvent();
+      await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel signup', { variant: 'error' });
     }
   };
 
   const teacherRoleSignup = async (ev, roleId) => {
+    const eventId = ev.id;
     try {
-      await signUpForEventRole(ev.id, roleId);
+      await signUpForEventRole(eventId, roleId);
       enqueueSnackbar('Signed up for role', { variant: 'success' });
-      await loadEvents();
-      await refreshSelectedEvent();
+      await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up for role', { variant: 'error' });
     }
@@ -511,49 +526,46 @@ const EventsPage = () => {
   };
 
   const teacherCancelSignup = async (ev) => {
+    const eventId = ev.id;
     try {
       const roleId = getTeacherSignupRoleId(ev);
       if (!roleId) throw new Error('No role signup found to cancel');
-      await cancelEventSignup(ev.id, roleId);   // ← pass roleId
+      await cancelEventSignup(eventId, roleId);
       enqueueSnackbar('Role signup cancelled', { variant: 'info' });
-      await loadEvents();
-      await refreshSelectedEvent();
+      await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel role signup', { variant: 'error' });
     }
   };
 
   const handleRSVP = async () => {
+    const eventId = selectedEvent?.id;
     try {
       const userId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
-      
       if (!userId) {
         enqueueSnackbar('User ID not found', { variant: 'error' });
         return;
       }
 
-      // Prepare RSVP data for backend - align with EventRSVPRequest structure
       const rsvpPayload = {
-        status: rsvpData.response.toUpperCase(), // ATTENDING, DECLINED, MAYBE
+        status: rsvpData.response.toUpperCase(),
         numberOfGuests: rsvpData.numberOfGuests || 0,
         dietaryRequirements: rsvpData.dietaryRequirements || null,
         specialRequests: rsvpData.specialRequests || null
       };
 
-      let response;
       if (isTeacher) {
-        response = await submitTeacherRSVP(selectedEvent.id, userId, rsvpPayload);
+        await submitTeacherRSVP(eventId, userId, rsvpPayload);
       } else if (isParent) {
-        response = await submitParentRSVP(selectedEvent.id, userId, rsvpPayload);
+        await submitParentRSVP(eventId, userId, rsvpPayload);
       } else {
-        // Fallback for students or other roles
-        response = await submitRSVP(selectedEvent.id, rsvpPayload);
+        await submitRSVP(eventId, rsvpPayload);
       }
 
       enqueueSnackbar('RSVP submitted successfully', { variant: 'success' });
       setRsvpDialogOpen(false);
-      await loadEvents();
-      await refreshSelectedEvent();
+      // FIX 5: reload after RSVP using captured eventId
+      await reloadAfterAction(eventId);
     } catch (e) {
       console.error('RSVP Error:', e);
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit RSVP', { variant: 'error' });
@@ -561,13 +573,14 @@ const EventsPage = () => {
   };
 
   const handleSponsorship = async () => {
+    const eventId = selectedEvent?.id;
     try {
-      await createSponsorship(selectedEvent.id, sponsorshipData);
+      await createSponsorship(eventId, sponsorshipData);
       enqueueSnackbar('Sponsorship pledge submitted', { variant: 'success' });
       setSponsorshipDialogOpen(false);
       setSponsorshipData({ pledgeType: 'monetary', pledgeAmount: '', pledgeDescription: '', isAnonymous: false });
-      await loadEvents();
-      await refreshSelectedEvent();
+      // FIX 5: reload after sponsorship using captured eventId
+      await reloadAfterAction(eventId);
     } catch (e) {
       enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to submit sponsorship', { variant: 'error' });
     }
@@ -585,12 +598,15 @@ const EventsPage = () => {
   };
 
   const handleExport = async () => {
+    // FIX 6: capture eventId before the async gap so selectedEvent can't go null
+    const eventId = selectedEvent?.id;
+    const eventTitle = selectedEvent?.title || 'event';
     try {
-      const blob = await exportEvent(selectedEvent.id, 'ics');
+      const blob = await exportEvent(eventId, 'ics');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${selectedEvent.title.replace(/[^a-z0-9]/gi, '_')}.ics`;
+      a.download = `${eventTitle.replace(/[^a-z0-9]/gi, '_')}.ics`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -601,19 +617,24 @@ const EventsPage = () => {
     }
   };
 
-  const getUserRSVP = () => selectedEvent?.rsvps?.find(r => r.userId === currentUser?.id);
+  // FIX 2: use getRsvpResponse() which reads both .status and .response
+  const getUserRSVP = () =>
+    selectedEvent?.rsvps?.find(
+      (r) => String(r.userId) === String(currentUser?.id || currentUser?.userId)
+    );
 
-  const refreshSelectedEvent = async () => {
-    if (!selectedEvent?.id) return;
+  // ─── FIX 1 + 5: standalone refresh using a passed-in eventId ───
+  const refreshSelectedEvent = useCallback(async (eventId) => {
+    if (!eventId) return;
     try {
-      const details = await getEventById(selectedEvent.id);
+      const details = await getEventById(eventId);
       if (!details) return;
       setSelectedEvent((prev) => {
-        if (!prev || String(prev.id) !== String(selectedEvent.id)) return prev;
+        if (!prev || String(prev.id) !== String(eventId)) return prev;
         return { ...prev, ...details };
       });
     } catch (e) { /* ignore */ }
-  };
+  }, []);
 
   const renderEventRoles = (ev) => {
     const rolesRaw =
@@ -625,7 +646,8 @@ const EventsPage = () => {
     const roles = rolesRaw.filter(Boolean).map((r) => {
       const slotLimit = r?.slotLimit ?? r?.slots ?? r?.limit ?? r?.capacity;
       const roleName = r?.roleName ?? r?.name ?? r?.role ?? r?.title;
-      const takenByList = Array.isArray(r?.signups) ? r.signups.length : undefined;
+      // FIX 3: also count signups array length as fallback for takenSlots
+      const takenByList = Array.isArray(r?.signups) ? r.signups.length : 0;
       const takenSlots = r?.takenSlots ?? r?.signupsCount ?? r?.filledSlots ?? r?.taken ?? takenByList;
       const id = r?.id ?? r?.roleId ?? r?.eventRoleId;
       return { ...r, id, roleName, slotLimit, takenSlots };
@@ -639,8 +661,9 @@ const EventsPage = () => {
         {roles.map((r) => {
           const roleId = r?.id;
           const slotLimit = Number(r.slotLimit) || 0;
-          const taken = Number(r.takenSlots ?? r.signupsCount ?? r.filledSlots ?? 0) || 0;
-          const available = Math.max(0, slotLimit - taken);
+          // FIX 3: takenSlots now always populated (falls back to signups.length above)
+          const taken = Number(r.takenSlots) || 0;
+          const available = slotLimit === 0 ? Infinity : Math.max(0, slotLimit - taken);
           const hasTeacherRoleSignup = getHasTeacherSignup(ev, roleId);
           const canParentClick = isParent && !hasParentSignup && canInteractWithEvent(ev) && (available > 0 || !roleId);
           const canTeacherClick = isTeacher && !hasTeacherRoleSignup && canInteractWithEvent(ev) && available > 0 && !!roleId;
@@ -652,7 +675,7 @@ const EventsPage = () => {
                   <Box sx={{ minWidth: 180 }}>
                     <Typography variant="subtitle2">{r.roleName || 'Role'}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Slots: {slotLimit} | Available: {available}
+                      Slots: {slotLimit || '∞'} | Available: {available === Infinity ? '∞' : available}
                     </Typography>
                     {(hasParentSignup || hasTeacherRoleSignup) && (
                       <Typography variant="caption" color="success.main">✓ You are signed up</Typography>
@@ -667,7 +690,7 @@ const EventsPage = () => {
                         if (hasParentSignup || hasTeacherRoleSignup) {
                           if (isParent) parentCancel(ev); else teacherCancelSignup(ev);
                         } else {
-                          if (isParent) parentSignup(ev, roleId); else teacherRoleSignup(ev, roleId);
+                          if (isParent) parentSignupRole(ev, roleId); else teacherRoleSignup(ev, roleId);
                         }
                       }}
                       disabled={isParent ? !canParentClick : !canTeacherClick}
@@ -684,6 +707,41 @@ const EventsPage = () => {
       </Stack>
     );
   };
+
+  // ─── FIX 2 + 3 + 4: admin stats computed from normalised fields ───
+  const adminAttending = useMemo(() =>
+    (selectedEvent?.rsvps || []).filter(r => getRsvpResponse(r) === 'attending').length,
+    [selectedEvent]
+  );
+  const adminDeclined = useMemo(() =>
+    (selectedEvent?.rsvps || []).filter(r => getRsvpResponse(r) === 'declined').length,
+    [selectedEvent]
+  );
+  const adminMaybe = useMemo(() =>
+    (selectedEvent?.rsvps || []).filter(r => getRsvpResponse(r) === 'maybe').length,
+    [selectedEvent]
+  );
+  // FIX 3: volunteer count uses signups.length fallback
+  const adminVolunteers = useMemo(() =>
+    (selectedEvent?.roles || []).reduce((t, r) => {
+      const taken = r.takenSlots ?? r.signupsCount ?? r.filledSlots ?? (Array.isArray(r.signups) ? r.signups.length : 0);
+      return t + Number(taken || 0);
+    }, 0),
+    [selectedEvent]
+  );
+  // FIX 4: sponsors — check both array lengths and handle missing field gracefully
+  const adminSponsors = useMemo(() => {
+    const list = selectedEvent?.sponsorships || selectedEvent?.pledges || [];
+    return list.length;
+  }, [selectedEvent]);
+  // FIX 4: approved sponsors count
+  const adminApprovedSponsors = useMemo(() => {
+    const list = selectedEvent?.sponsorships || selectedEvent?.pledges || [];
+    return list.filter(s => {
+      const st = (s.status || s.approvalStatus || '').toLowerCase();
+      return st === 'approved' || st === 'confirmed' || st === 'received';
+    }).length;
+  }, [selectedEvent]);
 
   return (
     <>
@@ -829,40 +887,50 @@ const EventsPage = () => {
                 {isAdmin && (
                   <>
                     <Divider />
+                    {/* FIX 2 + 3 + 4: use pre-computed memoised values */}
                     <Grid container spacing={2}>
-                      <Grid item xs={selectedEvent.sponsorshipEnabled ? 4 : 6}>
+                      <Grid item xs={selectedEvent.sponsorshipEnabled ? 3 : 6}>
                         <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
                           <Typography variant="h5" color="primary.main" fontWeight="bold">
-                            {selectedEvent.rsvps?.filter(r => r.response === 'attending').length || 0}
+                            {adminAttending}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">Attending</Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={selectedEvent.sponsorshipEnabled ? 4 : 6}>
+                      <Grid item xs={selectedEvent.sponsorshipEnabled ? 3 : 6}>
                         <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
                           <Typography variant="h5" color="success.main" fontWeight="bold">
-                            {selectedEvent.roles?.reduce((t, r) => t + (r.takenSlots || 0), 0) || 0}
+                            {adminVolunteers}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">Volunteers</Typography>
                         </Box>
                       </Grid>
                       {selectedEvent.sponsorshipEnabled && (
-                        <Grid item xs={4}>
-                          <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
-                            <Typography variant="h5" color="secondary.main" fontWeight="bold">
-                              {selectedEvent.sponsorships?.length || 0}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">Sponsors</Typography>
-                          </Box>
-                        </Grid>
+                        <>
+                          <Grid item xs={3}>
+                            <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+                              <Typography variant="h5" color="secondary.main" fontWeight="bold">
+                                {adminSponsors}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">Sponsors</Typography>
+                            </Box>
+                          </Grid>
+                          {/* FIX 4: show approved sponsors count */}
+                          <Grid item xs={3}>
+                            <Box sx={{ textAlign: 'center', py: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
+                              <Typography variant="h5" color="warning.main" fontWeight="bold">
+                                {adminApprovedSponsors}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">Approved</Typography>
+                            </Box>
+                          </Grid>
+                        </>
                       )}
                     </Grid>
 
-                    {selectedEvent.rsvps?.length > 0 && (
+                    {(adminAttending + adminDeclined + adminMaybe) > 0 && (
                       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
-                        {selectedEvent.rsvps?.filter(r => r.response === 'attending').length || 0} attending ·{' '}
-                        {selectedEvent.rsvps?.filter(r => r.response === 'declined').length || 0} declined ·{' '}
-                        {selectedEvent.rsvps?.filter(r => r.response === 'maybe').length || 0} maybe
+                        {adminAttending} attending · {adminDeclined} declined · {adminMaybe} maybe
                       </Typography>
                     )}
 
@@ -871,29 +939,6 @@ const EventsPage = () => {
                         <Divider />
                         <Typography variant="subtitle2">Role Slots</Typography>
                         {renderEventRoles(selectedEvent)}
-                      </>
-                    )}
-
-                    {/* Teacher: RSVP + share + export */}
-                    {isTeacher && canInteractWithEvent(selectedEvent) && (
-                      <>
-                        <Divider />
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          <Button variant="outlined" startIcon={<HowToRegIcon />}
-                            onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
-                            {getUserRSVP() ? `RSVP (${getUserRSVP().response})` : 'RSVP'}
-                          </Button>
-                          <Button variant="outlined" startIcon={<ShareIcon />}
-                            onClick={() => setShareDialogOpen(true)} sx={{ minHeight: 44 }}>Share</Button>
-                          <Button variant="outlined" startIcon={<DownloadIcon />}
-                            onClick={handleExport} sx={{ minHeight: 44 }}>Export</Button>
-                        </Stack>
-                        {getTeacherSignupRoleId(selectedEvent) && (
-                          <Button variant="outlined" color="error" size="small"
-                            onClick={() => teacherCancelSignup(selectedEvent)} sx={{ minHeight: 44, alignSelf: 'flex-start' }}>
-                            Cancel role participation
-                          </Button>
-                        )}
                       </>
                     )}
                   </>
@@ -909,15 +954,14 @@ const EventsPage = () => {
                         {renderEventRoles(selectedEvent)}
                       </>
                     )}
-                    
-                    {/* Teacher: RSVP + share + export */}
+
                     {canInteractWithEvent(selectedEvent) && (
                       <>
                         <Divider />
                         <Stack direction="row" spacing={1} flexWrap="wrap">
                           <Button variant="outlined" startIcon={<HowToRegIcon />}
                             onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
-                            {getUserRSVP() ? `RSVP (${getUserRSVP().response})` : 'RSVP'}
+                            {getUserRSVP() ? `RSVP (${getRsvpResponse(getUserRSVP())})` : 'RSVP'}
                           </Button>
                           <Button variant="outlined" startIcon={<ShareIcon />}
                             onClick={() => setShareDialogOpen(true)} sx={{ minHeight: 44 }}>Share</Button>
@@ -945,7 +989,7 @@ const EventsPage = () => {
                       <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
                         <Button variant="outlined" startIcon={<HowToRegIcon />}
                           onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
-                          {getUserRSVP() ? `RSVP (${getUserRSVP().response})` : 'RSVP'}
+                          {getUserRSVP() ? `RSVP (${getRsvpResponse(getUserRSVP())})` : 'RSVP'}
                         </Button>
                         {selectedEvent.sponsorshipEnabled && (
                           <Button variant="outlined" color="secondary" startIcon={<AttachMoneyIcon />}
@@ -975,7 +1019,7 @@ const EventsPage = () => {
                     <Stack direction="row" spacing={1} flexWrap="wrap">
                       <Button variant="outlined" startIcon={<HowToRegIcon />}
                         onClick={() => setRsvpDialogOpen(true)} sx={{ minHeight: 44 }}>
-                        {getUserRSVP() ? `RSVP (${getUserRSVP().response})` : 'RSVP'}
+                        {getUserRSVP() ? `RSVP (${getRsvpResponse(getUserRSVP())})` : 'RSVP'}
                       </Button>
                       {selectedEvent.sponsorshipEnabled && (
                         <Button variant="outlined" color="secondary" startIcon={<AttachMoneyIcon />}
@@ -1083,13 +1127,8 @@ const EventsPage = () => {
                       <Grid item xs={12} sm={6}>
                         <FormControl fullWidth>
                           <InputLabel>Repeat Pattern</InputLabel>
-                          <Select value={formData.recurringPattern || 'weekly'} label="Repeat Pattern" onChange={(e) => {
-                              console.log('=== RECURRING PATTERN CHANGE ===');
-                              console.log('Previous value:', formData.recurringPattern);
-                              console.log('New value:', e.target.value);
-                              console.log('===============================');
-                              setFormData((p) => ({ ...p, recurringPattern: e.target.value }));
-                            }}>
+                          <Select value={formData.recurringPattern || 'weekly'} label="Repeat Pattern"
+                            onChange={(e) => setFormData((p) => ({ ...p, recurringPattern: e.target.value }))}>
                             <MenuItem value="daily">Daily</MenuItem>
                             <MenuItem value="weekly">Weekly</MenuItem>
                             <MenuItem value="biweekly">Bi-weekly</MenuItem>

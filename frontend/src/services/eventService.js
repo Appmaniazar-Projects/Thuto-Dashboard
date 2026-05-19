@@ -31,7 +31,6 @@ const coerceEventsArray = (data) => {
   if (Array.isArray(data?.data)) return data.data;
   if (Array.isArray(data?.result)) return data.result;
   if (Array.isArray(data?.items)) return data.items;
-  // Add more potential response formats as needed
   return [];
 };
 
@@ -40,12 +39,10 @@ const normalizeEventDates = (event, keepCombined = false) => {
 
   const normalizedEvent = { ...event };
 
-  // If backend returns separate LocalDate and LocalTime fields, combine them
   if (event.startDate && event.startTime && !event.startDate.includes('T')) {
     normalizedEvent.startDate = `${event.startDate}T${event.startTime}`;
     normalizedEvent.endDate = `${event.endDate}T${event.endTime}`;
-    
-    // Keep original separate fields for form editing if needed
+
     if (!keepCombined) {
       const [sDate, sTime] = normalizedEvent.startDate.split('T');
       const [eDate, eTime] = normalizedEvent.endDate.split('T');
@@ -56,11 +53,7 @@ const normalizeEventDates = (event, keepCombined = false) => {
     }
   }
 
-  // If backend returns combined ISO datetime, keep it for display
-  // Don't split it - let the display code use it as-is
   if (normalizedEvent.startDate && normalizedEvent.startDate.includes('T')) {
-    // Already combined - keep as is for display
-    // Extract original fields for form editing if needed
     if (!keepCombined && !normalizedEvent.startTimeOriginal) {
       const [date, time] = normalizedEvent.startDate.split('T');
       normalizedEvent.startDateOriginal = date;
@@ -81,7 +74,6 @@ const normalizeEventPayload = (eventData) => {
 
   const payload = { ...eventData };
 
-  // Handle date/time fields - backend expects separate LocalDate and LocalTime fields
   if (payload.startDate) {
     if (payload.startDate.includes('T')) {
       const [date, time] = payload.startDate.split('T');
@@ -102,7 +94,6 @@ const normalizeEventPayload = (eventData) => {
     }
   }
 
-  // Handle Date objects
   if (payload.startDate instanceof Date) {
     payload.startDate = payload.startDate.toISOString().split('T')[0];
     payload.startTime = payload.startDate.toISOString().split('T')[1].substring(0, 8);
@@ -134,8 +125,6 @@ const normalizeEventPayload = (eventData) => {
 
   if (payload.recurringPattern !== undefined) {
     if (payload.recurringPattern && typeof payload.recurringPattern === 'object') {
-      // Leave as object - Spring/Jackson will map it to RecurringPatternDTO
-      // Just ensure endDate is a plain YYYY-MM-DD string, not a full ISO timestamp
       const rp = payload.recurringPattern;
       payload.recurringPattern = {
         ...rp,
@@ -163,8 +152,6 @@ const normalizeEventPayload = (eventData) => {
       .filter(r => r.roleName);
   }
 
-  // Preserve userId and schoolId when explicitly provided in eventData
-
   return payload;
 };
 
@@ -175,7 +162,6 @@ export const getEvents = async (startDate, endDate) => {
     const response = await api.get(`${EVENTS_BASE}/${schoolId}`);
     const events = coerceEventsArray(response.data);
 
-    // Normalize dates - keep combined format for display
     const normalizedEvents = events.map((ev) => normalizeEventDates(ev, true));
 
     if (!startDate && !endDate) return normalizedEvents;
@@ -205,7 +191,6 @@ export const getEvents = async (startDate, endDate) => {
 export const getEventById = async (eventId) => {
   try {
     const response = await api.get(`${EVENTS_BASE}/${eventId}/details`);
-    // Normalize dates - keep combined format for display
     return normalizeEventDates(response.data, true);
   } catch (error) {
     console.error('Error fetching event:', error);
@@ -217,7 +202,6 @@ export const getEventById = async (eventId) => {
 export const createEvent = async (eventData) => {
   try {
     const payload = normalizeEventPayload(eventData);
-  
     const response = await api.post(`${EVENTS_BASE}/create`, payload);
     return response.data;
   } catch (error) {
@@ -235,10 +219,7 @@ export const updateEvent = async (eventId, eventData) => {
   try {
     const payload = normalizeEventPayload({ ...eventData, id: eventId });
     const response = await api.put(`/events/update/${eventId}`, payload);
-    
-    // Normalize dates - split them for form editing after update
     const normalizedEvent = normalizeEventDates(response.data, false);
-    
     return normalizedEvent;
   } catch (error) {
     console.error('Error updating event:', error.response || error);
@@ -289,7 +270,7 @@ export const signUpForEventRole = async (eventId, roleId) => {
 
     const response = await api.post(
       `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup`,
-      null,                          // no request body
+      null,
       { params: { schoolId, userId } }
     );
     return response.data;
@@ -306,9 +287,8 @@ export const cancelEventSignup = async (eventId, roleId = null) => {
     const userInfo = storedUser ? JSON.parse(storedUser) : null;
     const userId = userInfo?.id || userInfo?.userId || userInfo?.phoneNumber;
 
-    // If we have a roleId, cancel that specific role signup
     const url = roleId
-      ? `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup/cancel` 
+      ? `${EVENTS_BASE}/${eventId}/roles/${roleId}/signup/cancel`
       : `${EVENTS_BASE}/${eventId}/signup/cancel`;
 
     const response = await api.delete(url, {
@@ -326,7 +306,6 @@ export const setTeacherAttendanceStatus = async (eventId, status) => {
   try {
     const endpoint = `/events/${eventId}/teacher-attendance`;
     const response = await api.put(endpoint, { status });
-    console.log('Teacher attendance updated successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error updating teacher attendance:', error);
@@ -526,12 +505,14 @@ export const getEventDetails = async (eventId) => {
   }
 };
 
-// Event Export
-export const exportEvent = async (eventId, format = 'ics') => {
+// ─── FIX 6: iCal export — correct URL pattern ───────────────────────────────
+// Old (broken): /events/export/25?format=ics  → 500
+// New (correct): /events/25/export?format=ics
+export const exportEvent = async (eventId, exportFormat = 'ics') => {
   try {
-    const response = await api.get(`${EVENTS_BASE}/export/${eventId}`, {
-      params: { format },
-      responseType: 'blob'
+    const response = await api.get(`${EVENTS_BASE}/${eventId}/export`, {
+      params: { format: exportFormat },
+      responseType: 'blob',
     });
     return response.data;
   } catch (error) {
