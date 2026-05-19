@@ -44,7 +44,11 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Warning as WarningIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  SupervisorAccount as AdminIcon,
+  School as TeacherIcon,
+  Note as NoteIcon
+
 } from '@mui/icons-material';
 import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
@@ -189,7 +193,7 @@ const Users = () => {
             const gradesData = await gradeService.getSchoolGrades();
             setGrades(gradesData);
         } catch (error) {
-            console.error('Failed to load grades:', error);
+            // Silently handle error and continue
         }
     };
 
@@ -198,7 +202,6 @@ const Users = () => {
             const subjectsData = await subjectService.getSchoolSubjects();
             setSubjects(subjectsData || []);
         } catch (error) {
-            console.warn('Subjects endpoint not available, using fallback data:', error.message);
             // Provide fallback subject data until backend implements the endpoint
             setSubjects([
                 { id: 1, name: 'Mathematics' },
@@ -225,7 +228,6 @@ const Users = () => {
             setStudents(studentsData || []);
         } catch (err) {
             setError('Failed to load users.');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -451,7 +453,6 @@ const Users = () => {
             setError(''); // Clear any previous errors
         } catch (err) {
             setError('Failed to save user: ' + (err.response?.data?.message || err.message));
-            console.error(err);
         }
     };
 
@@ -462,7 +463,6 @@ const Users = () => {
                 fetchUsers();
             } catch (err) {
                 setError('Failed to delete user');
-                console.error(err);
             }
         }
     };
@@ -492,7 +492,6 @@ const Users = () => {
             saveAs(blob, `student_notes_${student.name}_${student.lastName || ''}_${new Date().toISOString().split('T')[0]}.csv`);
             
         } catch (error) {
-            console.error('Failed to export student notes:', error);
             setError('Failed to export student notes. Please try again.');
         }
     };
@@ -825,7 +824,6 @@ const Users = () => {
             fetchUsers();
 
         } catch (error) {
-            console.error('Bulk upload error:', error);
             setBulkUploadErrors([error.response?.data?.message || error.message || 'Upload failed']);
         } finally {
             setBulkUploadLoading(false);

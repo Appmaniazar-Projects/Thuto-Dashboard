@@ -15,12 +15,6 @@ export const getAllUsers = async () => {
       adminInfo.school?.id ||
       adminInfo.schoolId;
     
-    console.log('Fetching all users from /admin/users with context:', {
-      adminEmail: adminInfo.email,
-      schoolId: schoolId,
-      adminInfo: adminInfo
-    });
-    
     // Add admin context as query parameters
     const params = {};
     if (schoolId) params.schoolId = schoolId;
@@ -30,22 +24,12 @@ export const getAllUsers = async () => {
     
     // Handle different response structures
     const users = response.data || [];
-    console.log('Received users response:', { 
-      status: response.status, 
-      dataType: typeof users, 
-      isArray: Array.isArray(users),
-      length: Array.isArray(users) ? users.length : 'N/A',
-      users: users
-    });
     
     // Ensure we always return an array
     return Array.isArray(users) ? users : [];
   } catch (error) {
-    console.error('Failed to fetch users:', error);
-    
     // If it's a 404 or the endpoint doesn't exist, return empty array
     if (error.response?.status === 404) {
-      console.log('No users found (404), returning empty array');
       return [];
     }
     
@@ -111,7 +95,6 @@ export const searchStudents = async (query, limit = 10) => {
     const student = response.data;
     return student ? [student] : [];
   } catch (error) {
-    console.error('Failed to search students:', error);
     if (error.response?.status === 404) return [];
     throw error;
   }
@@ -132,7 +115,6 @@ export const getParentStudents = async (parentId) => {
     const response = await api.get(`/admin/parents/${parentId}/students`, { params });
     return response.data || [];
   } catch (error) {
-    console.error('Failed to fetch parent students:', error);
     if (error.response?.status === 404) return [];
     throw error;
   }
@@ -157,7 +139,6 @@ export const linkParentStudents = async (parentId, studentIds = []) => {
     const response = await api.post(`/admin/parents/${parentId}/link-students`, payload, { params });
     return response.data;
   } catch (error) {
-    console.error('Failed to link parent to students:', error);
     throw error;
   }
 };
@@ -185,7 +166,6 @@ export const getUsersByRole = async (role) => {
     const response = await api.get(`/admin/users/role/${role}`, { params });
     return response.data || [];
   } catch (error) {
-    console.error(`Failed to fetch users with role ${role}:`, error);
     
     // Return empty array for 404s
     if (error.response?.status === 404) {
@@ -314,15 +294,8 @@ export const createUser = async (userData) => {
     };
     
     const response = await api.post('/admin/createUser', payload);
-    console.log('✅ User created successfully');
     return response.data;
   } catch (error) {
-    console.error('Failed to create user:', error);
-    console.error('Error details:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
     throw error;
   }
 };
@@ -366,10 +339,8 @@ export const updateUser = async (userId, userData) => {
     };
     
     const response = await api.put(`/admin/users/${userId}`, updatePayload);
-    console.log('✅ User updated successfully');
     return response.data;
   } catch (error) {
-    console.error('Failed to update user:', error.message);
     
     // If it's a 500 error, provide a more helpful error message
     if (error.response?.status === 500) {
@@ -406,9 +377,7 @@ export const deleteUser = async (userId) => {
     await api.delete(`/admin/removeUser/${userId}`, {
       params: Object.keys(params).length > 0 ? params : undefined
     });
-    console.log('✅ User deleted successfully');
   } catch (error) {
-    console.error('Failed to delete user:', error);
     throw error;
   }
 };
@@ -471,7 +440,6 @@ export const uploadSchoolDocument = async ({
       firebaseData: uploadResult
     };
   } catch (error) {
-    console.error('Failed to upload school document:', error);
     throw error;
   }
 };
@@ -539,7 +507,6 @@ export const createAnnouncement = async ({
     const response = await api.post('/admin/announcements', announcementPayload);
     return response.data;
   } catch (error) {
-    console.error('Failed to create announcement:', error);
     throw error;
   }
 };
@@ -553,7 +520,6 @@ export const getSchoolDocuments = async (filters = {}) => {
     const response = await api.get('/admin/documents', { params: filters });
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch school documents:', error);
     throw error;
   }
 };
@@ -573,7 +539,6 @@ export const deleteSchoolDocument = async (documentId) => {
       try {
         await fileUploadService.deleteFile(document.filePath);
       } catch (firebaseError) {
-        console.warn('Failed to delete from Firebase Storage:', firebaseError);
         // Continue with backend deletion even if Firebase deletion fails
       }
     }
@@ -581,7 +546,6 @@ export const deleteSchoolDocument = async (documentId) => {
     // Delete from backend
     await api.delete(`/admin/documents/${documentId}`);
   } catch (error) {
-    console.error('Failed to delete document:', error);
     throw error;
   }
 };
@@ -605,7 +569,6 @@ export const getDocumentsFromStorage = async (filters = {}) => {
 
     return await fileUploadService.getFiles(criteria);
   } catch (error) {
-    console.error('Failed to fetch documents from storage:', error);
     throw error;
   }
 };
@@ -653,7 +616,6 @@ export const uploadBulkData = async (file, dataType = 'students', onProgress = n
       firebaseData: uploadResult
     };
   } catch (error) {
-    console.error('Failed to upload bulk data:', error);
     throw error;
   }
 };
