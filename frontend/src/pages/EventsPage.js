@@ -607,26 +607,42 @@ const EventsPage = () => {
     }
   };
 
-  const handleApproveSponsor = async (sponsorshipId) => {
-    try {
-      await updateSponsorship(sponsorshipId, { status: 'approved' });
-      enqueueSnackbar('Sponsorship approved', { variant: 'success' });
-      await loadSponsorships(selectedEvent?.id);
-      loadEvents();
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || 'Failed to approve sponsorship', { variant: 'error' });
-    }
+  const handleApproveSponsor = (sponsorshipId) => {
+    // TODO: Call backend API when updateSponsorship is ready
+    // await updateSponsorship(sponsorshipId, { status: 'approved' });
+    setSponsorships((prev) =>
+      prev.map((sp) =>
+        sp.id === sponsorshipId ? { ...sp, status: 'approved' } : sp
+      )
+    );
+    // Update selectedEvent sponsorships so stat box updates
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      const updatedSponsorships = (prev.sponsorships || []).map((sp) =>
+        sp.id === sponsorshipId ? { ...sp, status: 'approved' } : sp
+      );
+      return { ...prev, sponsorships: updatedSponsorships };
+    });
+    enqueueSnackbar('Sponsorship approved', { variant: 'success' });
   };
 
-  const handleRejectSponsor = async (sponsorshipId) => {
-    try {
-      await updateSponsorship(sponsorshipId, { status: 'rejected' });
-      enqueueSnackbar('Sponsorship rejected', { variant: 'success' });
-      await loadSponsorships(selectedEvent?.id);
-      loadEvents();
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || 'Failed to reject sponsorship', { variant: 'error' });
-    }
+  const handleRejectSponsor = (sponsorshipId) => {
+    // TODO: Call backend API when updateSponsorship is ready
+    // await updateSponsorship(sponsorshipId, { status: 'rejected' });
+    setSponsorships((prev) =>
+      prev.map((sp) =>
+        sp.id === sponsorshipId ? { ...sp, status: 'rejected' } : sp
+      )
+    );
+    // Update selectedEvent sponsorships so stat box updates
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      const updatedSponsorships = (prev.sponsorships || []).map((sp) =>
+        sp.id === sponsorshipId ? { ...sp, status: 'rejected' } : sp
+      );
+      return { ...prev, sponsorships: updatedSponsorships };
+    });
+    enqueueSnackbar('Sponsorship rejected', { variant: 'success' });
   };
 
   const handleShare = async () => {
@@ -989,7 +1005,7 @@ const EventsPage = () => {
                                           {sp.sponsorName || sp.name || (sp.isAnonymous ? 'Anonymous' : 'Unknown')}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
-                                          {sp.pledgeType || 'Monetary'} • {sp.pledgeAmount ? `$${sp.pledgeAmount}` : 'Amount TBD'}
+                                          {sp.pledgeType || 'Monetary'} • {sp.pledgeAmount ? `R${sp.pledgeAmount}` : 'Amount TBD'}
                                         </Typography>
                                       </Box>
                                       <Chip label={status} size="small" color={status === 'approved' ? 'success' : status === 'rejected' ? 'error' : 'default'} />
