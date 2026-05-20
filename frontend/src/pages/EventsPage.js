@@ -1002,7 +1002,7 @@ const EventsPage = () => {
                                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                                       <Box>
                                         <Typography variant="body2" fontWeight="600">
-                                          {sp.sponsorName || sp.name || (sp.isAnonymous ? 'Anonymous' : 'Unknown')}
+                                          {sp.sponsorName || sp.name || (sp.isAnonymous ? 'Anonymous' : 'Unknown Sponsor')}
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
                                           {sp.pledgeType || 'Monetary'} • {sp.pledgeAmount ? `R${sp.pledgeAmount}` : 'Amount TBD'}
@@ -1017,10 +1017,10 @@ const EventsPage = () => {
                                     )}
                                     {status === 'pending' && (
                                       <Stack direction="row" spacing={1}>
-                                        <Button size="small" variant="contained" color="success" onClick={() => handleApproveSponsor(sp.id)} sx={{ minHeight: 36 }}>
+                                        <Button size="small" variant="contained" color="success" onClick={() => handleApproveSponsor(sp.id)} sx={{ minHeight: 36, flex: 1 }}>
                                           Approve
                                         </Button>
-                                        <Button size="small" variant="outlined" color="error" onClick={() => handleRejectSponsor(sp.id)} sx={{ minHeight: 36 }}>
+                                        <Button size="small" variant="contained" color="error" onClick={() => handleRejectSponsor(sp.id)} sx={{ minHeight: 36, flex: 1 }}>
                                           Reject
                                         </Button>
                                       </Stack>
