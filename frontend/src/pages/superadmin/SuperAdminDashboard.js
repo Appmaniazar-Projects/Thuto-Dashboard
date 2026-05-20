@@ -111,7 +111,7 @@ import {
   bulkUploadSchools
 
 } from '../../services/superAdminService';
-
+import { getRoleDisplayName } from '../../constants/roleLabels';
 import regionService from '../../services/regionService';
 
 
@@ -1422,7 +1422,7 @@ const filteredAdmins = useMemo(() => {
 
       <PageTitle
 
-        title="Super Admin Dashboard"
+        title={`${getRoleDisplayName(currentUser?.role)} Dashboard`}
 
         subtitle="Manage schools and administrators across the platform"
 
