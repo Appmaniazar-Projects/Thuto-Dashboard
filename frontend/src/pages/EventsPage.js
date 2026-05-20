@@ -599,7 +599,13 @@ const EventsPage = () => {
     try {
       setSponsorshipsLoading(true);
       const data = await getEventSponsorships(eventId);
-      setSponsorships(Array.isArray(data) ? data : data?.sponsorships || []);
+      const sponsorshipList = Array.isArray(data) ? data : data?.sponsorships || [];
+      setSponsorships(sponsorshipList);
+      // Update selectedEvent sponsorships so stat box recalculates
+      setSelectedEvent((prev) => {
+        if (!prev) return prev;
+        return { ...prev, sponsorships: sponsorshipList };
+      });
     } catch (e) {
       console.error('Error loading sponsorships:', e);
     } finally {
