@@ -396,11 +396,19 @@ const SuperAdminDashboard = () => {
 
   const [searchSchoolName, setSearchSchoolName] = useState('');
 
+  // Admin filters
+  const [adminFilterProvince, setAdminFilterProvince] = useState('');
+  const [adminFilterRegion, setAdminFilterRegion] = useState('');
+  const [adminSearchSchoolName, setAdminSearchSchoolName] = useState('');
+  const [adminLoadingFilterRegions, setAdminLoadingFilterRegions] = useState(false);
+
 
 
   // Only National SuperAdmin and Master see multiple provinces — show filter for them
 
-  const showFilter = isNationalSuperAdmin() || isMaster();
+  const showFilter = isNationalSuperAdmin() || isMaster() || isProvincialSuperAdmin();
+  const showSchoolFilter = showFilter;
+  const showAdminFilter = showFilter;
 
 
 
@@ -472,13 +480,17 @@ const filteredAdmins = useMemo(() => {
   return safeFilter(admins, a => {
     if (filterProvince && a.province !== filterProvince) return false;
     if (filterRegion) {
-      // Match admin via their school's region
       const school = schools.find(s => s.id === (a.schoolId || a.school?.id));
       if (school && school.region !== filterRegion) return false;
     }
+    if (searchSchoolName) {
+      const school = schools.find(s => s.id === (a.schoolId || a.school?.id));
+      const schoolName = school?.name || '';
+      if (!schoolName.toLowerCase().includes(searchSchoolName.toLowerCase())) return false;
+    }
     return true;
   });
-}, [admins, filterProvince, filterRegion, schools]);
+}, [admins, filterProvince, filterRegion, searchSchoolName, schools]);
 
 
 
@@ -2096,11 +2108,11 @@ const filteredAdmins = useMemo(() => {
 
                   </Typography>
 
-                  {(filterProvince || filterRegion) && (
+                  {(adminFilterProvince || adminFilterRegion || adminSearchSchoolName) && (
 
                     <Chip
 
-                      label={`${[filterProvince, filterRegion].filter(Boolean).length} filter${[filterProvince, filterRegion].filter(Boolean).length > 1 ? 's' : ''} active`}
+                      label={`${[adminFilterProvince, adminFilterRegion, adminSearchSchoolName].filter(Boolean).length} filter${[adminFilterProvince, adminFilterRegion, adminSearchSchoolName].filter(Boolean).length > 1 ? 's' : ''} active`}
 
                       size="small"
 
@@ -2962,35 +2974,40 @@ const filteredAdmins = useMemo(() => {
 
           />
 
-
-
-          <TextField
-
-            select label="School" fullWidth margin="dense" required
-
-            value={adminForm.schoolId}
-
-            onChange={(e) => setAdminForm({ ...adminForm, schoolId: e.target.value })}
-
-          >
-
-            <MenuItem value=""><em>Select School</em></MenuItem>
-
-            {safeFilter(schools, s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))
-
-              .map((s) => (
-
-                <MenuItem key={s.id} value={s.id}>
-
-                  {s.name}{!isProvincialSuperAdmin() ? ` (${s.province || 'No province'})` : ''}
-
-                </MenuItem>
-
-              ))}
-
-          </TextField>
-
-
+          <Autocomplete
+            fullWidth
+            options={safeFilter(schools, s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))}
+            getOptionLabel={(option) => `${option.name}${!isProvincialSuperAdmin() ? ` (${option.province || 'No province'})` : ''}`}
+            value={schools.find(s => s.id === adminForm.schoolId) || null}
+            onChange={(e, newValue) => {
+              if (newValue) {
+                setAdminForm({ ...adminForm, schoolId: newValue.id });
+              }
+            }}
+            filterOptions={(options, state) => {
+              if (!state.inputValue) return options;
+              return options.filter(school =>
+                school.name.toLowerCase().includes(state.inputValue.toLowerCase()) ||
+                school.province?.toLowerCase().includes(state.inputValue.toLowerCase()) ||
+                school.region?.toLowerCase().includes(state.inputValue.toLowerCase())
+              );
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="School"
+                required
+                margin="dense"
+                placeholder="Type to search schools..."
+              />
+            )}
+            noOptionsText="No schools found"
+            slotProps={{
+              paper: {
+                sx: { maxHeight: 300 }
+              }
+            }}
+          />
 
           {/* Auto-assigned province & region from selected school */}
 
