@@ -3,15 +3,10 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
 
   Box,
-
   Button,
-
   Card,
-
   CardContent,
-
   Dialog,
-
   DialogTitle,
 
   DialogContent,
@@ -19,6 +14,7 @@ import {
   DialogActions,
 
   TextField,
+  Autocomplete,
 
   Typography,
 
@@ -93,21 +89,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
 
   getAllSchools,
-
   createSchool,
-
   updateSchool,
-
   deleteSchool,
-
   getAllAdmins,
-
   createAdmin,
-
   updateAdmin,
-
   deleteAdmin,
-
   bulkUploadSchools
 
 } from '../../services/superAdminService';
@@ -131,13 +119,10 @@ const ScrollableTable = ({ children }) => {
   const syncTop = useCallback(() => {
 
     if (syncingRef.current) return;
-
     syncingRef.current = true;
 
     if (topRef.current && bottomRef.current) {
-
       topRef.current.scrollLeft = bottomRef.current.scrollLeft;
-
     }
 
     syncingRef.current = false;
@@ -322,7 +307,7 @@ const SuperAdminDashboard = () => {
 
     phoneNumber: '',
 
-    schoolId: '',
+    schoolIds: [],
 
     password: '',
 
@@ -476,18 +461,28 @@ const filteredSchools = useMemo(() => {
   });
 }, [schools, filterProvince, filterRegion, searchSchoolName]);
 
-const filteredAdmins = useMemo(() => {
-  return safeFilter(admins, a => {
-    if (filterProvince && a.province !== filterProvince) return false;
-    if (filterRegion) {
-      const school = schools.find(s => s.id === (a.schoolId || a.school?.id));
-      if (school && school.region !== filterRegion) return false;
-    }
-    if (searchSchoolName) {
-      const school = schools.find(s => s.id === (a.schoolId || a.school?.id));
-      const schoolName = school?.name || '';
-      if (!schoolName.toLowerCase().includes(searchSchoolName.toLowerCase())) return false;
-    }
+  const filteredAdmins = useMemo(() => {
+    return safeFilter(admins, a => {
+      if (filterProvince && a.province !== filterProvince) return false;
+    const adminSchoolIds = Array.isArray(a.schoolIds) ? a.schoolIds
+    : a.schoolId ? [a.schoolId]
+    : a.school?.id ? [a.school.id]
+    : [];
+
+      if (filterRegion) {
+        const hasMatch = adminSchoolIds.some(id => {
+          const s = schools.find(sc => sc.id === id);
+          return s?.region === filterRegion;
+        });
+        if (!hasMatch) return false;
+      }
+      if (searchSchoolName) {
+        const hasMatch = adminSchoolIds.some(id => {
+          const s = schools.find(sc => sc.id === id);
+          return s?.name?.toLowerCase().includes(searchSchoolName.toLowerCase());
+        });
+        if (!hasMatch) return false;
+      }
     return true;
   });
 }, [admins, filterProvince, filterRegion, searchSchoolName, schools]);
@@ -1046,7 +1041,12 @@ const filteredAdmins = useMemo(() => {
 
         phoneNumber: admin.phoneNumber || '',
 
-        schoolId: admin.schoolId || admin.school?.id || '',
+        schoolIds: (() => {
+          if (Array.isArray(admin.schoolIds)) return admin.schoolIds;
+          if (admin.schoolId) return [admin.schoolId];
+          if (admin.school?.id) return [admin.school.id];
+          return [];
+        })(),
 
         password: '',
 
@@ -1064,7 +1064,7 @@ const filteredAdmins = useMemo(() => {
 
         name: '', lastName: '', email: '', phoneNumber: '',
 
-        schoolId: '', password: '', province: '', region: ''
+        schoolIds: [], password: '', province: '', region: ''
 
       });
 
@@ -1088,7 +1088,7 @@ const filteredAdmins = useMemo(() => {
 
       name: '', lastName: '', email: '', phoneNumber: '',
 
-      schoolId: '', password: '', province: '', region: ''
+      schoolIds: [], password: '', province: '', region: ''
 
     });
 
@@ -1130,42 +1130,29 @@ const filteredAdmins = useMemo(() => {
 
 
 
-      const selectedSchool = schools.find(s => s.id === adminForm.schoolId);
+      const selectedSchools = schools.filter(s => adminForm.schoolIds.includes(s.id));
 
-
-
-      if (isProvincialSuperAdmin() && selectedSchool?.province !== currentUserProvinceName) {
-
+      if (isProvincialSuperAdmin() && selectedSchools.some(s => s.province !== currentUserProvinceName)) {
         setError(`You can only assign admins to schools in ${currentUserProvinceName}`); return;
-
       }
 
-
-
-      const province = selectedSchool?.province || currentUserProvinceName || adminForm.province || '';
-
-      const region = selectedSchool?.region || currentUserRegionName || adminForm.region || '';
-
+      // Use the first school's province/region (or the user's own if none selected)
+      const province = selectedSchools[0]?.province || currentUserProvinceName || adminForm.province || '';
+      const region = selectedSchools[0]?.region || currentUserRegionName || adminForm.region || '';
 
 
       const payload = {
 
         ...adminForm,
-
         name: adminForm.name.trim(),
-
         lastName: adminForm.lastName.trim(),
-
         email: adminForm.email.trim(),
-
         phoneNumber: adminForm.phoneNumber.trim(),
-
         province,
-
         region,
-
+        schoolIds: adminForm.schoolIds,   // array of IDs
+        schoolId: adminForm.schoolIds[0] ?? null,
         createdBy: currentUser.email,
-
         updatedBy: currentUser.email
 
       };
@@ -1198,7 +1185,7 @@ const filteredAdmins = useMemo(() => {
 
         name: '', lastName: '', email: '', phoneNumber: '',
 
-        schoolId: '', password: '', province: '', region: ''
+        schoolIds: [], password: '', province: '', region: ''
 
       });
 
@@ -2019,11 +2006,14 @@ const filteredAdmins = useMemo(() => {
                       <TableCell>
 
                         <Chip
-
-                          label={safeFilter(admins, a => a.schoolId === school.id).length > 0 ? 'Active' : 'Pre-populated'}
-
-                          color={safeFilter(admins, a => a.schoolId === school.id).length > 0 ? 'success' : 'default'}
-
+                            label={safeFilter(admins, a => {
+                              const ids = Array.isArray(a.schoolIds) ? a.schoolIds : a.schoolId ? [a.schoolId] : [];
+                              return ids.includes(school.id);
+                            }).length > 0 ? 'Active' : 'Pre-populated'}
+                            color={safeFilter(admins, a => {
+                              const ids = Array.isArray(a.schoolIds) ? a.schoolIds : a.schoolId ? [a.schoolId] : [];
+                              return ids.includes(school.id);
+                            }).length > 0 ? 'success' : 'default'}
                           size="small"
 
                         />
@@ -2108,11 +2098,11 @@ const filteredAdmins = useMemo(() => {
 
                   </Typography>
 
-                  {(adminFilterProvince || adminFilterRegion || adminSearchSchoolName) && (
+                  {(filterProvince || filterRegion || searchSchoolName) && (
 
                     <Chip
 
-                      label={`${[adminFilterProvince, adminFilterRegion, adminSearchSchoolName].filter(Boolean).length} filter${[adminFilterProvince, adminFilterRegion, adminSearchSchoolName].filter(Boolean).length > 1 ? 's' : ''} active`}
+                      label={`${[filterProvince, filterRegion, searchSchoolName].filter(Boolean).length} filter${[filterProvince, filterRegion, searchSchoolName].filter(Boolean).length > 1 ? 's' : ''} active`}
 
                       size="small"
 
@@ -2340,7 +2330,7 @@ const filteredAdmins = useMemo(() => {
 
                   {/* Active filter chips */}
 
-                  {(filterProvince || filterRegion) && (
+                  {(filterProvince || filterRegion || searchSchoolName) && (
 
                     <Stack direction="row" spacing={0.75} sx={{ mt: 1.5 }} flexWrap="wrap" useFlexGap>
 
@@ -2376,6 +2366,22 @@ const filteredAdmins = useMemo(() => {
 
                       )}
 
+                      {searchSchoolName && (
+
+                        <Chip
+
+                          label={`Name: "${searchSchoolName}"`}
+
+                          size="small"
+
+                          onDelete={() => setSearchSchoolName('')}
+
+                          sx={{ height: 24, fontSize: 12 }}
+
+                        />
+
+                      )}
+
                     </Stack>
 
                   )}
@@ -2397,17 +2403,11 @@ const filteredAdmins = useMemo(() => {
                   <TableRow>
 
                     <TableCell>First Name</TableCell>
-
                     <TableCell>Last Name</TableCell>
-
                     <TableCell>Email</TableCell>
-
                     <TableCell>Phone</TableCell>
-
-                    <TableCell>School</TableCell>
-
+                    <TableCell>Schools</TableCell>
                     <TableCell>Status</TableCell>
-
                     <TableCell align="right">Actions</TableCell>
 
                   </TableRow>
@@ -2418,28 +2418,27 @@ const filteredAdmins = useMemo(() => {
 
                   {filteredAdmins.map((admin, i) => {
 
-                    const school = schools.find(s => s.id === (admin.schoolId || admin.school?.id));
-
-                    const schoolName = school?.name || admin.school?.name || admin.schoolName || 'Unknown School';
+                    const adminSchoolIds = Array.isArray(admin.schoolIds) ? admin.schoolIds
+                      : admin.schoolId ? [admin.schoolId]
+                      : admin.school?.id ? [admin.school.id]
+                      : [];
+                    const schoolNames = adminSchoolIds
+                      .map(id => schools.find(s => s.id === id)?.name)
+                      .filter(Boolean);
+                    const schoolName = schoolNames.length
+                      ? schoolNames.join(', ')
+                      : admin.school?.name || admin.schoolName || 'Unknown School';
 
                     return (
 
                       <TableRow key={admin.id || `admin-${i}`}>
-
                         <TableCell>{admin.name}</TableCell>
-
                         <TableCell>{admin.lastName || 'N/A'}</TableCell>
-
                         <TableCell>{admin.email}</TableCell>
-
                         <TableCell>{admin.phoneNumber}</TableCell>
-
                         <TableCell>{schoolName}</TableCell>
-
                         <TableCell>
-
                           <Chip label="Active" color="success" size="small" />
-
                         </TableCell>
 
                         <TableCell align="right">
@@ -2975,15 +2974,24 @@ const filteredAdmins = useMemo(() => {
           />
 
           <Autocomplete
+            multiple
             fullWidth
             options={safeFilter(schools, s => s && (!isProvincialSuperAdmin() || s.province === currentUserProvinceName))}
             getOptionLabel={(option) => `${option.name}${!isProvincialSuperAdmin() ? ` (${option.province || 'No province'})` : ''}`}
-            value={schools.find(s => s.id === adminForm.schoolId) || null}
-            onChange={(e, newValue) => {
-              if (newValue) {
-                setAdminForm({ ...adminForm, schoolId: newValue.id });
-              }
+            value={schools.filter(s => adminForm.schoolIds.includes(s.id))}
+            onChange={(e, newValues) => {
+              setAdminForm({ ...adminForm, schoolIds: newValues.map(v => v.id) });
             }}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  key={option.id}
+                  label={option.name}
+                  size="small"
+                  {...getTagProps({ index })}
+                />
+              ))
+            }
             filterOptions={(options, state) => {
               if (!state.inputValue) return options;
               return options.filter(school =>
@@ -2995,62 +3003,39 @@ const filteredAdmins = useMemo(() => {
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="School"
+                label="Schools"
                 required
                 margin="dense"
-                placeholder="Type to search schools..."
+                placeholder={adminForm.schoolIds.length ? '' : 'Type to search schools...'}
               />
             )}
             noOptionsText="No schools found"
-            slotProps={{
-              paper: {
-                sx: { maxHeight: 300 }
-              }
-            }}
+            slotProps={{ paper: { sx: { maxHeight: 300 } } }}
           />
 
           {/* Auto-assigned province & region from selected school */}
 
-          {adminForm.schoolId && (() => {
-
-            const sel = schools.find(s => s.id === adminForm.schoolId);
-
-            if (!sel) return null;
-
+          {adminForm.schoolIds?.length > 0 && (() => {
+            const selectedSchools = schools.filter(s => adminForm.schoolIds.includes(s.id));
+            const provinces = [...new Set(selectedSchools.map(s => s.province).filter(Boolean))];
+            const regions = [...new Set(selectedSchools.map(s => s.region).filter(Boolean))];
             return (
-
               <Box sx={{ display: 'flex', gap: 2 }}>
-
                 <TextField
-
-                  label="Province" fullWidth margin="dense"
-
-                  value={sel.province || ''}
-
+                  label="Province(s)" fullWidth margin="dense"
+                  value={provinces.join(', ') || ''}
                   disabled
-
-                  helperText="Auto-assigned from school"
-
+                  helperText="Auto-assigned from school(s)"
                 />
-
                 <TextField
-
-                  label="Region" fullWidth margin="dense"
-
-                  value={sel.region || 'N/A'}
-
+                  label="Region(s)" fullWidth margin="dense"
+                  value={regions.join(', ') || 'N/A'}
                   disabled
-
-                  helperText="Auto-assigned from school"
-
+                  helperText="Auto-assigned from school(s)"
                 />
-
               </Box>
-
             );
-
           })()}
-
 
 
           <TextField
