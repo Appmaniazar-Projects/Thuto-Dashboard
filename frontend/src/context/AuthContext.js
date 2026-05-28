@@ -42,6 +42,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState(null);
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
@@ -263,6 +264,8 @@ export const AuthProvider = ({ children }) => {
     updateUserProfile,
     setUser,
     setAuthData,
+    selectedSchool,
+    setSelectedSchool,
     isAuthenticated: !!currentUser,
     isMaster,
     isSuperAdmin,

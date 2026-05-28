@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Paper, Typography, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import analyticsService from '../../services/analyticsService';
 import Logo from '../../assets/Logo.png';
 
 const AdminLogin = () => {
@@ -56,6 +57,7 @@ const AdminLogin = () => {
     try {
       const { user, token } = await authService.adminLogin(email, password);
       setAuthData(user, token);
+      analyticsService.trackEvent('admin_login_success', { email, role: user?.role });
       navigate('/dashboard');
     } catch (err) {
       console.error('Admin login failed:', err);
@@ -67,11 +69,14 @@ const AdminLogin = () => {
         setError('Invalid email or password. Please try again.');
       } else if (err.message.includes('403')) {
         setError('Access denied. You do not have permission to access the admin panel.');
+      } else if (err.message.includes('404') || err.message.toLowerCase().includes('not found')) {
+        setError('Email not recognised. Please contact your Super Admin.');
       } else if (err.message.includes('429')) {
         setError('Too many login attempts. Please wait a few minutes before trying again.');
       } else {
         setError(err.message || 'Login failed. Please try again.');
       }
+      analyticsService.trackEvent('admin_login_failure', { email, message: err.message });
     } finally {
       setLoading(false);
     }

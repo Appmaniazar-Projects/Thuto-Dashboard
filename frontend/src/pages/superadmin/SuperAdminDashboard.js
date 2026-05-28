@@ -76,7 +76,9 @@ import {
 
   Clear as ClearIcon,
 
-  UploadFile as UploadFileIcon
+  UploadFile as UploadFileIcon,
+
+  EmojiEvents as SportsIcon
 
 } from '@mui/icons-material';
 
@@ -85,6 +87,8 @@ import PageTitle from '../../components/common/PageTitle';
 import SuperadminManagement from '../../components/superadmin/SuperadminManagement';
 
 import { useAuth } from '../../context/AuthContext';
+
+import { useNavigate } from 'react-router-dom';
 
 import {
 
@@ -101,6 +105,7 @@ import {
 } from '../../services/superAdminService';
 import { getRoleDisplayName } from '../../constants/roleLabels';
 import regionService from '../../services/regionService';
+import analyticsService from '../../services/analyticsService';
 
 
 
@@ -199,34 +204,21 @@ const ScrollableTable = ({ children }) => {
 
 };
 
-
-
 const SuperAdminDashboard = () => {
-
   const {
-
     isMaster,
-
     isNationalSuperAdmin,
-
     isRegionalSuperAdmin,
-
     isProvincialSuperAdmin,
-
     currentUser
-
   } = useAuth();
 
-
+  const navigate = useNavigate();
 
   const [schools, setSchools] = useState([]);
-
   const [admins, setAdmins] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState(null);
-
   const [activeTab, setActiveTab] = useState('schools');
 
   const [submitting, setSubmitting] = useState(false);
@@ -607,6 +599,7 @@ const filteredSchools = useMemo(() => {
 
           setSchools(normalizeArray(schoolsData));
           setAdmins(normalizeArray(adminsData));
+          analyticsService.trackPageView('superadmin_dashboard', { role: currentUser.role });
           
         } catch (err) {
           setError(
@@ -1435,7 +1428,7 @@ const filteredSchools = useMemo(() => {
 
       {/* Tab navigation */}
 
-      <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+      <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
 
         <Button
 
@@ -1469,6 +1462,14 @@ const filteredSchools = useMemo(() => {
 
           >Superadmin Management</Button>
 
+        )}
+
+        {!isNationalSuperAdmin() && !isProvincialSuperAdmin() && (
+          <Button
+            variant={activeTab === 'sports' ? 'contained' : 'outlined'}
+            onClick={() => navigate('/sports')}
+            startIcon={<SportsIcon />}
+          >Sports Center</Button>
         )}
 
       </Box>

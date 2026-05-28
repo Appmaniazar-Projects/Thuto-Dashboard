@@ -225,6 +225,13 @@ const getCurrentUser = () => {
  * @param {string} newPassword - The new password
  * @returns {Promise<Object>} Response from the server
  */
+const setFirstLoginPassword = async (email, password, token) => {
+  const requestData = { email, password };
+  if (token) requestData.token = token;
+  const response = await api.post('/superadmins/auth/first-login-password', requestData);
+  return response.data;
+};
+
 const resetPassword = async (token, newPassword) => {
   const response = await api.post('/superadmins/reset-password', { 
     token, 
@@ -242,6 +249,7 @@ const authService = {
   refreshToken,
   forgotPassword,
   resetPassword,
+  setFirstLoginPassword,
   getCurrentUser,
 };
 

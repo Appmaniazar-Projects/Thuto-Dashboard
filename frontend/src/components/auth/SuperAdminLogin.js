@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Paper, Typography, TextField, Button, Box, Alert, CircularProgress } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/auth';
+import analyticsService from '../../services/analyticsService';
 import Logo from '../../assets/Logo.png';
 
 const SuperAdminLogin = () => {
@@ -40,7 +41,7 @@ const SuperAdminLogin = () => {
           setError('Access denied. You do not have super admin permissions.');
           break;
         case 404:
-          setError('Account not found. Please check your email address.');
+          setError('Email not recognised. Please contact your Super Admin.');
           break;
         case 500:
           setError('Server error. Please try again later or contact support.');
@@ -49,6 +50,7 @@ const SuperAdminLogin = () => {
           // Use backend message if available, otherwise fall back to a generic message
           setError(bodyMessage || err.message || 'Login failed. Please try again.');
       }
+      analyticsService.trackEvent('superadmin_login_failure', { email: formData.email, status: httpStatus, message: bodyMessage || err.message });
     } finally {
       setLoading(false);
     }

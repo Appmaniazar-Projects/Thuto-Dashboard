@@ -52,12 +52,17 @@ const CreateAnnouncementPage = lazy(() => import('./pages/common/CreateAnnouncem
 const SuperAdminLogin = lazy(() => import('./components/auth/SuperAdminLogin'));
 const SuperAdminRegister = lazy(() => import('./components/auth/SuperAdminRegister'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+const AdminLandingPage = lazy(() => import('./pages/superadmin/AdminLandingPage'));
 const SuperAdminProfile = lazy(() => import('./pages/superadmin/SuperAdminProfile'));
 const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSettings'));
 
 // Parent Registration
 const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
+
+// Common pages
+const SportsComingSoonPage = lazy(() => import('./pages/common/SportsComingSoonPage'));
+const SportsCenterPage = lazy(() => import('./pages/common/SportsCenterPage'));
 
 const Loading = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -98,6 +103,8 @@ const protectedRoutes = [
   { path: '/calendar/event/new', element: <Navigate to="/events/create" replace /> },
   { path: '/announcements', element: <AnnouncementsPage /> },
   { path: '/announcements/create', element: <CreateAnnouncementPage /> },
+  { path: '/sports', element: <SportsCenterPage /> },
+  { path: '/sports/:sport', element: <SportsComingSoonPage /> },
 
   // Student
   { path: '/student/subjects', element: <StudentSubjects /> },
@@ -194,11 +201,21 @@ const routes = [
 ];
 
 export const superAdminRoutes = [
+  { path: '/superadmin', element: <AdminLandingPage /> },
+  { path: '/superadmin/landing', element: <AdminLandingPage /> },
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
   { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
   { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
   { path: '/superadmin/profile', element: <SuperAdminProfile /> },
   { path: '/superadmin/settings', element: <SuperAdminSettings /> },
+  // Sports Center Routes
+  { path: '/superadmin/sports', element: <SportsCenterPage /> },
+  { path: '/superadmin/sports/:sport', element: <SportsComingSoonPage /> },
+  { path: '/superadmin/sports/soccer', element: <SportsComingSoonPage /> },
+  { path: '/superadmin/sports/netball', element: <SportsComingSoonPage /> },
+  { path: '/superadmin/sports/rugby', element: <SportsComingSoonPage /> },
+  { path: '/superadmin/sports/athletics', element: <SportsComingSoonPage /> },
+  { path: '/superadmin/sports/cricket', element: <SportsComingSoonPage /> },
 ];
 
 export { protectedRoutes };

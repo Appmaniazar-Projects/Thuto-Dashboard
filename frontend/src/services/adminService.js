@@ -620,6 +620,22 @@ export const uploadBulkData = async (file, dataType = 'students', onProgress = n
   }
 };
 
+/**
+ * Fetches all schools managed by an admin (for multi-school admins)
+ * @param {string} adminId - The admin's ID
+ * @returns {Promise<Array>} Array of school objects
+ */
+export const getAdminSchools = async (adminId) => {
+  try {
+    const response = await api.get(`/superadmins/admins/${adminId}/schools`);
+    return Array.isArray(response.data) ? response.data : response.data?.schools || [];
+  } catch (error) {
+    console.error('Failed to fetch admin schools:', error);
+    // Return empty array as fallback
+    return [];
+  }
+};
+
 export default {
   getAllUsers,
   checkParentPhoneExists,
@@ -635,5 +651,6 @@ export default {
   getSchoolDocuments,
   deleteSchoolDocument,
   getDocumentsFromStorage,
-  uploadBulkData
+  uploadBulkData,
+  getAdminSchools
 };

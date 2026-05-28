@@ -30,6 +30,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import NoteAltIcon from '@mui/icons-material/NoteAlt';
 import SchoolIcon from '@mui/icons-material/School';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import SubjectIcon from '@mui/icons-material/Subject';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import SchoolLogo from '../common/SchoolLogo';
@@ -58,9 +59,14 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
 
     const commonItems = [
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
-            { path: '/events', icon: <EventIcon />, text: 'Events' },
-            { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
+      { path: '/events', icon: <EventIcon />, text: 'Events' },
+      { path: '/messages', icon: <EmailIcon />, text: 'Messages' },
     ];
+
+    const showSportsCenter = !['superadmin_national', 'superadmin_provincial'].includes(role);
+    if (showSportsCenter) {
+      commonItems.push({ path: '/sports', icon: <SportsSoccerIcon />, text: 'Sports Center' });
+    }
 
     if (['admin', 'teacher'].includes(role)) {
       commonItems.push({ path: '/announcements', icon: <CampaignIcon />, text: 'Announcements' });
