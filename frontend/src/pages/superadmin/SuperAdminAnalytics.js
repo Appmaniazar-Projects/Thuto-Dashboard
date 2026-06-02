@@ -244,8 +244,8 @@ const SuperAdminAnalytics = () => {
   const { provinceStats, regionStats, quintileStats, feeTypeStats, schoolTypeStats, topSchools, summaryMetrics } = analytics;
 
   return (
-    <Box sx={{ width: '100%', p: 3 }}>
-      <PageTitle title="System Analytics" />
+    <Box sx={{ width: '100%', p: 3, backgroundColor: 'background.default' }}>
+      <PageTitle title="Super Admin Analytics" />
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
@@ -260,7 +260,7 @@ const SuperAdminAnalytics = () => {
           { label: 'Fee-paying share', value: formatPercent(summaryMetrics.feePayingPct) },
         ].map((m) => (
           <Grid item xs={6} sm={4} md={2.4} key={m.label}>
-            <Card variant="outlined">
+            <Card variant="outlined" sx={{ borderRadius: 3, borderColor: 'divider', boxShadow: 0, backgroundColor: 'background.paper' }}>
               <CardContent sx={{ pb: '12px !important' }}>
                 <Typography variant="caption" color="text.secondary" display="block">
                   {m.label}
