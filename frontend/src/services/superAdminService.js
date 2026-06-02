@@ -66,11 +66,21 @@ export const getAllRoleSpecificUsers = async (role, createdBy, queryString) => {
 export const getAllSchools = async (createdBy, queryString) => {
   try {
     const params = {};
-    
-    if (createdBy) {
+
+    // Read the current user to check their role and region
+    const storedUser = localStorage.getItem('user');
+    const currentUser = storedUser ? JSON.parse(storedUser) : null;
+    const role = currentUser?.role?.toLowerCase();
+    const isRegionalAdmin = role === 'superadmin_regional' || role === 'regional_admin' || role === 'regionaladmin';
+
+    if (isRegionalAdmin && currentUser?.region) {
+      // Backend doesn't persist createdBy on school records for regional admins,
+      // so we filter by regionId instead
+      params.regionId = Number(currentUser.region);
+    } else if (createdBy) {
       params.createdBy = createdBy;
     }
-    
+
     if (queryString) {
       const urlParams = new URLSearchParams(queryString);
       urlParams.forEach((value, key) => {
@@ -78,44 +88,25 @@ export const getAllSchools = async (createdBy, queryString) => {
       });
     }
 
-    // Try the correct endpoint for all schools first
+    const mapSchool = (school) => ({
+      ...school,
+      phoneNumber:    school.phone_number    || school.phoneNumber    || null,
+      principalName:  school.principal_name  || school.principalName  || null,
+      province:       school.province        || null,
+      regionalId:     school.regional_id     || school.regionalId     || null,
+      region:         school.region          || null,
+      municipalityId: school.municipality_id || school.municipalityId || null,
+      createdBy:      school.created_by      || school.createdBy      || null,
+      updatedBy:      school.updated_by      || school.updatedBy      || null,
+    });
+
     try {
-      const response = await api.get('/superadmins/admins/schools/allSchools', {
-        params
-      });
-      // Map snake_case fields to camelCase for consistency
-      const schoolsData = response.data.map(school => ({
-        ...school,
-        phoneNumber: school.phone_number || school.phoneNumber || null,
-        principalName: school.principal_name || school.principalName || null,
-        province: school.province || null,
-        regionalId: school.regional_id || school.regionalId || null,
-        region: school.region || null,
-        municipalityId: school.municipality_id || school.municipalityId || null,
-        createdBy: school.created_by || school.createdBy || null,
-        updatedBy: school.updated_by || school.updatedBy || null
-      }));
-      return schoolsData;
+      const response = await api.get('/superadmins/admins/schools/allSchools', { params });
+      return response.data.map(mapSchool);
     } catch (firstError) {
-      console.log('Primary endpoint failed, trying alternative...');
-      // If primary fails, try without region-specific endpoint
-      // This might work for National SuperAdmins who don't have a region
-      const response = await api.get('/superadmins/admins/schools', {
-        params
-      });
-      // Also map snake_case fields for the fallback endpoint
-      const schoolsData = response.data.map(school => ({
-        ...school,
-        phoneNumber: school.phone_number || school.phoneNumber || null,
-        principalName: school.principal_name || school.principalName || null,
-        province: school.province || null,
-        regionalId: school.regional_id || school.regionalId || null,
-        region: school.region || null,
-        municipalityId: school.municipality_id || school.municipalityId || null,
-        createdBy: school.created_by || school.createdBy || null,
-        updatedBy: school.updated_by || school.updatedBy || null
-      }));
-      return schoolsData;
+      console.log('Primary endpoint failed, trying fallback...');
+      const response = await api.get('/superadmins/admins/schools', { params });
+      return response.data.map(mapSchool);
     }
   } catch (error) {
     console.error('Failed to fetch schools:', error);
@@ -131,11 +122,22 @@ export const createSchool = async (schoolData) => {
   try {
     const createdBy = schoolData.createdBy;
     const payload = { ...schoolData };
-    delete payload.createdBy; // Remove from body, send as query param
-    
-    const response = await api.post('/superadmins/admins/school/createSchool/create', payload, {
-      params: { createdBy }
-    });
+    delete payload.createdBy;
+
+    // Read currentUser from localStorage — it wasn't in scope before
+    const storedUser = localStorage.getItem('user');
+    const currentUser = storedUser ? JSON.parse(storedUser) : null;
+    const regionalId = currentUser?.region ? Number(currentUser.region) : null;
+
+    // Build params object cleanly — previous version had invalid syntax inside the api call
+    const params = { createdBy };
+    if (regionalId) params.regionalId = regionalId;
+
+    const response = await api.post(
+      '/superadmins/admins/school/createSchool/create',
+      payload,
+      { params }
+    );
     return response.data;
   } catch (error) {
     console.error('Failed to create school:', error);

@@ -1099,11 +1099,14 @@ const filteredSchools = useMemo(() => {
 
 
 
-      const required = ['name', 'lastName', 'email', 'phoneNumber', 'schoolId'];
+      const required = ['name', 'lastName', 'email', 'phoneNumber'];
 
       if (!editingAdmin) required.push('password');
 
       const missing = required.filter(f => !String(adminForm[f] || '').trim());
+      if (!Array.isArray(adminForm.schoolIds) || adminForm.schoolIds.length === 0) {
+        missing.push('schoolIds');
+      }
 
       if (missing.length) { setError(`Please fill in: ${missing.join(', ')}`); return; }
 
@@ -1533,6 +1536,7 @@ const filteredSchools = useMemo(() => {
         </Grid>
 
       </Grid>
+      
 
       {activeTab === 'schools' && (
 
