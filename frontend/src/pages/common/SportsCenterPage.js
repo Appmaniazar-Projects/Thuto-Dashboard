@@ -21,7 +21,7 @@ const SportsCenterPage = () => {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f4f6fb', py: 4 }}>
       <PageTitle title="Sports Center" subtitle="Explore sports management tools and upcoming features" />
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2 }}>
+      <Box sx={{ maxWidth: 960, mx: 'auto', px: 2 }}>
         {!canAccess ? (
           <Alert severity="warning" sx={{ mb: 4 }}>
             Sports Center is not available for National or Provincial admin roles.
@@ -36,25 +36,27 @@ const SportsCenterPage = () => {
           <Grid container spacing={3}>
             {sports.map((sport) => (
               <Grid key={sport.key} item xs={12} sm={6} md={4}>
-                <Card sx={{ borderRadius: 3, minHeight: 220, boxShadow: '0 10px 25px rgba(15, 23, 42, 0.08)' }}>
-                  <CardContent>
+                <Card sx={{ borderRadius: 3, minHeight: 220, display: 'flex', flexDirection: 'column', boxShadow: '0 10px 25px rgba(15, 23, 42, 0.08)' }}>
+                  <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>
                         {sport.label}
                       </Typography>
                       <Chip label="Coming Soon" color="primary" size="small" />
                     </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 4, minHeight: 64 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3, minHeight: 64 }}>
                       {sport.description}
                     </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={() => navigate(`/superadmin/sports/${sport.key}`)}
-                      sx={{ mt: 'auto' }}
-                    >
-                      View {sport.label}
-                    </Button>
+                    <Box sx={{ mt: 'auto' }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        color="primary"
+                        onClick={() => navigate(`/superadmin/sports/${sport.key}`)}
+                      >
+                        View {sport.label}
+                      </Button>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>

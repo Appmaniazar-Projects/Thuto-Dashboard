@@ -77,6 +77,57 @@ const toBackendTimeOnly = (value) => {
   return format(d, 'HH:mm:ss');
 };
 
+const getNextRecurringDate = (date, frequency, interval = 1) => {
+  if (!date) return null;
+  switch ((frequency || 'weekly').toString().toLowerCase()) {
+    case 'daily': return addDays(date, interval);
+    case 'weekly': return addWeeks(date, interval);
+    case 'monthly': return addMonths(date, interval);
+    case 'yearly': return addYears(date, interval);
+    default: return addWeeks(date, interval);
+  }
+};
+
+const expandRecurringEvents = (events = []) => {
+  const expanded = [];
+
+  events.forEach((event) => {
+    const rp = event.recurringPattern || event.recurring_pattern;
+    const start = toSafeDate(event.startDate);
+    const end = toSafeDate(event.endDate);
+    const isRecurring = Boolean(rp && (rp.frequency || rp.interval || rp.dayOfWeek || rp.dayOfMonth));
+
+    if (!isRecurring || !start || !end) {
+      expanded.push({ ...event, start, end, title: event.title || 'Untitled event' });
+      return;
+    }
+
+    const frequency = (rp.frequency || 'WEEKLY').toString().toLowerCase();
+    const interval = Number(rp.interval || 1) || 1;
+    const recurrenceEnd = toSafeDate(rp.endDate || event.recurringEndDate || event.endDate);
+    const until = recurrenceEnd || end;
+
+    let currentStart = start;
+    let currentEnd = end;
+    let iteration = 0;
+
+    while (currentStart && currentStart <= until && iteration < 100) {
+      expanded.push({
+        ...event,
+        start: currentStart,
+        end: currentEnd,
+        title: `${event.title || 'Untitled event'}${iteration === 0 ? '' : ' (Recurring)'}`,
+        recurringInstance: iteration + 1,
+      });
+      currentStart = getNextRecurringDate(currentStart, frequency, interval);
+      currentEnd = getNextRecurringDate(currentEnd, frequency, interval);
+      iteration += 1;
+    }
+  });
+
+  return expanded;
+};
+
 const buildRoleDraft = (role = {}) => ({
   clientId: role.clientId || (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`),
   id: role.id ?? undefined,
@@ -245,12 +296,7 @@ const EventsPage = () => {
     navigate('/events', { replace: true });
   }, [canCreateEvents, navigate, openCreate, searchParams, setSearchParams]);
 
-  const rbcEvents = useMemo(() => (events || []).map((ev) => {
-    const start = toSafeDate(ev.startDate);
-    const end = toSafeDate(ev.endDate);
-    if (!start || !end) return null;
-    return { ...ev, start, end, title: ev.title || 'Untitled event' };
-  }).filter(Boolean), [events]);
+  const rbcEvents = useMemo(() => expandRecurringEvents(events).filter((ev) => ev.start && ev.end), [events]);
 
   const agendaItems = useMemo(() => [...(events || [])]
     .map((ev) => ({ ...ev, _start: toSafeDate(ev.startDate), _end: toSafeDate(ev.endDate) }))
@@ -906,6 +952,13 @@ const EventsPage = () => {
                   <Chip label={deriveStatus(selectedEvent)} color={getStatusColor(deriveStatus(selectedEvent))} size="small" />
                   {selectedEvent.eventType && <Chip label={selectedEvent.eventType} size="small" variant="outlined" />}
                   {selectedEvent.sponsorshipEnabled && <Chip label="Sponsorship Open" size="small" color="secondary" />}
+                  {selectedEvent.recurringPattern && (
+                    <Chip
+                      label={`Recurring: ${selectedEvent.recurringPattern.frequency?.toLowerCase() || 'weekly'}${selectedEvent.recurringPattern.interval === '2' ? ' (biweekly)' : ''}${selectedEvent.recurringPattern.endDate ? ` until ${format(toSafeDate(selectedEvent.recurringPattern.endDate), 'dd MMM yyyy')}` : ''}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
                 </Stack>
 
                 {/* Date / location / organizer */}

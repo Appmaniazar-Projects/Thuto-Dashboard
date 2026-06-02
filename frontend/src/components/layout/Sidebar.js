@@ -57,6 +57,14 @@ const Sidebar = ({ mobileOpen, setMobileOpen, sidebarWidth }) => {
     let role = user.role.toLowerCase();
     if (role === 'administrator') role = 'admin';
 
+    // Superadmin-specific menu: show analytics + school management
+    if (role.startsWith('superadmin')) {
+      return [
+        { path: '/superadmin/analytics', icon: <AssessmentIcon />, text: 'Dashboard' },
+        { path: '/superadmin/dashboard', icon: <SchoolIcon />, text: 'School Management' }
+      ];
+    }
+
     const commonItems = [
       { path: '/dashboard', icon: <DashboardIcon />, text: 'Dashboard' },
       { path: '/events', icon: <EventIcon />, text: 'Events' },

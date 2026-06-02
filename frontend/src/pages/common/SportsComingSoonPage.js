@@ -55,7 +55,7 @@ const SportsComingSoonPage = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container maxWidth="sm" sx={{ py: 4 }}>
         <PageTitle
           title={sportInfo.name}
           subtitle="Coming Soon"
@@ -67,16 +67,18 @@ const SportsComingSoonPage = () => {
           </Alert>
         ) : (
           <Card
-          elevation={6}
-          sx={{
-            textAlign: 'center',
-            py: 6,
-            px: 3,
-            background: `linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)`,
-            borderRadius: 2,
-            border: '1px solid rgba(99, 102, 241, 0.2)'
-          }}
-        >
+            elevation={6}
+            sx={{
+              maxWidth: 720,
+              mx: 'auto',
+              textAlign: 'center',
+              py: 5,
+              px: 3,
+              background: `linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)`,
+              borderRadius: 2,
+              border: '1px solid rgba(99, 102, 241, 0.2)'
+            }}
+          >
           <CardContent>
             {/* Large Emoji */}
             <Box sx={{ fontSize: '80px', mb: 2 }}>
@@ -116,7 +118,7 @@ const SportsComingSoonPage = () => {
                 mb: 4,
                 color: '#6b7280',
                 fontSize: '16px',
-                maxWidth: '600px',
+                maxWidth: '520px',
                 mx: 'auto',
                 lineHeight: 1.6
               }}

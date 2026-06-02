@@ -329,11 +329,8 @@ export const getAttendanceSubmissions = async () => {
     let response;
     const endpoints = [
       '/attendance/submission',
-      '/attendance/submissions', 
-      '/api/attendance/submission',
-      '/api/attendance/submissions',
-      '/attendance',
-      '/api/attendance'
+      '/attendance/submissions',
+      '/attendance'
     ];
 
     for (const endpoint of endpoints) {
