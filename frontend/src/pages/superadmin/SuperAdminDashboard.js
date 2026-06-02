@@ -102,7 +102,7 @@ import {
   deleteAdmin,
   bulkUploadSchools
 
-} from '../../services/superadminService';
+} from '../../services/superadminServices';
 import { getRoleDisplayName } from '../../constants/roleLabels';
 import regionService from '../../services/regionService';
 import analyticsService from '../../services/analyticsService';
@@ -112,11 +112,8 @@ import analyticsService from '../../services/analyticsService';
 // ScrollableTable: wraps a table with a top scrollbar that mirrors the bottom one
 
 const ScrollableTable = ({ children }) => {
-
   const topRef = useRef(null);
-
   const bottomRef = useRef(null);
-
   const syncingRef = useRef(false);
 
 
