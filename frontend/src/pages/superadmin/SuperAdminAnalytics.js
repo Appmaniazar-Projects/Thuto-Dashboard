@@ -36,7 +36,7 @@ import {
 import PageTitle from '../../components/common/PageTitle';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import superadminService from '../../services/superadminService';
+import superadminService from '../../services/superAdminService';
 
 // SA province list used to normalise API data
 const SA_PROVINCES = [
