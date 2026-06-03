@@ -513,85 +513,122 @@ const EventsPage = () => {
   };
 
   const parentSignupRole = async (ev, roleId) => {
-    const eventId = ev.id;
-    try {
-      await signUpForEventRole(eventId, roleId);
-      enqueueSnackbar('Signed up', { variant: 'success' });
-      await reloadAfterAction(eventId);
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up', { variant: 'error' });
-    }
-  };
+  const eventId = ev.id;
+  try {
+    await signUpForEventRole(eventId, roleId);
+    enqueueSnackbar('Signed up', { variant: 'success' });
+
+    // Optimistically increment the taken slot count immediately
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        roles: (prev.roles || []).map((r) =>
+          r.id === roleId
+            ? { ...r, takenSlots: (Number(r.takenSlots) || 0) + 1 }
+            : r
+        ),
+      };
+    });
+
+    await reloadAfterAction(eventId);
+  } catch (e) {
+    enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up', { variant: 'error' });
+  }
+};
 
   const parentCancel = async (ev) => {
-    const eventId = ev.id;
-    try {
-      await cancelEventSignup(eventId);
-      enqueueSnackbar('Signup cancelled', { variant: 'info' });
-      await reloadAfterAction(eventId);
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel signup', { variant: 'error' });
-    }
-  };
+  const eventId = ev.id;
+  try {
+    await cancelEventSignup(eventId);
+    enqueueSnackbar('Signup cancelled', { variant: 'info' });
+
+    // Optimistically decrement
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        roles: (prev.roles || []).map((r) => ({
+          ...r,
+          takenSlots: Math.max(0, (Number(r.takenSlots) || 0) - 1),
+        })),
+      };
+    });
+
+    await reloadAfterAction(eventId);
+  } catch (e) {
+    enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel signup', { variant: 'error' });
+  }
+};
+
+
+ const getHasTeacherSignup = (ev, roleId) => {
+  const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
+  if (!ev.roles || !teacherId) return false;
+  return ev.roles.some(
+    (r) =>
+      r.id === roleId &&
+      Array.isArray(r.signups) &&
+      r.signups.some(
+        (s) =>
+          String(s.userId) === String(teacherId) ||
+          String(s.id) === String(teacherId) ||
+          String(s.phoneNumber) === String(teacherId)
+      )
+  );
+};
 
   const teacherRoleSignup = async (ev, roleId) => {
-    const eventId = ev.id;
-    try {
-      await signUpForEventRole(eventId, roleId);
-      enqueueSnackbar('Signed up for role', { variant: 'success' });
-      await reloadAfterAction(eventId);
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up for role', { variant: 'error' });
-    }
-  };
+  const eventId = ev.id;
+  try {
+    await signUpForEventRole(eventId, roleId);
+    enqueueSnackbar('Signed up for role', { variant: 'success' });
 
-  const getHasTeacherSignup = (ev, roleId) => {
-    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
-    if (!ev.roles || !teacherId) return false;
-    return ev.roles.some(
-      (r) =>
-        r.id === roleId &&
-        Array.isArray(r.signups) &&
-        r.signups.some(
-          (s) =>
-            String(s.userId) === String(teacherId) ||
-            String(s.id) === String(teacherId) ||
-            String(s.phoneNumber) === String(teacherId)
-        )
-    );
-  };
+    // Optimistically increment the taken slot count immediately
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        roles: (prev.roles || []).map((r) =>
+          r.id === roleId
+            ? { ...r, takenSlots: (Number(r.takenSlots) || 0) + 1 }
+            : r
+        ),
+      };
+    });
 
-  const getTeacherSignupRoleId = (ev) => {
-    const teacherId = currentUser?.id || currentUser?.userId || currentUser?.phoneNumber;
-    if (!ev?.roles || !teacherId) return null;
-    for (const r of ev.roles) {
-      if (
-        Array.isArray(r.signups) &&
-        r.signups.some(
-          (s) =>
-            String(s.userId) === String(teacherId) ||
-            String(s.id) === String(teacherId) ||
-            String(s.phoneNumber) === String(teacherId)
-        )
-      ) {
-        return r.id;
-      }
-    }
-    return null;
-  };
+    await reloadAfterAction(eventId);
+  } catch (e) {
+    enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to sign up for role', { variant: 'error' });
+  }
+};
 
   const teacherCancelSignup = async (ev) => {
-    const eventId = ev.id;
-    try {
-      const roleId = getTeacherSignupRoleId(ev);
-      if (!roleId) throw new Error('No role signup found to cancel');
-      await cancelEventSignup(eventId, roleId);
-      enqueueSnackbar('Role signup cancelled', { variant: 'info' });
-      await reloadAfterAction(eventId);
-    } catch (e) {
-      enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel role signup', { variant: 'error' });
-    }
-  };
+  const eventId = ev.id;
+  try {
+    const roleId = getTeacherSignupRoleId(ev);
+    if (!roleId) throw new Error('No role signup found to cancel');
+    await cancelEventSignup(eventId, roleId);
+    enqueueSnackbar('Role signup cancelled', { variant: 'info' });
+
+    // Optimistically decrement
+    setSelectedEvent((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        roles: (prev.roles || []).map((r) =>
+          r.id === roleId
+            ? { ...r, takenSlots: Math.max(0, (Number(r.takenSlots) || 0) - 1) }
+            : r
+        ),
+      };
+    });
+
+    await reloadAfterAction(eventId);
+  } catch (e) {
+    enqueueSnackbar(e?.response?.data?.message || e?.message || 'Failed to cancel role signup', { variant: 'error' });
+  }
+};
 
   const handleRSVP = async () => {
     const eventId = selectedEvent?.id;

@@ -15,6 +15,7 @@ const AdminLogin = () => {
   const [passwordError, setPasswordError] = useState('');
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
+  
 
   // Clear form errors when user starts typing
   useEffect(() => {
@@ -55,10 +56,19 @@ const AdminLogin = () => {
     setLoading(true);
     
     try {
-      const { user, token } = await authService.adminLogin(email, password);
+     const { user, token } = await authService.adminLogin(email, password);
       setAuthData(user, token);
       analyticsService.trackEvent('admin_login_success', { email, role: user?.role });
-      navigate('/dashboard');
+      console.log('MULTI ADMIN USER DATA:', JSON.stringify(user, null, 2));
+
+      const schoolIds = user?.schoolIds;
+      const isMultiSchool = Array.isArray(schoolIds) && schoolIds.length > 1;
+
+      if (isMultiSchool) {
+        navigate('/multi-school/landing');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Admin login failed:', err);
       

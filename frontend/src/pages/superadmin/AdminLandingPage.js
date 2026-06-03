@@ -51,7 +51,38 @@ const AdminLandingPage = () => {
         // Check if admin has multiple schools
         if (currentUser?.schoolIds && Array.isArray(currentUser.schoolIds) && currentUser.schoolIds.length > 1) {
           // Multi-school admin - fetch all their schools
-          const schoolList = await adminService.getAdminSchools(currentUser.id);
+          let schoolList = [];
+try {
+  schoolList = await adminService.getAdminSchools(currentUser.id);
+} catch (err) {
+  console.warn('Could not fetch school details, building from schoolIds:', err);
+  // Fallback: build basic school objects from the IDs we already have
+  const ids = Array.isArray(currentUser.schoolIds) ? currentUser.schoolIds : [];
+  schoolList = ids.map(id => ({
+    id,
+    name: `School ${id}`,
+  }));
+}
+setSchools(schoolList || []);
+          // If no selected school yet, select the first one
+          if (!selectedSchoolData && schoolList && schoolList.length > 0) {
+            setSelectedSchoolData(schoolList[0]);
+            setSelectedSchool(schoolList[0]);
+          }
+        } else if (currentUser?.schoolIds && Array.isArray(currentUser.schoolIds) && currentUser.schoolIds.length === 1) {
+          // Multi-school admin - fetch all their schools
+          let schoolList = [];
+          try {
+            schoolList = await adminService.getAdminSchools(currentUser.id);
+          } catch (err) {
+            console.warn('Could not fetch school details, building from schoolIds:', err);
+            // Fallback: build basic school objects from the IDs we already have
+            const ids = Array.isArray(currentUser.schoolIds) ? currentUser.schoolIds : [];
+            schoolList = ids.map(id => ({
+              id,
+              name: `School ${id}`,
+            }));
+          }
           setSchools(schoolList || []);
           
           // If no selected school yet, select the first one
@@ -95,7 +126,7 @@ const AdminLandingPage = () => {
     setSelectedSchoolData(school);
     setSelectedSchool(school);
     setDialogOpen(false);
-    navigate('/superadmin/dashboard', { state: { selectedSchool: school } });
+    navigate('/dashboard', { state: { selectedSchool: school } });
   };
 
   const handleOpenDialog = () => {

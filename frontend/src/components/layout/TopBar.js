@@ -35,6 +35,7 @@ import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import SchoolLogo from '../common/SchoolLogo';
 import BugReport from '../testing/BugReport';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAdmin = false, onTitleClick, logoAsImage = false }) => {
   const theme = useTheme();
@@ -194,7 +195,29 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
           </Typography>
         </Box>
         
+        
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+
+          {(() => {
+              const schoolIds = user?.schoolIds;
+              const isMultiSchool = Array.isArray(schoolIds) && schoolIds.length > 1;
+              const isAdmin = user?.role?.toLowerCase() === 'admin';
+              
+              if (isMultiSchool && isAdmin) {
+                return (
+                  <Tooltip title="Switch School">
+                    <IconButton
+                      color="inherit"
+                      onClick={() => navigate('/multi-school/landing')}
+                      sx={{ mr: 1 }}
+                    >
+                      <SwapHorizIcon />
+                    </IconButton>
+                  </Tooltip>
+                );
+              }
+              return null;
+            })()}
           
           {/* Notifications */}
           {user && user.role === 'admin' && (

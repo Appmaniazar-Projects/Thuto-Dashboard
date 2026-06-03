@@ -55,7 +55,12 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
   
     // Normalize role to lowercase before storing
-    const normalizedUser = { ...user, role: user.role.toLowerCase() };
+    const normalizedUser = { 
+        ...user, 
+        role: user.role.toLowerCase(),
+        schoolIds: Array.isArray(user.schoolIds) ? user.schoolIds : 
+                  user.schoolId ? [user.schoolId] : []
+      };
 
     if (['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(normalizedUser.role)) {
       localStorage.setItem('superAdmin', JSON.stringify(normalizedUser));

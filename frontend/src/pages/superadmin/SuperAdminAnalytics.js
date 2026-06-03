@@ -97,7 +97,8 @@ const SuperAdminAnalytics = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user?.role !== 'superadmin') {
+   const superAdminRoles = ['superadmin', 'superadmin_national', 'superadmin_provincial', 'superadmin_regional', 'master'];
+    if (!superAdminRoles.includes(user?.role)) {
       navigate('/dashboard');
       return;
     }
