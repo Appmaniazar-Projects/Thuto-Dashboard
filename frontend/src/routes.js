@@ -203,7 +203,7 @@ const routes = [
 
 export const superAdminRoutes = [
   { path: '/superadmin', element: <Navigate to="/superadmin/analytics" replace /> },
-  { path: '/multi-school/landing', element: <Navigate to="/superadmin/analytics" replace /> },
+  { path: '/multi-school/landing', element: <AdminLandingPage /> },
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
   { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
   { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },
