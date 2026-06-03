@@ -99,7 +99,7 @@ import {
   deleteAdmin,
   bulkUploadSchools
 
-} from '../../services/superadminService';
+} from '../../services/superAdminService';
 import { getRoleDisplayName } from '../../constants/roleLabels';
 import regionService from '../../services/regionService';
 import analyticsService from '../../services/analyticsService';
