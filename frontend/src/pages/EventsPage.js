@@ -21,8 +21,8 @@ import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import {
-  addDays, endOfMonth, endOfWeek, format, getDay, isAfter, isBefore,
-  isValid, parse, startOfMonth, startOfWeek,
+  addDays, addWeeks, addMonths, addYears, endOfMonth, endOfWeek, format, 
+  getDay, isAfter, isBefore, isValid, parse, startOfMonth, startOfWeek,
 } from 'date-fns';
 import enGB from 'date-fns/locale/en-GB';
 import enUS from 'date-fns/locale/en-US';
