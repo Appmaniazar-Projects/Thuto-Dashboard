@@ -444,6 +444,20 @@ const LandingPage = () => {
             >
               Register as Parent
             </Button>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/parent/register')}
+              sx={{
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                '&:hover': {
+                  borderColor: theme.palette.primary.dark,
+                  backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                }
+              }}
+            >
+              New Register as Parent
+            </Button>
           </Box>
           <Box
             sx={{

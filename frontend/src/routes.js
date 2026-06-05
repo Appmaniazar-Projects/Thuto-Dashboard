@@ -89,6 +89,7 @@ export const publicRoutes = [
   { path: '/superadmin/reset-password', element: <ResetPassword /> },
   { path: '/superadmin/register', element: <SuperAdminRegister /> },
   { path: '/parent/register', element: <ParentRegistration /> },
+  { path: "/register/irene-primary", element: <IrenePrimaryRegistration /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
