@@ -59,6 +59,7 @@ const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSetti
 
 // Parent Registration
 const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
+const IrenePrimaryRegistration = lazy(() => import('./components/auth/IrenePrimaryRegistration'))
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
 
 // Common pages
