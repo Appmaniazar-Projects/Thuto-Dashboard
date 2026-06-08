@@ -2,288 +2,289 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   Grid,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Paper,
+  Card,
+  CardContent,
   Chip,
-  Stack
+  Stack,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
 import {
   School as SchoolIcon,
   DashboardCustomize as DashboardIcon,
-  Info as InfoIcon
+  LocationOn as LocationIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import PageTitle from '../../components/common/PageTitle';
 import adminService from '../../services/adminService';
-import { getRoleDisplayName } from '../../constants/roleLabels';
+import Logo from '../../assets/Logo_Dashboard.png';
 
 const AdminLandingPage = () => {
   const navigate = useNavigate();
-  const { currentUser, setSelectedSchool, isProvincialSuperAdmin, isNationalSuperAdmin, isRegionalSuperAdmin } = useAuth();
-  
-  const [schools, setSchools] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { currentUser, setSelectedSchool } = useAuth();
+
+  const [schools, setSchools]               = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState(null);
   const [selectedSchoolData, setSelectedSchoolData] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [statistics, setStatistics] = useState(null);
 
-  // Fetch admin's schools if multi-school admin
- useEffect(() => {
-  const fetchAdminSchools = async () => {
-    try {
-      setLoading(true);
+  // ── fetch schools ──────────────────────────────────────────────
+  useEffect(() => {
+    const fetchAdminSchools = async () => {
+      try {
+        setLoading(true);
+        const ids = currentUser?.schoolIds;
+        const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
 
-      const ids = currentUser?.schoolIds;
-      const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
-
-      if (hasSchoolIds) {
-        let schoolList = [];
-        try {
-          schoolList = await adminService.getAdminSchools(currentUser.id);
-        } catch (err) {
-          console.warn('Could not fetch school details, building from schoolIds:', err);
-          schoolList = ids.map(id => ({ id, name: `School ${id}` }));
+        if (hasSchoolIds) {
+          let schoolList = [];
+          try {
+            schoolList = await adminService.getAdminSchools(currentUser.id);
+          } catch {
+            schoolList = ids.map(id => ({ id, name: `School ${id}` }));
+          }
+          setSchools(schoolList || []);
+        } else if (currentUser?.schoolId) {
+          setSchools([{ id: currentUser.schoolId, name: currentUser.schoolName || 'Your School' }]);
         }
-        setSchools(schoolList || []);
-
-        if (!selectedSchoolData && schoolList.length > 0) {
-          setSelectedSchoolData(schoolList[0]);
-          setSelectedSchool(schoolList[0]);
-        }
-      } else if (currentUser?.schoolId) {
-        // Single schoolId field (not array)
-        const singleSchool = {
-          id: currentUser.schoolId,
-          name: currentUser.schoolName || 'Your School'
-        };
-        setSchools([singleSchool]);
-        setSelectedSchoolData(singleSchool);
-        setSelectedSchool(singleSchool);
+        setError(null);
+      } catch {
+        setError('Failed to load your schools. Please try again.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch admin schools:', err);
-      setError('Failed to load your schools. Please try again.');
-    } finally {
-      setLoading(false);
+    if (currentUser?.id) fetchAdminSchools();
+  }, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId]);
+
+  // ── auto-redirect single school ────────────────────────────────
+  const handleSelectSchool = useCallback((school) => {
+    setSelectedSchoolData(school);
+    setSelectedSchool(school);
+    localStorage.setItem('schoolId', String(school.id));
+    localStorage.setItem('schoolName', school.name || '');
+    navigate('/dashboard', { state: { selectedSchool: school } });
+  }, [navigate, setSelectedSchool]);
+
+  useEffect(() => {
+    if (!loading && schools.length === 1) {
+      handleSelectSchool(schools[0]);
     }
-  };
+  }, [loading, schools, handleSelectSchool]);
 
-  if (currentUser?.id) fetchAdminSchools();
-}, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId]);
-
-// Auto-redirect if only one school — fires after fetch completes
-    useEffect(() => {
-      if (!loading && schools.length === 1) {
-        handleSelectSchool(schools[0]);
-      }
-    }, [loading, schools]);
-
-    const handleSelectSchool = useCallback((school) => {
-      setSelectedSchoolData(school);
-      setSelectedSchool(school);
-      localStorage.setItem('schoolId', String(school.id));
-      localStorage.setItem('schoolName', school.name || '');
-      setDialogOpen(false);
-      navigate('/dashboard', { state: { selectedSchool: school } });
-    }, [navigate, setSelectedSchool]);
-
-    // Then the useEffect dependency array is valid:
-    useEffect(() => {
-      if (!loading && schools.length === 1) {
-        handleSelectSchool(schools[0]);
-      }
-    }, [loading, schools, handleSelectSchool]);
-
-  const handleOpenDialog = () => {
-    setDialogOpen(true);
-  };
-
+  // ── loading ────────────────────────────────────────────────────
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: '#F7F8FA',
+        }}
+      >
+        <TopBar />
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Stack alignItems="center" spacing={2}>
+            <CircularProgress />
+            <Typography variant="body2" color="text.secondary">Loading your schools…</Typography>
+          </Stack>
+        </Box>
       </Box>
     );
   }
 
-  // If single school, this page shouldn't be shown (redirects to dashboard)
+  // ── single school — briefly shows while auto-redirect fires ────
   if (schools.length <= 1) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="info">
-          Loading your dashboard...
-        </Alert>
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
+        <TopBar />
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CircularProgress />
+        </Box>
       </Box>
     );
   }
 
+  // ── school picker ──────────────────────────────────────────────
   return (
-    <Box sx={{ p: 3 }}>
-      <PageTitle
-        title={`${getRoleDisplayName(currentUser?.role)} - Welcome`}
-        subtitle="You manage multiple schools. Select one to continue."
-      />
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
+      <TopBar />
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          px: { xs: 2, sm: 4 },
+          py: { xs: 4, sm: 6 },
+          maxWidth: 960,
+          mx: 'auto',
+          width: '100%',
+        }}
+      >
+        {/* Heading */}
+        <Box sx={{ textAlign: 'center', mb: 5 }}>
+          <Typography
+            variant="h4"
+            fontWeight={600}
+            sx={{ mb: 1, color: 'text.primary', letterSpacing: '-0.5px' }}
+          >
+            Select a school
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Choose the school you want to manage
+          </Typography>
+        </Box>
 
-      {/* Statistics Cards - For National/Provincial/Regional Admins */}
-      {(isNationalSuperAdmin() || isProvincialSuperAdmin() || isRegionalSuperAdmin()) && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <SchoolIcon sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">{schools.length}</Typography>
-                    <Typography color="text.secondary">Schools Managed</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, width: '100%', maxWidth: 640 }}>
+            {error}
+          </Alert>
+        )}
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <DashboardIcon sx={{ fontSize: 40, color: 'success.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">{statistics?.totalStudents || 0}</Typography>
-                    <Typography color="text.secondary">Total Students</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <InfoIcon sx={{ fontSize: 40, color: 'info.main', mr: 2 }} />
-                  <Box>
-                    <Typography variant="h4">{statistics?.totalTeachers || 0}</Typography>
-                    <Typography color="text.secondary">Total Teachers</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* School Selection */}
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h6" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SchoolIcon />
-          Select a School to Manage
-        </Typography>
-
-        <Grid container spacing={2}>
-          {schools.map((school) => (
-            <Grid item xs={12} sm={6} md={4} key={school.id}>
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  border: selectedSchoolData?.id === school.id ? '2px solid' : '1px solid',
-                  borderColor: selectedSchoolData?.id === school.id ? 'primary.main' : 'divider',
-                  backgroundColor: selectedSchoolData?.id === school.id ? 'action.selected' : 'background.paper',
-                  '&:hover': {
-                    boxShadow: 4,
-                    transform: 'translateY(-4px)'
-                  }
-                }}
-                onClick={() => handleSelectSchool(school)}
-              >
-                <CardContent>
-                  <Stack spacing={2}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <SchoolIcon color="primary" />
-                      <Typography variant="h6" sx={{ flex: 1 }}>
-                        {school.name}
-                      </Typography>
+        {/* School cards */}
+        <Grid container spacing={3} justifyContent="center">
+          {schools.map((school) => {
+            const isSelected = selectedSchoolData?.id === school.id;
+            return (
+              <Grid item xs={12} sm={6} md={4} key={school.id}>
+                <Card
+                  onClick={() => handleSelectSchool(school)}
+                  elevation={0}
+                  sx={{
+                    cursor: 'pointer',
+                    border: '1.5px solid',
+                    borderColor: isSelected ? 'primary.main' : 'divider',
+                    borderRadius: 3,
+                    bgcolor: isSelected ? 'primary.50' : 'background.paper',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      transform: 'translateY(-3px)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    {/* Icon */}
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 2,
+                        bgcolor: 'primary.main',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mb: 2,
+                      }}
+                    >
+                      <SchoolIcon sx={{ color: '#fff', fontSize: 24 }} />
                     </Box>
 
-                    {school.region && (
-                      <Stack direction="row" spacing={1}>
-                        <Chip
-                          label={`Region: ${school.region}`}
-                          size="small"
-                          variant="outlined"
-                        />
-                      </Stack>
-                    )}
-
-                    {school.principalName && (
-                      <Typography variant="body2" color="text.secondary">
-                        Principal: {school.principalName}
-                      </Typography>
-                    )}
-
-                    <Typography variant="body2" color="text.secondary">
-                      School ID: {school.id}
+                    {/* Name */}
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      sx={{ mb: 1.5, lineHeight: 1.3, fontSize: '1rem' }}
+                    >
+                      {school.name}
                     </Typography>
 
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<DashboardIcon />}
-                      fullWidth
-                      onClick={() => handleSelectSchool(school)}
-                      sx={{ mt: 1 }}
-                    >
-                      Go to Dashboard
-                    </Button>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
+                    {/* Meta chips */}
+                    <Stack spacing={0.75} sx={{ mb: 2.5 }}>
+                      {school.region && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {school.region}
+                          </Typography>
+                        </Box>
+                      )}
+                      {school.province && !school.region && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {school.province}
+                          </Typography>
+                        </Box>
+                      )}
+                      {school.principalName && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                          <PersonIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {school.principalName}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Stack>
 
-      {/* School Selection Dialog - Alternative View */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Select a School</DialogTitle>
-        <DialogContent>
-          <List>
-            {schools.map((school) => (
-              <ListItem key={school.id} disablePadding>
-                <ListItemButton onClick={() => handleSelectSchool(school)}>
-                  <ListItemText
-                    primary={school.name}
-                    secondary={school.region ? `Region: ${school.region}` : 'Regional/National'}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+                    <Button
+                      variant={isSelected ? 'contained' : 'outlined'}
+                      size="small"
+                      fullWidth
+                      startIcon={<DashboardIcon fontSize="small" />}
+                      onClick={(e) => { e.stopPropagation(); handleSelectSchool(school); }}
+                      sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500 }}
+                    >
+                      Go to dashboard
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+
+        {/* Footer count */}
+        <Typography
+          variant="caption"
+          color="text.disabled"
+          sx={{ mt: 5 }}
+        >
+          {schools.length} school{schools.length !== 1 ? 's' : ''} assigned to your account
+        </Typography>
+      </Box>
     </Box>
   );
 };
+
+// ── Standalone topbar — no sidebar, just logo ──────────────────
+const TopBar = () => (
+  <AppBar
+    position="static"
+    elevation={0}
+    sx={{
+      bgcolor: 'background.paper',
+      borderBottom: '1px solid',
+      borderColor: 'divider',
+    }}
+  >
+    <Toolbar sx={{ minHeight: 56, px: { xs: 2, sm: 3 } }}>
+      <Box
+        component="img"
+        src={Logo}
+        alt="Thuto"
+        sx={{ height: 32, width: 'auto', objectFit: 'contain' }}
+        onError={(e) => {
+          // fallback text if logo doesn't load
+          e.target.style.display = 'none';
+        }}
+      />
+      <Box sx={{ flex: 1 }} />
+      <Typography variant="caption" color="text.disabled" sx={{ display: { xs: 'none', sm: 'block' } }}>
+        School Management
+      </Typography>
+    </Toolbar>
+  </AppBar>
+);
 
 export default AdminLandingPage;

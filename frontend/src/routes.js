@@ -53,14 +53,13 @@ const SuperAdminLogin = lazy(() => import('./components/auth/SuperAdminLogin'));
 const SuperAdminRegister = lazy(() => import('./components/auth/SuperAdminRegister'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
 const SuperAdminAnalytics = lazy(() => import('./pages/superadmin/SuperAdminAnalytics'));
-const AdminLandingPage = lazy(() => import('./pages/superadmin/AdminLandingPage'));
 const SuperAdminProfile = lazy(() => import('./pages/superadmin/SuperAdminProfile'));
 const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSettings'));
 
 // Parent Registration
 const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
-const IrenePrimaryRegistration = lazy(() => import('./components/auth/IrenePrimaryRegistration'))
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
+const QuickParentRegistration = lazy(() => import('./components/auth/QuickParentRegistration'));
 
 // Common pages
 const SportsComingSoonPage = lazy(() => import('./pages/common/SportsComingSoonPage'));
@@ -90,7 +89,8 @@ export const publicRoutes = [
   { path: '/superadmin/reset-password', element: <ResetPassword /> },
   { path: '/superadmin/register', element: <SuperAdminRegister /> },
   { path: '/parent/register', element: <ParentRegistration /> },
-  { path: "/register/irene-primary", element: <IrenePrimaryRegistration /> },
+  { path: '/register/:schoolSlug', element: <QuickParentRegistration /> },
+  { path: '/register', element: <QuickParentRegistration /> }, 
   { path: '*', element: <NotFoundPage /> }
 ];
 
@@ -130,7 +130,6 @@ const protectedRoutes = [
   
 
   // Admin
-  { path: '/multi-school/landing', element: <AdminLandingPage /> },
   { path: '/admin/users', element: <UserManagementPage /> },
   { path: '/admin/reports', element: <AdminReportsPage /> },
   { path: '/admin/reports/users', element: <UserStatistics /> },

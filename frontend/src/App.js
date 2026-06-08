@@ -1,7 +1,6 @@
 // src/App.js
-import React, { useEffect } from 'react';
-import { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect, lazy, Suspense } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
@@ -28,6 +27,9 @@ import { ParentProvider } from './context/ParentContext';
 // Theme
 import theme from './styles/theme';
 
+// Standalone pages (no layout wrapper)
+const AdminLandingPage = lazy(() => import('./pages/superadmin/AdminLandingPage'));
+
 const getTheme = (mode = 'light') => createTheme({
   ...theme,
   palette: {
@@ -36,7 +38,7 @@ const getTheme = (mode = 'light') => createTheme({
     ...(mode === 'dark' ? {
       background: {
         default: '#121213',
-        paper: '#bb8b8bff',
+        paper: '#1e1e1e',
       },
       text: {
         primary: '#ffffff',
@@ -46,7 +48,7 @@ const getTheme = (mode = 'light') => createTheme({
   },
 });
 
-// Scroll reset
+// Scroll reset on route change
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -55,7 +57,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-// App component
 function App() {
   const [darkMode, setDarkMode] = React.useState(false);
   const currentTheme = getTheme(darkMode ? 'dark' : 'light');
@@ -73,48 +74,60 @@ function App() {
                     <ParentProvider>
                       <ScrollToTop />
                       <Routes>
-                      {/* Public routes */}
-                      {publicRoutes.map((route, i) => (
+
+                        {/* ── Public routes (AuthLayout) ─────────────────── */}
+                        {publicRoutes.map((route, i) => (
+                          <Route
+                            key={i}
+                            path={route.path}
+                            element={
+                              <Suspense fallback={<div>Loading...</div>}>
+                                <AuthLayout>{route.element}</AuthLayout>
+                              </Suspense>
+                            }
+                          />
+                        ))}
+
+                        {/* ── Standalone: school picker (no sidebar) ─────── */}
                         <Route
-                          key={i}
-                          path={route.path}
+                          path="/multi-school/landing"
                           element={
                             <Suspense fallback={<div>Loading...</div>}>
-                              <AuthLayout>{route.element}</AuthLayout>
+                              <AdminLandingPage />
                             </Suspense>
                           }
                         />
-                      ))}
 
-                      {/* Protected routes */}
-                      <Route element={<Layout />}>
-                        {protectedRoutes.map((route, i) => (
-                          <Route
-                            key={i}
-                            path={route.path}
-                            element={
-                              <Suspense fallback={<div>Loading...</div>}>
-                                {route.element}
-                              </Suspense>
-                            }
-                          />
-                        ))}
-                      </Route>
+                        {/* ── Protected routes (Layout with sidebar) ─────── */}
+                        <Route element={<Layout />}>
+                          {protectedRoutes.map((route, i) => (
+                            <Route
+                              key={i}
+                              path={route.path}
+                              element={
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  {route.element}
+                                </Suspense>
+                              }
+                            />
+                          ))}
+                        </Route>
 
-                      {/* Super Admin routes */}
-                      <Route element={<SuperAdminLayout />}>
-                        {superAdminRoutes.map((route, i) => (
-                          <Route
-                            key={i}
-                            path={route.path}
-                            element={
-                              <Suspense fallback={<div>Loading...</div>}>
-                                {route.element}
-                              </Suspense>
-                            }
-                          />
-                        ))}
-                      </Route>
+                        {/* ── Super Admin routes (SuperAdminLayout) ─────── */}
+                        <Route element={<SuperAdminLayout />}>
+                          {superAdminRoutes.map((route, i) => (
+                            <Route
+                              key={i}
+                              path={route.path}
+                              element={
+                                <Suspense fallback={<div>Loading...</div>}>
+                                  {route.element}
+                                </Suspense>
+                              }
+                            />
+                          ))}
+                        </Route>
+
                       </Routes>
                     </ParentProvider>
                   </EventsProvider>
