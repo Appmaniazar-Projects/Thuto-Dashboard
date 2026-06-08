@@ -57,9 +57,12 @@ const DashboardPage = () => {
     // Map user roles to their corresponding dashboard components
     const dashboardComponents = {
       admin: <AdminDashboard />,
-      administrator: <AdminDashboard />, // Alternative role name for admins
+      administrator: <AdminDashboard />,
       teacher: <TeacherDashboard />,
       parent: <ParentDashboard />,
+      guardian: <ParentDashboard />,
+      sponsor: <ParentDashboard />,
+      helper: <ParentDashboard />,
       student: <StudentDashboard />,
     };
     

@@ -68,7 +68,7 @@ export const getAllSchools = async (createdBy, queryString) => {
     const params = {};
 
     // Read the current user to check their role and region
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('superAdmin') || localStorage.getItem('user');
     const currentUser = storedUser ? JSON.parse(storedUser) : null;
     const role = currentUser?.role?.toLowerCase();
     const isRegionalAdmin = role === 'superadmin_regional' || role === 'regional_admin' || role === 'regionaladmin';

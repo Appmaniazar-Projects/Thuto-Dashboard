@@ -33,7 +33,12 @@ const ROLES = [
 ];
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, selectedSchool } = useAuth();
+
+  const activeSchoolId = selectedSchool?.id
+    || localStorage.getItem('schoolId')
+    || user?.schoolId;
+
   const navigate = useNavigate();
   
   // State for data and filters
@@ -57,9 +62,8 @@ const AdminDashboard = () => {
 
   // Fetch all data on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      // Simple cache check - avoid refetching data within 5 minutes
-      const cacheKey = 'adminDashboardData';
+  const fetchData = async () => {
+    const cacheKey = `adminDashboardData_${activeSchoolId}`;
       const cacheTime = 5 * 60 * 1000; // 5 minutes
       const cached = localStorage.getItem(cacheKey);
       
@@ -119,8 +123,9 @@ const AdminDashboard = () => {
       }
     };
     
-    fetchData();
-  }, []);
+     if (activeSchoolId) fetchData();
+}, [activeSchoolId]);
+ 
 
   // Apply filters to data
   const filteredStudents = React.useMemo(() => {

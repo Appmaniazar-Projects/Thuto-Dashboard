@@ -130,6 +130,7 @@ const protectedRoutes = [
   
 
   // Admin
+  { path: '/multi-school/landing', element: <AdminLandingPage /> },
   { path: '/admin/users', element: <UserManagementPage /> },
   { path: '/admin/reports', element: <AdminReportsPage /> },
   { path: '/admin/reports/users', element: <UserStatistics /> },
@@ -205,7 +206,6 @@ const routes = [
 
 export const superAdminRoutes = [
   { path: '/superadmin', element: <Navigate to="/superadmin/analytics" replace /> },
-  { path: '/multi-school/landing', element: <AdminLandingPage /> },
   { path: '/superadmin/dashboard', element: <SuperAdminDashboard /> },
   { path: '/superadmin/schools', element: <Navigate to="/superadmin/dashboard" replace /> },
   { path: '/superadmin/admins', element: <Navigate to="/superadmin/dashboard" replace /> },

@@ -46,51 +46,56 @@ const AdminLogin = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-     const { user, token } = await authService.adminLogin(email, password);
-      setAuthData(user, token);
-      analyticsService.trackEvent('admin_login_success', { email, role: user?.role });
-      console.log('MULTI ADMIN USER DATA:', JSON.stringify(user, null, 2));
+  e.preventDefault();
+  setError('');
 
-      const schoolIds = user?.schoolIds;
-      const isMultiSchool = Array.isArray(schoolIds) && schoolIds.length > 1;
+  if (!validateForm()) return;
 
-      if (isMultiSchool) {
-        navigate('/multi-school/landing');
-      } else {
-        navigate('/dashboard');
+  setLoading(true);
+
+  try {
+    const { user, token } = await authService.adminLogin(email, password);
+    setAuthData(user, token);
+    analyticsService.trackEvent('admin_login_success', { email, role: user?.role });
+
+    const schoolIds = user?.schoolIds;
+    const isMultiSchool = Array.isArray(schoolIds) && schoolIds.length > 1;
+
+    if (isMultiSchool) {
+      localStorage.removeItem('schoolId');
+      localStorage.removeItem('schoolName');
+      navigate('/multi-school/landing');
+    } else {
+      const schoolId = user?.schoolId
+        || (Array.isArray(schoolIds) && schoolIds[0])
+        || null;
+      if (schoolId) {
+        localStorage.setItem('schoolId', String(schoolId));
+        localStorage.setItem('schoolName', user?.schoolName || '');
       }
-    } catch (err) {
-      console.error('Admin login failed:', err);
-      
-      // Handle specific error messages
-      if (err.message.includes('network')) {
-        setError('Unable to connect to the server. Please check your internet connection.');
-      } else if (err.message.includes('401') || err.message.toLowerCase().includes('invalid')) {
-        setError('Invalid email or password. Please try again.');
-      } else if (err.message.includes('403')) {
-        setError('Access denied. You do not have permission to access the admin panel.');
-      } else if (err.message.includes('404') || err.message.toLowerCase().includes('not found')) {
-        setError('Email not recognised. Please contact your Super Admin.');
-      } else if (err.message.includes('429')) {
-        setError('Too many login attempts. Please wait a few minutes before trying again.');
-      } else {
-        setError(err.message || 'Login failed. Please try again.');
-      }
-      analyticsService.trackEvent('admin_login_failure', { email, message: err.message });
-    } finally {
-      setLoading(false);
+      navigate('/dashboard');
     }
-  };
+  } catch (err) {                          // ← catch block restored
+    console.error('Admin login failed:', err);
+    analyticsService.trackEvent('admin_login_failure', { email, message: err.message });
+
+    if (err.message?.includes('network')) {
+      setError('Unable to connect to the server. Please check your internet connection.');
+    } else if (err.message?.includes('401') || err.message?.toLowerCase().includes('invalid')) {
+      setError('Invalid email or password. Please try again.');
+    } else if (err.message?.includes('403')) {
+      setError('Access denied. You do not have permission to access the admin panel.');
+    } else if (err.message?.includes('404') || err.message?.toLowerCase().includes('not found')) {
+      setError('Email not recognised. Please contact your Super Admin.');
+    } else if (err.message?.includes('429')) {
+      setError('Too many login attempts. Please wait a few minutes before trying again.');
+    } else {
+      setError(err.message || 'Login failed. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <Box

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -43,91 +43,73 @@ const AdminLandingPage = () => {
   const [statistics, setStatistics] = useState(null);
 
   // Fetch admin's schools if multi-school admin
-  useEffect(() => {
-    const fetchAdminSchools = async () => {
-      try {
-        setLoading(true);
-        
-        // Check if admin has multiple schools
-        if (currentUser?.schoolIds && Array.isArray(currentUser.schoolIds) && currentUser.schoolIds.length > 1) {
-          // Multi-school admin - fetch all their schools
-          let schoolList = [];
-try {
-  schoolList = await adminService.getAdminSchools(currentUser.id);
-} catch (err) {
-  console.warn('Could not fetch school details, building from schoolIds:', err);
-  // Fallback: build basic school objects from the IDs we already have
-  const ids = Array.isArray(currentUser.schoolIds) ? currentUser.schoolIds : [];
-  schoolList = ids.map(id => ({
-    id,
-    name: `School ${id}`,
-  }));
-}
-setSchools(schoolList || []);
-          // If no selected school yet, select the first one
-          if (!selectedSchoolData && schoolList && schoolList.length > 0) {
-            setSelectedSchoolData(schoolList[0]);
-            setSelectedSchool(schoolList[0]);
-          }
-        } else if (currentUser?.schoolIds && Array.isArray(currentUser.schoolIds) && currentUser.schoolIds.length === 1) {
-          // Multi-school admin - fetch all their schools
-          let schoolList = [];
-          try {
-            schoolList = await adminService.getAdminSchools(currentUser.id);
-          } catch (err) {
-            console.warn('Could not fetch school details, building from schoolIds:', err);
-            // Fallback: build basic school objects from the IDs we already have
-            const ids = Array.isArray(currentUser.schoolIds) ? currentUser.schoolIds : [];
-            schoolList = ids.map(id => ({
-              id,
-              name: `School ${id}`,
-            }));
-          }
-          setSchools(schoolList || []);
-          
-          // If no selected school yet, select the first one
-          if (!selectedSchoolData && schoolList && schoolList.length > 0) {
-            setSelectedSchoolData(schoolList[0]);
-            setSelectedSchool(schoolList[0]);
-          }
-        } else if (currentUser?.schoolId) {
-          // Single-school admin
-          const singleSchool = {
-            id: currentUser.schoolId,
-            name: currentUser.schoolName || 'Your School'
-          };
-          setSchools([singleSchool]);
-          setSelectedSchoolData(singleSchool);
-          setSelectedSchool(singleSchool);
+ useEffect(() => {
+  const fetchAdminSchools = async () => {
+    try {
+      setLoading(true);
+
+      const ids = currentUser?.schoolIds;
+      const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
+
+      if (hasSchoolIds) {
+        let schoolList = [];
+        try {
+          schoolList = await adminService.getAdminSchools(currentUser.id);
+        } catch (err) {
+          console.warn('Could not fetch school details, building from schoolIds:', err);
+          schoolList = ids.map(id => ({ id, name: `School ${id}` }));
         }
-        
-        setError(null);
-      } catch (err) {
-        console.error('Failed to fetch admin schools:', err);
-        setError('Failed to load your schools. Please try again.');
-      } finally {
-        setLoading(false);
+        setSchools(schoolList || []);
+
+        if (!selectedSchoolData && schoolList.length > 0) {
+          setSelectedSchoolData(schoolList[0]);
+          setSelectedSchool(schoolList[0]);
+        }
+      } else if (currentUser?.schoolId) {
+        // Single schoolId field (not array)
+        const singleSchool = {
+          id: currentUser.schoolId,
+          name: currentUser.schoolName || 'Your School'
+        };
+        setSchools([singleSchool]);
+        setSelectedSchoolData(singleSchool);
+        setSelectedSchool(singleSchool);
       }
-    };
 
-    if (currentUser?.id) {
-      fetchAdminSchools();
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch admin schools:', err);
+      setError('Failed to load your schools. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId]);
-
-  // Auto-redirect single-school admin to dashboard
-  useEffect(() => {
-    if (!loading && schools.length === 1 && !selectedSchoolData?.multiSchoolSelector) {
-      handleSelectSchool(schools[0]);
-    }
-  }, [loading, schools]);
-
-  const handleSelectSchool = (school) => {
-    setSelectedSchoolData(school);
-    setSelectedSchool(school);
-    setDialogOpen(false);
-    navigate('/dashboard', { state: { selectedSchool: school } });
   };
+
+  if (currentUser?.id) fetchAdminSchools();
+}, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId]);
+
+// Auto-redirect if only one school — fires after fetch completes
+    useEffect(() => {
+      if (!loading && schools.length === 1) {
+        handleSelectSchool(schools[0]);
+      }
+    }, [loading, schools]);
+
+    const handleSelectSchool = useCallback((school) => {
+      setSelectedSchoolData(school);
+      setSelectedSchool(school);
+      localStorage.setItem('schoolId', String(school.id));
+      localStorage.setItem('schoolName', school.name || '');
+      setDialogOpen(false);
+      navigate('/dashboard', { state: { selectedSchool: school } });
+    }, [navigate, setSelectedSchool]);
+
+    // Then the useEffect dependency array is valid:
+    useEffect(() => {
+      if (!loading && schools.length === 1) {
+        handleSelectSchool(schools[0]);
+      }
+    }, [loading, schools, handleSelectSchool]);
 
   const handleOpenDialog = () => {
     setDialogOpen(true);

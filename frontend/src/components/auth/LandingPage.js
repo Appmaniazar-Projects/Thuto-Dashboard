@@ -446,7 +446,7 @@ const LandingPage = () => {
             </Button>
             <Button
               variant="outlined"
-              onClick={() => navigate('/parent/register')}
+              onClick={() => navigate('/register/irene-primary')}
               sx={{
                 borderColor: theme.palette.primary.main,
                 color: theme.palette.primary.main,
