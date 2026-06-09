@@ -35,48 +35,47 @@ const AdminLandingPage = () => {
 
   // ── fetch schools ──────────────────────────────────────────────
   useEffect(() => {
-    const fetchAdminSchools = async () => {
-      try {
-        setLoading(true);
-        const ids = currentUser?.schoolIds;
-        const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
+  const fetchAdminSchools = async () => {
+    try {
+      setLoading(true);
+      const ids = currentUser?.schoolIds;
+      const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
 
-        if (hasSchoolIds) {
-          let schoolList = [];
+      if (hasSchoolIds) {
+        const schoolsFromLogin = Array.isArray(currentUser?.schools) && currentUser.schools.length > 0
+          ? currentUser.schools
+          : null;
+
+        let schoolList = schoolsFromLogin;
+
+        if (!schoolList) {
           try {
             schoolList = await adminService.getAdminSchools(currentUser.id);
-          } catch {
+          } catch (err) {
+            console.warn('Could not fetch school details, building from schoolIds:', err);
             schoolList = ids.map(id => ({ id, name: `School ${id}` }));
           }
-          setSchools(schoolList || []);
-        } else if (currentUser?.schoolId) {
-          setSchools([{ id: currentUser.schoolId, name: currentUser.schoolName || 'Your School' }]);
         }
-        setError(null);
-      } catch {
-        setError('Failed to load your schools. Please try again.');
-      } finally {
-        setLoading(false);
+
+        setSchools(schoolList || []);
+      } else if (currentUser?.schoolId) {
+        setSchools([{
+          id: currentUser.schoolId,
+          name: currentUser.schoolName || 'Your School'
+        }]);
       }
-    };
 
-    if (currentUser?.id) fetchAdminSchools();
-  }, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId]);
-
-  // ── auto-redirect single school ────────────────────────────────
-  const handleSelectSchool = useCallback((school) => {
-    setSelectedSchoolData(school);
-    setSelectedSchool(school);
-    localStorage.setItem('schoolId', String(school.id));
-    localStorage.setItem('schoolName', school.name || '');
-    navigate('/dashboard', { state: { selectedSchool: school } });
-  }, [navigate, setSelectedSchool]);
-
-  useEffect(() => {
-    if (!loading && schools.length === 1) {
-      handleSelectSchool(schools[0]);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch admin schools:', err);
+      setError('Failed to load your schools. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }, [loading, schools, handleSelectSchool]);
+  };
+
+  if (currentUser?.id) fetchAdminSchools();
+}, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId, currentUser?.schools]);
 
   // ── loading ────────────────────────────────────────────────────
   if (loading) {
