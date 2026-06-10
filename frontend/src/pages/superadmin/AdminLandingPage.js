@@ -9,7 +9,6 @@ import {
   Alert,
   Card,
   CardContent,
-  Chip,
   Stack,
   AppBar,
   Toolbar,
@@ -22,72 +21,83 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import adminService from '../../services/adminService';
-import Logo from '../../assets/Logo_Dashboard.png';
+import TopBar from '../../components/layout/TopBar';
 
 const AdminLandingPage = () => {
   const navigate = useNavigate();
   const { currentUser, setSelectedSchool } = useAuth();
 
-  const [schools, setSchools]               = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState(null);
+  const [schools, setSchools]                       = useState([]);
+  const [loading, setLoading]                       = useState(true);
+  const [error, setError]                           = useState(null);
   const [selectedSchoolData, setSelectedSchoolData] = useState(null);
 
-  // ── fetch schools ──────────────────────────────────────────────
+  // ── 1. Fetch schools ───────────────────────────────────────────
   useEffect(() => {
-  const fetchAdminSchools = async () => {
-    try {
-      setLoading(true);
-      const ids = currentUser?.schoolIds;
-      const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
+    const fetchAdminSchools = async () => {
+      try {
+        setLoading(true);
+        const ids = currentUser?.schoolIds;
+        const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
 
-      if (hasSchoolIds) {
-        const schoolsFromLogin = Array.isArray(currentUser?.schools) && currentUser.schools.length > 0
-          ? currentUser.schools
-          : null;
+        if (hasSchoolIds) {
+          // Use schools array already returned at login — avoids the broken /admins/:id/schools endpoint
+          const schoolsFromLogin =
+            Array.isArray(currentUser?.schools) && currentUser.schools.length > 0
+              ? currentUser.schools
+              : null;
 
-        let schoolList = schoolsFromLogin;
+          let schoolList = schoolsFromLogin;
 
-        if (!schoolList) {
-          try {
-            schoolList = await adminService.getAdminSchools(currentUser.id);
-          } catch (err) {
-            console.warn('Could not fetch school details, building from schoolIds:', err);
-            schoolList = ids.map(id => ({ id, name: `School ${id}` }));
+          if (!schoolList) {
+            try {
+              schoolList = await adminService.getAdminSchools(currentUser.id);
+            } catch (err) {
+              console.warn('Could not fetch school details, building from schoolIds:', err);
+              schoolList = ids.map(id => ({ id, name: `School ${id}` }));
+            }
           }
+
+          setSchools(schoolList || []);
+        } else if (currentUser?.schoolId) {
+          setSchools([{
+            id: currentUser.schoolId,
+            name: currentUser.schoolName || 'Your School',
+          }]);
         }
 
-        setSchools(schoolList || []);
-      } else if (currentUser?.schoolId) {
-        setSchools([{
-          id: currentUser.schoolId,
-          name: currentUser.schoolName || 'Your School'
-        }]);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch admin schools:', err);
+        setError('Failed to load your schools. Please try again.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch admin schools:', err);
-      setError('Failed to load your schools. Please try again.');
-    } finally {
-      setLoading(false);
+    if (currentUser?.id) fetchAdminSchools();
+  }, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId, currentUser?.schools]);
+
+  // ── 2. handleSelectSchool — defined BEFORE the auto-redirect useEffect ──
+  const handleSelectSchool = useCallback((school) => {
+    setSelectedSchoolData(school);
+    setSelectedSchool(school);
+    localStorage.setItem('schoolId', String(school.id));
+    localStorage.setItem('schoolName', school.name || '');
+    navigate('/dashboard', { state: { selectedSchool: school } });
+  }, [navigate, setSelectedSchool]);
+
+  // ── 3. Auto-redirect when only one school ──────────────────────
+  useEffect(() => {
+    if (!loading && schools.length === 1) {
+      handleSelectSchool(schools[0]);
     }
-  };
+  }, [loading, schools, handleSelectSchool]);
 
-  if (currentUser?.id) fetchAdminSchools();
-}, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId, currentUser?.schools]);
-
-  // ── loading ────────────────────────────────────────────────────
+  // ── Loading state ──────────────────────────────────────────────
   if (loading) {
     return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          bgcolor: '#F7F8FA',
-        }}
-      >
+      <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
         <TopBar />
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Stack alignItems="center" spacing={2}>
@@ -99,7 +109,7 @@ const AdminLandingPage = () => {
     );
   }
 
-  // ── single school — briefly shows while auto-redirect fires ────
+  // ── Single school — spinner while auto-redirect fires ──────────
   if (schools.length <= 1) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
@@ -111,10 +121,15 @@ const AdminLandingPage = () => {
     );
   }
 
-  // ── school picker ──────────────────────────────────────────────
+  // ── School picker ──────────────────────────────────────────────
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
-      <TopBar />
+      <TopBar
+        isSuperAdmin={true}
+        logoAsImage={true}
+        drawerWidth={0}
+        title=""
+      />
 
       <Box
         sx={{
@@ -129,13 +144,8 @@ const AdminLandingPage = () => {
           width: '100%',
         }}
       >
-        {/* Heading */}
         <Box sx={{ textAlign: 'center', mb: 5 }}>
-          <Typography
-            variant="h4"
-            fontWeight={600}
-            sx={{ mb: 1, color: 'text.primary', letterSpacing: '-0.5px' }}
-          >
+          <Typography variant="h4" fontWeight={600} sx={{ mb: 1, letterSpacing: '-0.5px' }}>
             Select a school
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -149,7 +159,6 @@ const AdminLandingPage = () => {
           </Alert>
         )}
 
-        {/* School cards */}
         <Grid container spacing={3} justifyContent="center">
           {schools.map((school) => {
             const isSelected = selectedSchoolData?.id === school.id;
@@ -173,7 +182,6 @@ const AdminLandingPage = () => {
                   }}
                 >
                   <CardContent sx={{ p: 3 }}>
-                    {/* Icon */}
                     <Box
                       sx={{
                         width: 48,
@@ -189,39 +197,27 @@ const AdminLandingPage = () => {
                       <SchoolIcon sx={{ color: '#fff', fontSize: 24 }} />
                     </Box>
 
-                    {/* Name */}
-                    <Typography
-                      variant="h6"
-                      fontWeight={600}
-                      sx={{ mb: 1.5, lineHeight: 1.3, fontSize: '1rem' }}
-                    >
+                    <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5, lineHeight: 1.3, fontSize: '1rem' }}>
                       {school.name}
                     </Typography>
 
-                    {/* Meta chips */}
                     <Stack spacing={0.75} sx={{ mb: 2.5 }}>
                       {school.region && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {school.region}
-                          </Typography>
+                          <Typography variant="caption" color="text.secondary">{school.region}</Typography>
                         </Box>
                       )}
                       {school.province && !school.region && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {school.province}
-                          </Typography>
+                          <Typography variant="caption" color="text.secondary">{school.province}</Typography>
                         </Box>
                       )}
                       {school.principalName && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                           <PersonIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">
-                            {school.principalName}
-                          </Typography>
+                          <Typography variant="caption" color="text.secondary">{school.principalName}</Typography>
                         </Box>
                       )}
                     </Stack>
@@ -243,12 +239,7 @@ const AdminLandingPage = () => {
           })}
         </Grid>
 
-        {/* Footer count */}
-        <Typography
-          variant="caption"
-          color="text.disabled"
-          sx={{ mt: 5 }}
-        >
+        <Typography variant="caption" color="text.disabled" sx={{ mt: 5 }}>
           {schools.length} school{schools.length !== 1 ? 's' : ''} assigned to your account
         </Typography>
       </Box>
@@ -256,16 +247,12 @@ const AdminLandingPage = () => {
   );
 };
 
-// ── Standalone topbar — no sidebar, just logo ──────────────────
+// ── Standalone topbar — logo only, no sidebar ──────────────────
 const TopBar = () => (
   <AppBar
     position="static"
     elevation={0}
-    sx={{
-      bgcolor: 'background.paper',
-      borderBottom: '1px solid',
-      borderColor: 'divider',
-    }}
+    sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}
   >
     <Toolbar sx={{ minHeight: 56, px: { xs: 2, sm: 3 } }}>
       <Box
@@ -273,10 +260,7 @@ const TopBar = () => (
         src={Logo}
         alt="Thuto"
         sx={{ height: 32, width: 'auto', objectFit: 'contain' }}
-        onError={(e) => {
-          // fallback text if logo doesn't load
-          e.target.style.display = 'none';
-        }}
+        onError={(e) => { e.target.style.display = 'none'; }}
       />
       <Box sx={{ flex: 1 }} />
       <Typography variant="caption" color="text.disabled" sx={{ display: { xs: 'none', sm: 'block' } }}>

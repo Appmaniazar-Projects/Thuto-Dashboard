@@ -1,76 +1,117 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Box, Paper, Typography, TextField, Button,
-  Alert, CircularProgress, Stack
+  Alert, CircularProgress, Stack, List, ListItem,
+  ListItemButton, ListItemText
 } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, School as SchoolIcon } from '@mui/icons-material';
-import parentService from '../../services/parentService';
+import api from '../../services/api';
 import Logo from '../../assets/Logo.png';
 
-
+/**
+ * Generic minimal parent registration page.
+ * School resolved from:
+ *   1. URL param  — /register/:schoolSlug
+ *   2. Query param — /register?schoolId=42
+ *   3. Manual search by the user
+ *
+ * Submits to: POST /admin/register-parent/parent  (public endpoint)
+ */
 const QuickParentRegistration = () => {
   const navigate = useNavigate();
-  const { schoolSlug } = useParams();                // /register/:schoolSlug
+  const { schoolSlug } = useParams();
   const [searchParams] = useSearchParams();
   const querySchoolId = searchParams.get('schoolId');
 
-  const [schoolId, setSchoolId]   = useState(querySchoolId || schoolSlug || '');
-  const [schoolName, setSchoolName] = useState('');
-  const [loadingSchool, setLoadingSchool] = useState(false);
+  // ── School state ───────────────────────────────────────────────
+  const [allSchools, setAllSchools]             = useState([]);
+  const [loadingSchools, setLoadingSchools]     = useState(false);
+  const [schoolSearchInput, setSchoolSearchInput] = useState('');
+  const [showSuggestions, setShowSuggestions]   = useState(false);
+  const [selectedSchool, setSelectedSchool]     = useState(null); // { id, name }
 
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-  });
-  const [errors, setErrors] = useState({});
+  // ── Form state ─────────────────────────────────────────────────
+  const [form, setForm]           = useState({ firstName: '', lastName: '', phoneNumber: '' });
+  const [errors, setErrors]       = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess]     = useState(false);
 
-  // ── resolve school name from ID/slug ──────────────────────────
+  // ── Load all public schools ────────────────────────────────────
   useEffect(() => {
-    const resolve = async () => {
-      if (!schoolId) return;
-      setLoadingSchool(true);
+    const fetchSchools = async () => {
+      setLoadingSchools(true);
       try {
-        const schools = await parentService.getPublicSchools();
-        const match = (schools || []).find(
-          s =>
-            String(s.id) === String(schoolId) ||
-            s.slug === schoolId ||
-            s.name?.toLowerCase().replace(/\s+/g, '-') === schoolId.toLowerCase()
-        );
-        if (match) {
-          setSchoolName(match.name);
-          setSchoolId(String(match.id)); // normalise to numeric id
-        } else {
-          setSchoolName('');
-        }
+        const response = await api.get('/schools/public');
+        setAllSchools(Array.isArray(response.data) ? response.data : []);
       } catch {
-        // silently fall through — school name is display-only
+        setAllSchools([]);
       } finally {
-        setLoadingSchool(false);
+        setLoadingSchools(false);
       }
     };
-    resolve();
-  }, [schoolSlug, querySchoolId]);
+    fetchSchools();
+  }, []);
 
-  // ── validation ────────────────────────────────────────────────
+  // ── Pre-select school from URL if provided ─────────────────────
+  useEffect(() => {
+    if ((!querySchoolId && !schoolSlug) || allSchools.length === 0) return;
+    const idOrSlug = querySchoolId || schoolSlug;
+    const match = allSchools.find(
+      s =>
+        String(s.id) === String(idOrSlug) ||
+        s.slug === idOrSlug ||
+        s.name?.toLowerCase().replace(/\s+/g, '-') === idOrSlug?.toLowerCase()
+    );
+    if (match) {
+      setSelectedSchool({ id: String(match.id), name: match.name });
+      setSchoolSearchInput(match.name);
+    }
+  }, [allSchools, querySchoolId, schoolSlug]);
+
+  // ── School search filtering ────────────────────────────────────
+  const filteredSchools = schoolSearchInput.trim().length > 1
+    ? allSchools.filter(s =>
+        s.name?.toLowerCase().includes(schoolSearchInput.toLowerCase()) ||
+        s.province?.toLowerCase().includes(schoolSearchInput.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const handleSchoolSearchChange = (e) => {
+    setSchoolSearchInput(e.target.value);
+    setSelectedSchool(null);
+    setShowSuggestions(true);
+    setErrors(er => ({ ...er, school: '' }));
+  };
+
+  const handleSchoolSelect = useCallback((school) => {
+    setSelectedSchool({ id: String(school.id), name: school.name });
+    setSchoolSearchInput(school.name);
+    setShowSuggestions(false);
+    setErrors(er => ({ ...er, school: '' }));
+  }, []);
+
+  // ── Form handlers ──────────────────────────────────────────────
+  const handleChange = (field) => (e) => {
+    setForm(f => ({ ...f, [field]: e.target.value }));
+    setErrors(er => ({ ...er, [field]: '' }));
+  };
+
+  // ── Validation ─────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim())  e.firstName  = 'First name is required';
-    if (!form.lastName.trim())   e.lastName   = 'Last name is required';
+    if (!form.firstName.trim())   e.firstName   = 'First name is required';
+    if (!form.lastName.trim())    e.lastName    = 'Last name is required';
     if (!form.phoneNumber.trim()) e.phoneNumber = 'Phone number is required';
     else if (!/^(\+27|0)[0-9]{9}$/.test(form.phoneNumber.replace(/\s/g, '')))
       e.phoneNumber = 'Enter a valid South African number (e.g. 0821234567)';
-    if (!schoolId) e.school = 'No school linked to this registration link.';
+    if (!selectedSchool?.id) e.school = 'Please select a school from the list';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  // ── submit ────────────────────────────────────────────────────
+  // ── Submit ─────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -78,16 +119,16 @@ const QuickParentRegistration = () => {
 
     setSubmitting(true);
     try {
-      const payload = {
+      const parentData = {
         firstName:        form.firstName.trim(),
         lastName:         form.lastName.trim(),
         phoneNumber:      form.phoneNumber.trim(),
-        schoolId,
+        schoolId:         selectedSchool.id,
         status:           'pending_approval',
         registrationDate: new Date().toISOString(),
         role:             'parent',
       };
-      await parentService.registerParent(payload);
+      await api.post('/admin/register-parent/parent', parentData);
       setSuccess(true);
     } catch (err) {
       setSubmitError(
@@ -100,12 +141,7 @@ const QuickParentRegistration = () => {
     }
   };
 
-  const handleChange = (field) => (e) => {
-    setForm(f => ({ ...f, [field]: e.target.value }));
-    setErrors(er => ({ ...er, [field]: '' }));
-  };
-
-  // ── success screen ────────────────────────────────────────────
+  // ── Success screen ─────────────────────────────────────────────
   if (success) {
     return (
       <PageShell>
@@ -115,7 +151,7 @@ const QuickParentRegistration = () => {
             Registration submitted!
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Your details have been sent to the school for approval.
+            Your details have been sent to <strong>{selectedSchool?.name}</strong> for approval.
             You will be contacted once your account is activated.
           </Typography>
           <Button variant="outlined" onClick={() => navigate('/login')}>
@@ -126,42 +162,9 @@ const QuickParentRegistration = () => {
     );
   }
 
-  // ── form ──────────────────────────────────────────────────────
+  // ── Form ───────────────────────────────────────────────────────
   return (
     <PageShell>
-      {/* School banner */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          mb: 3,
-          p: 1.5,
-          borderRadius: 2,
-          bgcolor: 'primary.50',
-          border: '1px solid',
-          borderColor: 'primary.100',
-          minHeight: 40,
-        }}
-      >
-        <SchoolIcon sx={{ color: 'primary.main', fontSize: 20, flexShrink: 0 }} />
-        {loadingSchool ? (
-          <CircularProgress size={14} />
-        ) : schoolName ? (
-          <Typography variant="body2" fontWeight={500} color="primary.main">
-            {schoolName}
-          </Typography>
-        ) : schoolId ? (
-          <Typography variant="body2" color="text.secondary">
-            School ID: {schoolId}
-          </Typography>
-        ) : (
-          <Typography variant="body2" color="error.main">
-            No school linked — check your registration link.
-          </Typography>
-        )}
-      </Box>
-
       <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5 }}>
         Parent registration
       </Typography>
@@ -169,15 +172,86 @@ const QuickParentRegistration = () => {
         Fill in your details. The school will review and approve your account.
       </Typography>
 
-      {errors.school && (
-        <Alert severity="error" sx={{ mb: 2 }}>{errors.school}</Alert>
-      )}
       {submitError && (
         <Alert severity="error" sx={{ mb: 2 }}>{submitError}</Alert>
       )}
 
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Stack spacing={2}>
+
+          {/* School search */}
+          <Box sx={{ position: 'relative' }}>
+            <TextField
+              label="School"
+              placeholder={loadingSchools ? 'Loading schools…' : 'Type to search your school…'}
+              value={schoolSearchInput}
+              onChange={handleSchoolSearchChange}
+              onFocus={() => schoolSearchInput.trim().length > 1 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+              fullWidth
+              required
+              disabled={submitting}
+              error={!!errors.school}
+              helperText={
+                errors.school ||
+                (selectedSchool
+                  ? `✓ ${selectedSchool.name}`
+                  : 'Search by school name or province')
+              }
+              InputProps={{
+                startAdornment: (
+                  <SchoolIcon sx={{ fontSize: 18, color: 'text.disabled', mr: 1 }} />
+                ),
+              }}
+            />
+
+            {/* Suggestions dropdown */}
+            {showSuggestions && filteredSchools.length > 0 && (
+              <Paper
+                elevation={4}
+                sx={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  zIndex: 20,
+                  maxHeight: 240,
+                  overflowY: 'auto',
+                  mt: 0.5,
+                  borderRadius: 2,
+                }}
+              >
+                <List dense disablePadding>
+                  {filteredSchools.map((school) => (
+                    <ListItem key={school.id} disablePadding>
+                      <ListItemButton onMouseDown={() => handleSchoolSelect(school)}>
+                        <ListItemText
+                          primary={school.name}
+                          secondary={school.province}
+                          primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                          secondaryTypographyProps={{ variant: 'caption' }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            )}
+
+            {/* No results */}
+            {showSuggestions && schoolSearchInput.trim().length > 1 && filteredSchools.length === 0 && !loadingSchools && (
+              <Paper
+                elevation={2}
+                sx={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, mt: 0.5, p: 2, borderRadius: 2 }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  No schools found for "{schoolSearchInput}"
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+
+          {/* Name */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <TextField
               label="First name"
@@ -201,6 +275,7 @@ const QuickParentRegistration = () => {
             />
           </Box>
 
+          {/* Phone */}
           <TextField
             label="Phone number"
             placeholder="e.g. 0821234567"
@@ -219,7 +294,7 @@ const QuickParentRegistration = () => {
             variant="contained"
             fullWidth
             size="large"
-            disabled={submitting || !schoolId}
+            disabled={submitting || !selectedSchool}
             sx={{ mt: 1, py: 1.4, borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
           >
             {submitting ? <CircularProgress size={22} color="inherit" /> : 'Register'}
@@ -240,7 +315,7 @@ const QuickParentRegistration = () => {
   );
 };
 
-// ── minimal page shell — logo + centred card ───────────────────
+// ── Minimal page shell ─────────────────────────────────────────
 const PageShell = ({ children }) => (
   <Box
     sx={{
@@ -266,7 +341,7 @@ const PageShell = ({ children }) => (
       elevation={0}
       sx={{
         width: '100%',
-        maxWidth: 420,
+        maxWidth: 440,
         p: { xs: 3, sm: 4 },
         borderRadius: 3,
         border: '1px solid',
