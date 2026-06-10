@@ -247,27 +247,4 @@ const AdminLandingPage = () => {
   );
 };
 
-// ── Standalone topbar — logo only, no sidebar ──────────────────
-const TopBar = () => (
-  <AppBar
-    position="static"
-    elevation={0}
-    sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}
-  >
-    <Toolbar sx={{ minHeight: 56, px: { xs: 2, sm: 3 } }}>
-      <Box
-        component="img"
-        src={Logo}
-        alt="Thuto"
-        sx={{ height: 32, width: 'auto', objectFit: 'contain' }}
-        onError={(e) => { e.target.style.display = 'none'; }}
-      />
-      <Box sx={{ flex: 1 }} />
-      <Typography variant="caption" color="text.disabled" sx={{ display: { xs: 'none', sm: 'block' } }}>
-        School Management
-      </Typography>
-    </Toolbar>
-  </AppBar>
-);
-
 export default AdminLandingPage;
