@@ -3,10 +3,16 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
-  const {user} = useAuth();
+  const { user } = useAuth();
 
-  if (!user){
-    // Not logged in
+  if (!user) {
+    // Check localStorage directly in case context hasn't hydrated yet
+    const storedRole = localStorage.getItem('userRole')?.toLowerCase();
+    const isAdmin = storedRole === 'admin';
+    const isSuperAdmin = storedRole?.startsWith('superadmin');
+
+    if (isSuperAdmin) return <Navigate to="/superadmin/login" replace />;
+    if (isAdmin)      return <Navigate to="/admin/login" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -14,11 +20,9 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
     requiredRoles.length &&
     !requiredRoles.map(r => r.toLowerCase()).includes(user.role?.toLowerCase())
   ) {
-    // User doesn't have required role
     return <Navigate to="/dashboard" replace />;
   }
 
   return children;
 };
-
 export default ProtectedRoute;

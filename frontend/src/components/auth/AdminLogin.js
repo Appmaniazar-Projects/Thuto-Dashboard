@@ -56,6 +56,7 @@ const AdminLogin = () => {
   try {
     const { user, token } = await authService.adminLogin(email, password);
     setAuthData(user, token);
+    localStorage.removeItem('superAdmin');
     analyticsService.trackEvent('admin_login_success', { email, role: user?.role });
 
     const schoolIds = user?.schoolIds;

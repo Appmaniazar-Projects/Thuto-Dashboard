@@ -62,6 +62,7 @@ const adminLogin = async (email, password) => {
       });
       
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('userRole', response.data.user.role?.toLowerCase());
       localStorage.setItem('token', response.data.token);
       
       // Also store schoolId separately if it exists in the user object
