@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Paper, Typography, TextField, Button,
-  Alert, CircularProgress, Stack,  useTheme, useMediaQuery
+  Alert, CircularProgress, Stack
 } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, School as SchoolIcon } from '@mui/icons-material';
 import api from '../../services/api';
 import Logo from '../../assets/Logo.png';
-import TopBar from '../layout/TopBar'; 
 
 const QuickParentRegistration = () => {
   const navigate = useNavigate();
@@ -254,48 +253,41 @@ const QuickParentRegistration = () => {
 };
 
 // ── Minimal page shell — logo + centred card ───────────────────
-const PageShell = ({ children }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
-      <TopBar
-        isSuperAdmin={true}          // full-width, no sidebar offset
-        drawerWidth={0}
-        handleDrawerToggle={() => {}}
-        title={isMobile ? 'Register' : 'Parent Registration'}
-        logoAsImage={true}
-      />
-
+const PageShell = ({ children }) => (
+  <Box
+    sx={{
+      minHeight: '100vh',
+      bgcolor: '#F7F8FA',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      px: 2,
+      py: 4,
+    }}
+  >
+    <Box sx={{ mb: 3, textAlign: 'center' }}>
       <Box
-        sx={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          px: 2,
-          py: 4,
-          mt: '64px',           // offset for the fixed AppBar height
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            width: '100%',
-            maxWidth: 440,
-            p: { xs: 3, sm: 4 },
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          {children}
-        </Paper>
-      </Box>
+        component="img"
+        src={Logo}
+        alt="Thuto"
+        sx={{ height: 44, width: 'auto', objectFit: 'contain' }}
+      />
     </Box>
-  );
-};
+    <Paper
+      elevation={0}
+      sx={{
+        width: '100%',
+        maxWidth: 440,
+        p: { xs: 3, sm: 4 },
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {children}
+    </Paper>
+  </Box>
+);
 
 export default QuickParentRegistration;
