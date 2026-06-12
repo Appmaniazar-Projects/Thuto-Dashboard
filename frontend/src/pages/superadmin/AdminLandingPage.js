@@ -10,8 +10,8 @@ import {
   Card,
   CardContent,
   Stack,
-  AppBar,
-  Toolbar,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -26,6 +26,8 @@ import TopBar from '../../components/layout/TopBar';
 const AdminLandingPage = () => {
   const navigate = useNavigate();
   const { currentUser, setSelectedSchool } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [schools, setSchools]                       = useState([]);
   const [loading, setLoading]                       = useState(true);
@@ -41,7 +43,6 @@ const AdminLandingPage = () => {
         const hasSchoolIds = Array.isArray(ids) && ids.length > 0;
 
         if (hasSchoolIds) {
-          // Use schools array already returned at login — avoids the broken /admins/:id/schools endpoint
           const schoolsFromLogin =
             Array.isArray(currentUser?.schools) && currentUser.schools.length > 0
               ? currentUser.schools
@@ -78,7 +79,7 @@ const AdminLandingPage = () => {
     if (currentUser?.id) fetchAdminSchools();
   }, [currentUser?.id, currentUser?.schoolIds, currentUser?.schoolId, currentUser?.schools]);
 
-  // ── 2. handleSelectSchool — defined BEFORE the auto-redirect useEffect ──
+  // ── 2. handleSelectSchool ────────────────────────────────────────
   const handleSelectSchool = useCallback((school) => {
     setSelectedSchoolData(school);
     setSelectedSchool(school);
@@ -94,15 +95,34 @@ const AdminLandingPage = () => {
     }
   }, [loading, schools, handleSelectSchool]);
 
+  // ── Shared TopBar props ──────────────────────────────────────────
+  const topBarProps = {
+    isSuperAdmin: true,
+    logoAsImage: true,
+    drawerWidth: 0,
+    title: isMobile ? 'Thuto' : 'School Management',
+  };
+
   // ── Loading state ──────────────────────────────────────────────
   if (loading) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
-        <TopBar />
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <TopBar {...topBarProps} />
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mt: '64px',
+            px: 2,
+          }}
+        >
           <Stack alignItems="center" spacing={2}>
             <CircularProgress />
-            <Typography variant="body2" color="text.secondary">Loading your schools…</Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              Loading your schools…
+            </Typography>
           </Stack>
         </Box>
       </Box>
@@ -113,8 +133,16 @@ const AdminLandingPage = () => {
   if (schools.length <= 1) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
-        <TopBar />
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <TopBar {...topBarProps} />
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mt: '64px',
+          }}
+        >
           <CircularProgress />
         </Box>
       </Box>
@@ -124,12 +152,7 @@ const AdminLandingPage = () => {
   // ── School picker ──────────────────────────────────────────────
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#F7F8FA' }}>
-      <TopBar
-        isSuperAdmin={true}
-        logoAsImage={true}
-        drawerWidth={0}
-        title=""
-      />
+      <TopBar {...topBarProps} />
 
       <Box
         sx={{
@@ -139,16 +162,25 @@ const AdminLandingPage = () => {
           alignItems: 'center',
           px: { xs: 2, sm: 4 },
           py: { xs: 4, sm: 6 },
+          mt: '64px',
           maxWidth: 960,
           mx: 'auto',
           width: '100%',
         }}
       >
-        <Box sx={{ textAlign: 'center', mb: 5 }}>
-          <Typography variant="h4" fontWeight={600} sx={{ mb: 1, letterSpacing: '-0.5px' }}>
+        <Box sx={{ textAlign: 'center', mb: { xs: 3, sm: 5 } }}>
+          <Typography
+            variant="h4"
+            fontWeight={600}
+            sx={{
+              mb: 1,
+              fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+              letterSpacing: { xs: 'normal', sm: '-0.5px' },
+            }}
+          >
             Select a school
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             Choose the school you want to manage
           </Typography>
         </Box>
@@ -159,7 +191,7 @@ const AdminLandingPage = () => {
           </Alert>
         )}
 
-        <Grid container spacing={3} justifyContent="center">
+        <Grid container spacing={{ xs: 2, sm: 3 }} justifyContent="center">
           {schools.map((school) => {
             const isSelected = selectedSchoolData?.id === school.id;
             return (
@@ -181,7 +213,7 @@ const AdminLandingPage = () => {
                     },
                   }}
                 >
-                  <CardContent sx={{ p: 3 }}>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                     <Box
                       sx={{
                         width: 48,
@@ -197,27 +229,42 @@ const AdminLandingPage = () => {
                       <SchoolIcon sx={{ color: '#fff', fontSize: 24 }} />
                     </Box>
 
-                    <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5, lineHeight: 1.3, fontSize: '1rem' }}>
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      sx={{
+                        mb: 1.5,
+                        lineHeight: 1.3,
+                        fontSize: '1rem',
+                        wordBreak: 'break-word',
+                      }}
+                    >
                       {school.name}
                     </Typography>
 
                     <Stack spacing={0.75} sx={{ mb: 2.5 }}>
                       {school.region && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">{school.region}</Typography>
+                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {school.region}
+                          </Typography>
                         </Box>
                       )}
                       {school.province && !school.region && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">{school.province}</Typography>
+                          <LocationIcon sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {school.province}
+                          </Typography>
                         </Box>
                       )}
                       {school.principalName && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                          <PersonIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-                          <Typography variant="caption" color="text.secondary">{school.principalName}</Typography>
+                          <PersonIcon sx={{ fontSize: 14, color: 'text.disabled', flexShrink: 0 }} />
+                          <Typography variant="caption" color="text.secondary" noWrap>
+                            {school.principalName}
+                          </Typography>
                         </Box>
                       )}
                     </Stack>
@@ -239,7 +286,7 @@ const AdminLandingPage = () => {
           })}
         </Grid>
 
-        <Typography variant="caption" color="text.disabled" sx={{ mt: 5 }}>
+        <Typography variant="caption" color="text.disabled" sx={{ mt: 5, textAlign: 'center' }}>
           {schools.length} school{schools.length !== 1 ? 's' : ''} assigned to your account
         </Typography>
       </Box>
