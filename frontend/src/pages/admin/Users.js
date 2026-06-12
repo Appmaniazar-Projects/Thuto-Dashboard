@@ -213,24 +213,38 @@ const Users = () => {
     };
 
     const fetchUsers = async () => {
-        try {
-            setLoading(true);
-            const [allUsersData, parentsData, teachersData, studentsData] = await Promise.all([
-                getAllUsers(),
-                getUsersByRole('parent'),
-                getUsersByRole('teacher'),
-                getUsersByRole('student')
-            ]);
-            setUsers(allUsersData);
-            setParents(parentsData || []);
-            setTeachers(teachersData || []);
-            setStudents(studentsData || []);
-        } catch (err) {
-            setError('Failed to load users.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+        setLoading(true);
+        const [allUsersData, parentsData, teachersData, studentsData] = await Promise.all([
+            getAllUsers(),
+            getUsersByRole('parent'),
+            getUsersByRole('teacher'),
+            getUsersByRole('student')
+        ]);
+
+        // Approved + legacy (null status) parents are treated as approved
+        const isApprovedParent = (u) =>
+            u.status === 'approved' ||
+            u.status === 'active' ||
+            !u.status; // legacy records created before status existed
+
+        const approvedParents = (parentsData || []).filter(isApprovedParent);
+
+        const filteredAllUsers = (allUsersData || []).filter((u) => {
+            if ((u.role || '').toString().toLowerCase() !== 'parent') return true;
+            return isApprovedParent(u);
+        });
+
+        setUsers(filteredAllUsers);
+        setParents(approvedParents);
+        setTeachers(teachersData || []);
+        setStudents(studentsData || []);
+    } catch (err) {
+        setError('Failed to load users.');
+    } finally {
+        setLoading(false);
+    }
+};
 
     // Normalize role to lowercase before submission
     const normalizeRole = (role) => {
