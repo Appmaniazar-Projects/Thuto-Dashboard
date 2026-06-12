@@ -366,100 +366,105 @@ const parentService = {
     }
   },
 
-  // Get pending parent registrations (admin only)
-  getPendingParents: async () => {
-    try {
-      // Use existing getUsersByRole endpoint and filter by status
-      const response = await api.get('/admin/users/role/parent');
-      // Filter for pending approval status
-      const pendingParents = response.data.filter(user => 
-        user.status === 'pending_approval' || 
-        (!user.status && user.role === 'parent')
-      );
-      return pendingParents;
-    } catch (error) {
-      console.error('Error fetching pending parents:', error);
-      throw error;
-    }
-  },
+    // ── Helper — gets schoolId from localStorage (used by all 4 functions) ──
+  const getSchoolId = () => {
+    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+    return (
+      localStorage.getItem('schoolId') ||
+      adminInfo.school?.id ||
+      adminInfo.schoolId ||
+      null
+    );
+  };
 
-  getApprovedParents: async () => {
-    try {
-      // Use existing getUsersByRole endpoint and filter by status
-      const response = await api.get('/admin/users/role/parent');
-      // Filter for approved status
-      const approvedParents = response.data.filter(user => 
-        user.status === 'approved' || 
-        (user.status === 'active' && user.role === 'parent')
-      );
-      return approvedParents;
-    } catch (error) {
-      console.error('Error fetching approved parents:', error);
-      throw error;
-    }
-  },
+// ── getPendingParents ──────────────────────────────────────────
+getPendingParents: async () => {
+  try {
+    const schoolId = getSchoolId();
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
 
-  getRejectedParents: async () => {
-    try {
-      // Use existing getUsersByRole endpoint and filter by status
-      const response = await api.get('/admin/users/role/parent');
-      // Filter for rejected status
-      const rejectedParents = response.data.filter(user => 
-        user.status === 'rejected' && user.role === 'parent'
-      );
-      return rejectedParents;
-    } catch (error) {
-      console.error('Error fetching rejected parents:', error);
-      throw error;
-    }
-  },
+    const response = await api.get('/admin/users/role/parent', { params });
+    return (response.data || []).filter(u =>
+      u.status === 'pending_approval' || (!u.status && u.role === 'parent')
+    );
+  } catch (error) {
+    console.error('Error fetching pending parents:', error);
+    throw error;
+  }
+},
 
-  // Approve parent registration (admin only)
-  approveParent: async (parentId) => {
-    try {
-      // Use existing user update endpoint to change status
-      const response = await api.patch(`/admin/users/${parentId}`, {
-        status: 'approved',
-        approvedAt: new Date().toISOString()
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error approving parent:', error);
-      throw error;
-    }
-  },
+// ── getApprovedParents ─────────────────────────────────────────
+getApprovedParents: async () => {
+  try {
+    const schoolId = getSchoolId();
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
 
-  // Reject parent registration (admin only)
-  rejectParent: async (parentId, reason) => {
-    try {
-      // Use existing user update endpoint to change status
-      const response = await api.patch(`/admin/users/${parentId}`, {
-        status: 'rejected',
-        rejectionReason: reason,
-        rejectedAt: new Date().toISOString()
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error rejecting parent:', error);
-      throw error;
-    }
-  },
+    const response = await api.get('/admin/users/role/parent', { params });
+    return (response.data || []).filter(u =>
+      u.status === 'approved' || (u.status === 'active' && u.role === 'parent')
+    );
+  } catch (error) {
+    console.error('Error fetching approved parents:', error);
+    throw error;
+  }
+},
 
-  // Resend approval email (admin only)
-  resendApprovalEmail: async (parentId) => {
-    try {
-      // This would need to be implemented as a backend endpoint
-      // For now, we'll use a generic notification endpoint
-      const response = await api.post(`/admin/users/${parentId}/notify`, {
-        type: 'approval_reminder',
-        message: 'Your registration is still pending approval'
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error resending approval email:', error);
-      throw error;
-    }
-  },
+// ── getRejectedParents ─────────────────────────────────────────
+getRejectedParents: async () => {
+  try {
+    const schoolId = getSchoolId();
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+
+    const response = await api.get('/admin/users/role/parent', { params });
+    return (response.data || []).filter(u =>
+      u.status === 'rejected' && u.role === 'parent'
+    );
+  } catch (error) {
+    console.error('Error fetching rejected parents:', error);
+    throw error;
+  }
+},
+
+// ── approveParent ──────────────────────────────────────────────
+approveParent: async (parentId) => {
+  try {
+    const schoolId = getSchoolId();
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+
+    const response = await api.patch(
+      `/admin/users/${parentId}`,
+      { status: 'approved', approvedAt: new Date().toISOString() },
+      { params }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error approving parent:', error);
+    throw error;
+  }
+},
+
+// ── rejectParent ───────────────────────────────────────────────
+rejectParent: async (parentId, reason) => {
+  try {
+    const schoolId = getSchoolId();
+    const params = {};
+    if (schoolId) params.schoolId = schoolId;
+
+    const response = await api.patch(
+      `/admin/users/${parentId}`,
+      { status: 'rejected', rejectionReason: reason, rejectedAt: new Date().toISOString() },
+      { params }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting parent:', error);
+    throw error;
+  }
+},
 
   // Get public schools list (for registration form)
   getPublicSchools: async () => {
