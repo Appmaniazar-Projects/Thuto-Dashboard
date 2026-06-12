@@ -1,5 +1,16 @@
 import api from './api';
 
+// ── Helper — gets schoolId from localStorage (used by approval-flow functions) ──
+const getSchoolId = () => {
+  const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+  return (
+    localStorage.getItem('schoolId') ||
+    adminInfo.school?.id ||
+    adminInfo.schoolId ||
+    null
+  );
+};
+
 const parentService = {
   /**
    * Fetches the parent's children
@@ -366,106 +377,109 @@ const parentService = {
     }
   },
 
-    // ── Helper — gets schoolId from localStorage (used by all 4 functions) ──
-  const getSchoolId = () => {
-    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    return (
-      localStorage.getItem('schoolId') ||
-      adminInfo.school?.id ||
-      adminInfo.schoolId ||
-      null
-    );
-  };
+  // Get pending parent registrations (admin only)
+   getPendingParents: async () => {
+    try {
+      const schoolId = getSchoolId();
+      const params = {};
+      if (schoolId) params.schoolId = schoolId;
 
-// ── getPendingParents ──────────────────────────────────────────
-getPendingParents: async () => {
-  try {
-    const schoolId = getSchoolId();
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
+      const response = await api.get('/admin/users/role/parent', { params });
+      return (response.data || []).filter(u =>
+        u.status === 'pending_approval' || (!u.status && u.role === 'parent')
+      );
+    } catch (error) {
+      console.error('Error fetching pending parents:', error);
+      throw error;
+    }
+  },
 
-    const response = await api.get('/admin/users/role/parent', { params });
-    return (response.data || []).filter(u =>
-      u.status === 'pending_approval' || (!u.status && u.role === 'parent')
-    );
-  } catch (error) {
-    console.error('Error fetching pending parents:', error);
-    throw error;
-  }
-},
+  // ── getApprovedParents ─────────────────────────────────────────
+  getApprovedParents: async () => {
+    try {
+      const schoolId = getSchoolId();
+      const params = {};
+      if (schoolId) params.schoolId = schoolId;
 
-// ── getApprovedParents ─────────────────────────────────────────
-getApprovedParents: async () => {
-  try {
-    const schoolId = getSchoolId();
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
+      const response = await api.get('/admin/users/role/parent', { params });
+      return (response.data || []).filter(u =>
+        u.status === 'approved' || (u.status === 'active' && u.role === 'parent')
+      );
+    } catch (error) {
+      console.error('Error fetching approved parents:', error);
+      throw error;
+    }
+  },
 
-    const response = await api.get('/admin/users/role/parent', { params });
-    return (response.data || []).filter(u =>
-      u.status === 'approved' || (u.status === 'active' && u.role === 'parent')
-    );
-  } catch (error) {
-    console.error('Error fetching approved parents:', error);
-    throw error;
-  }
-},
+  // ── getRejectedParents ─────────────────────────────────────────
+  getRejectedParents: async () => {
+    try {
+      const schoolId = getSchoolId();
+      const params = {};
+      if (schoolId) params.schoolId = schoolId;
 
-// ── getRejectedParents ─────────────────────────────────────────
-getRejectedParents: async () => {
-  try {
-    const schoolId = getSchoolId();
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
+      const response = await api.get('/admin/users/role/parent', { params });
+      return (response.data || []).filter(u =>
+        u.status === 'rejected' && u.role === 'parent'
+      );
+    } catch (error) {
+      console.error('Error fetching rejected parents:', error);
+      throw error;
+    }
+  },
 
-    const response = await api.get('/admin/users/role/parent', { params });
-    return (response.data || []).filter(u =>
-      u.status === 'rejected' && u.role === 'parent'
-    );
-  } catch (error) {
-    console.error('Error fetching rejected parents:', error);
-    throw error;
-  }
-},
+  // ── approveParent ──────────────────────────────────────────────
+  approveParent: async (parentId) => {
+    try {
+      const schoolId = getSchoolId();
+      const params = {};
+      if (schoolId) params.schoolId = schoolId;
 
-// ── approveParent ──────────────────────────────────────────────
-approveParent: async (parentId) => {
-  try {
-    const schoolId = getSchoolId();
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
+      const response = await api.patch(
+        `/admin/users/${parentId}`,
+        { status: 'approved', approvedAt: new Date().toISOString() },
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error approving parent:', error);
+      throw error;
+    }
+  },
 
-    const response = await api.patch(
-      `/admin/users/${parentId}`,
-      { status: 'approved', approvedAt: new Date().toISOString() },
-      { params }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error approving parent:', error);
-    throw error;
-  }
-},
+  // ── rejectParent ───────────────────────────────────────────────
+  rejectParent: async (parentId, reason) => {
+    try {
+      const schoolId = getSchoolId();
+      const params = {};
+      if (schoolId) params.schoolId = schoolId;
 
-// ── rejectParent ───────────────────────────────────────────────
-rejectParent: async (parentId, reason) => {
-  try {
-    const schoolId = getSchoolId();
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
+      const response = await api.patch(
+        `/admin/users/${parentId}`,
+        { status: 'rejected', rejectionReason: reason, rejectedAt: new Date().toISOString() },
+        { params }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting parent:', error);
+      throw error;
+    }
+  },
 
-    const response = await api.patch(
-      `/admin/users/${parentId}`,
-      { status: 'rejected', rejectionReason: reason, rejectedAt: new Date().toISOString() },
-      { params }
-    );
-    return response.data;
-  } catch (error) {
-    console.error('Error rejecting parent:', error);
-    throw error;
-  }
-},
-
+  // ── resendApprovalEmail — restored from old version ─────────────
+  resendApprovalEmail: async (parentId) => {
+    try {
+      const response = await api.post(`/admin/users/${parentId}/notify`, {
+        type: 'approval_reminder',
+        message: 'Your registration is still pending approval'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error resending approval email:', error);
+      throw error;
+    }
+  },
+  
   // Get public schools list (for registration form)
   getPublicSchools: async () => {
     try {
