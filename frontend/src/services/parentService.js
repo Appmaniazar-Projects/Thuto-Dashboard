@@ -1,6 +1,5 @@
 import api from './api';
 
-// ── Helper — gets schoolId from localStorage (used by approval-flow functions) ──
 const getSchoolId = () => {
   const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
   return (
@@ -12,20 +11,11 @@ const getSchoolId = () => {
 };
 
 const parentService = {
-  /**
-   * Fetches the parent's children
-   * @param {string} phoneNumber - The parent's phone number
-   * @returns {Promise<Array>} List of children
-   */
+
   getMyChildren: async (phoneNumber) => {
     try {
       const storedUser = localStorage.getItem('user');
       const userData = storedUser ? JSON.parse(storedUser) : null;
-      const schoolId =
-        localStorage.getItem('schoolId') ||
-        userData?.school?.id ||
-        userData?.schoolId ||
-        null;
 
       const normalizePhone = (value) => {
         const raw = (value ?? '').toString().trim();
@@ -39,11 +29,10 @@ const parentService = {
 
       const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
       const encodedPhone = encodeURIComponent(normalizedPhone);
-      
-      console.log('parentService.getMyChildren - Input phone:', phoneNumber);
-      console.log('parentService.getMyChildren - User phone:', userData?.phoneNumber);
-      console.log('parentService.getMyChildren - Normalized phone:', normalizedPhone);
-      console.log('parentService.getMyChildren - Encoded phone:', encodedPhone);
+
+      if (!encodedPhone) {
+        throw new Error('Parent phone number is required to fetch children');
+      }
 
       const normalizeChildren = (items) => {
         const list = Array.isArray(items) ? items : [];
@@ -58,57 +47,19 @@ const parentService = {
             const grade = c?.grade ?? c?.gradeName ?? c?.student?.grade ?? c?.student?.gradeName ?? c?.student?.gradeId ?? '';
             const className = c?.class ?? c?.className ?? c?.student?.class ?? c?.student?.className ?? '';
             const schoolName = c?.school ?? c?.schoolName ?? c?.student?.school ?? c?.student?.schoolName ?? '';
-            return {
-              ...c,
-              id,
-              name,
-              grade,
-              class: className,
-              school: schoolName,
-            };
+            return { ...c, id, name, grade, class: className, school: schoolName };
           })
           .filter((c) => c?.id !== null && c?.id !== undefined);
       };
 
-      // Use phone-based endpoint (only one that exists in backend)
-      if (!encodedPhone) {
-        throw new Error('Parent phone number is required to fetch children');
-      }
-      
-      console.log('parentService.getMyChildren - Making API call to:', `/parent/${encodedPhone}/children`);
-      console.log('parentService.getMyChildren - User data:', userData);
-      console.log('parentService.getMyChildren - User role:', userData?.role);
-      console.log('parentService.getMyChildren - User ID:', userData?.id);
-      
-      try {
-        const response = await api.get(`/parent/${encodedPhone}/children`);
-        console.log('parentService.getMyChildren - Raw API response:', response);
-        console.log('parentService.getMyChildren - Response status:', response.status);
-        console.log('parentService.getMyChildren - Response data type:', typeof response.data);
-        console.log('parentService.getMyChildren - Response data:', response.data);
-        
-        const normalized = normalizeChildren(response.data);
-        console.log('parentService.getMyChildren - Normalized children:', normalized);
-        
-        return normalized;
-      } catch (error) {
-        console.error('Failed to fetch children:', error);
-        console.error('Error response:', error.response?.data);
-        // Return empty array instead of throwing to prevent UI breakage
-        return [];
-      }
+      const response = await api.get(`/parent/${encodedPhone}/children`);
+      return normalizeChildren(response.data);
     } catch (error) {
       console.error('Failed to fetch children:', error);
-      throw new Error('Failed to load children. Please try again.');
+      return [];
     }
   },
 
-  /**
-   * Fetches details for a specific child
-   * @param {string} phoneNumber - The parent's phone number
-   * @param {string} childId - The ID of the child
-   * @returns {Promise<Object>} Child details
-   */
   getChildDetails: async (phoneNumber, childId) => {
     try {
       const response = await api.get(`/parent/${phoneNumber}/children/child/${childId}`);
@@ -119,11 +70,6 @@ const parentService = {
     }
   },
 
-  /**
-   * Fetches upcoming events for the parent's children
-   * @param {string} [childId] - Optional child ID to filter events
-   * @returns {Promise<Array>} List of upcoming events
-   */
   getUpcomingEvents: async (childId) => {
     try {
       const storedUser = localStorage.getItem('user');
@@ -144,12 +90,7 @@ const parentService = {
         if (!ev || typeof ev !== 'object') return ev;
         const startDate = ev.startDate ?? ev.date ?? ev.start ?? null;
         const endDate = ev.endDate ?? ev.end ?? null;
-        return {
-          ...ev,
-          startDate,
-          endDate,
-          date: startDate ?? ev.date,
-        };
+        return { ...ev, startDate, endDate, date: startDate ?? ev.date };
       };
 
       const isUpcoming = (ev) => {
@@ -166,26 +107,21 @@ const parentService = {
           const response = await api.get(`/events/${schoolId}`);
           return coerceEventsArray(response.data).map(normalizeEvent).filter(isUpcoming);
         } catch (e) {
-          // fall through to parent endpoints
+          // fall through
         }
       }
 
       const url = childId
         ? `/parent/children/${childId}/events/upcoming`
         : '/parent/events/upcoming';
-
       const response = await api.get(url);
       return coerceEventsArray(response.data).map(normalizeEvent);
     } catch (error) {
       console.error('Failed to fetch upcoming events:', error);
-      return []; // Return empty array instead of throwing to prevent UI breakage
+      return [];
     }
   },
 
-  /**
-   * Fetches announcements for parents
-   * @returns {Promise<Array>} List of announcements
-   */
   getAnnouncements: async () => {
     try {
       const response = await api.get('/announcements');
@@ -196,11 +132,6 @@ const parentService = {
     }
   },
 
-  /**
-   * Fetches fee information for a specific child
-   * @param {string} childId - The ID of the child
-   * @returns {Promise<Object>} Fee information
-   */
   getFeeInfo: async (childId) => {
     try {
       const response = await api.get(`/parent/children/${childId}/fees`);
@@ -211,27 +142,8 @@ const parentService = {
     }
   },
 
-  /**
-   * Fetches attendance records for a specific child
-   * @param {string} studentId - The ID of the student/child
-   * @param {Object} [options] - Optional query options
-   * @param {Date|string} [options.startDate] - Start date (YYYY-MM-DD or Date)
-   * @param {Date|string} [options.endDate] - End date (YYYY-MM-DD or Date)
-   * @returns {Promise<Array>} Attendance data
-   */
   getChildAttendance: async (studentId, options = {}) => {
     try {
-      const storedUser = localStorage.getItem('user');
-      const userData = storedUser ? JSON.parse(storedUser) : null;
-      
-      // Get parent's phone number for parent-specific endpoint
-      const parentPhoneNumber = userData?.phoneNumber;
-      
-      if (!parentPhoneNumber) {
-        console.error('Parent phone number not found for attendance fetch');
-        return [];
-      }
-
       const formatDateParam = (value) => {
         if (!value) return null;
         if (value instanceof Date) return value.toISOString().split('T')[0];
@@ -241,135 +153,73 @@ const parentService = {
 
       const startDate = formatDateParam(options?.startDate);
       const endDate = formatDateParam(options?.endDate);
-
       const params = {
         ...(startDate ? { startDate } : {}),
-        ...(endDate ? { endDate } : {})
+        ...(endDate ? { endDate } : {}),
       };
 
-      console.log(`parentService.getChildAttendance - Fetching attendance for child ${studentId} with parent ${parentPhoneNumber}`);
-
-      // Use parent-specific endpoint
       const response = await api.get(`/parent/children/${studentId}/attendance`, {
-        params: Object.keys(params).length > 0 ? params : undefined
+        params: Object.keys(params).length > 0 ? params : undefined,
       });
-      
-      console.log('parentService.getChildAttendance - Response:', response.data);
-      
-      // Handle string response from backend
+
       let data = response.data;
       if (typeof data === 'string') {
-        try {
-          data = JSON.parse(data);
-          console.log('Parsed string response in parent service');
-        } catch (e) {
-          console.error('Failed to parse string response:', e);
-          data = [];
-        }
+        try { data = JSON.parse(data); } catch { data = []; }
       }
 
-      const normalizeRecords = (records) => {
-        const list = Array.isArray(records) ? records : [];
-        return list
+      const normalizeRecords = (records) =>
+        (Array.isArray(records) ? records : [])
           .map((r) => {
             if (!r || typeof r !== 'object') return r;
-            const sid = r.studentId ?? r.student?.id ?? studentId;
             return {
               ...r,
-              studentId: sid,
-              // Ensure we have the required fields for display
+              studentId: r.studentId ?? r.student?.id ?? studentId,
               date: r.date || r.attendanceDate,
               status: r.status || r.attendanceStatus,
               subject: r.subject || r.subjectName || 'N/A',
               teacherName: r.teacherName || r.teacher || 'N/A',
-              remarks: r.remarks || r.comment || ''
+              remarks: r.remarks || r.comment || '',
             };
           })
           .filter(Boolean);
-      };
 
-      if (Array.isArray(data)) {
-        return normalizeRecords(data);
-      }
-
-      if (data && Array.isArray(data.details)) {
-        return normalizeRecords(data.details);
-      }
-
-      if (data && Array.isArray(data.attendance)) {
-        return normalizeRecords(data.attendance);
-      }
-
+      if (Array.isArray(data)) return normalizeRecords(data);
+      if (data && Array.isArray(data.details)) return normalizeRecords(data.details);
+      if (data && Array.isArray(data.attendance)) return normalizeRecords(data.attendance);
       return [];
     } catch (error) {
       console.error(`Failed to fetch attendance for student ${studentId}:`, error);
-      console.error('Error response:', error.response?.data);
-      
-      // Treat "no records" as empty rather than a hard error
-      if (error.response?.status === 404 || error.response?.status === 403) {
-        console.log('No attendance records found or access denied');
-        return [];
-      }
-      
-      return []; // Return empty array instead of throwing to prevent UI breakage
-    }
-  },
-
-  /**
-   * Fetches academic reports for a specific child
-   * @param {string} phoneNumber - The parent's phone number
-   * @param {string} studentId - The ID of the student
-   * @returns {Promise<Array>} List of academic reports
-   */
-  getChildAcademicReports: async (phoneNumber, studentId) => {
-    try {
-      console.log('parentService.getChildAcademicReports - Fetching reports for:', { phoneNumber, studentId });
-      const response = await api.get(`/parent/${phoneNumber}/students/${studentId}/reports`);
-      console.log('parentService.getChildAcademicReports - Response:', response.data);
-      return response.data || [];
-    } catch (error) {
-      console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
-      console.error('Error response:', error.response?.data);
-
-      // Treat "no reports" and "not allowed" as empty rather than a hard error
-      // so the UI can show the default empty state.
-      if (error.response?.status === 404 || error.response?.status === 403) {
-        return [];
-      }
-
       return [];
     }
   },
 
-  // Parent Registration API calls
+  getChildAcademicReports: async (phoneNumber, studentId) => {
+    try {
+      const response = await api.get(`/parent/${phoneNumber}/students/${studentId}/reports`);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
+      return [];
+    }
+  },
+
+  // ── registerParent ─────────────────────────────────────────────
+  // Backend: POST /api/admin/register-parent/parent
+  // UserService.registerParent() reads getFirstName() for the name field,
+  // so firstName and lastName must be sent as separate fields.
   registerParent: async (parentData) => {
     try {
-      // Use existing createUser endpoint with parent-specific data
-      const userData = {
-        ...parentData,
-        // Map parent registration fields to user creation fields
-        name: `${parentData.firstName} ${parentData.lastName}`,
+      const response = await api.post('/admin/register-parent/parent', {
         firstName: parentData.firstName,
         lastName: parentData.lastName,
         email: parentData.email,
         phoneNumber: parentData.phoneNumber,
-        role: parentData.role || 'parent',
+        role: 'PARENT',
         schoolId: parentData.schoolId,
-        // Additional parent-specific fields
-        address: parentData.address,
-        city: parentData.city,
-        province: parentData.province,
-        postalCode: parentData.postalCode,
-        relationshipToStudent: parentData.relationshipToStudent,
-        studentNames: parentData.studentNames,
-        studentGrade: parentData.studentGrade,
-        helperExpiryDate: parentData.helperExpiryDate,
-        // Set status to pending approval
-        status: 'pending_approval',
-        password: parentData.password
-      };
-      
-      const response = await api.post('/admin/createUser', userData);
+        status: 'PENDING_APPROVAL',
+        registrationDate: new Date().toISOString(),
+        password: parentData.password,
+      });
       return response.data;
     } catch (error) {
       console.error('Error registering parent:', error);
@@ -377,68 +227,48 @@ const parentService = {
     }
   },
 
-  // Get pending parent registrations (admin only)
-   getPendingParents: async () => {
-    try {
-      const schoolId = getSchoolId();
-      const params = {};
-      if (schoolId) params.schoolId = schoolId;
-
-      const response = await api.get('/admin/users/role/parent', { params });
-      return (response.data || []).filter(u =>
-        u.status === 'pending_approval' || (!u.status && u.role === 'parent')
-      );
-    } catch (error) {
-      console.error('Error fetching pending parents:', error);
-      throw error;
-    }
+  // ── getPendingParents ──────────────────────────────────────────
+  // Backend: GET /api/admin/users/role/parent?schoolId=X
+  // schoolId is a required @RequestParam — throws 400 if missing.
+  getPendingParents: async () => {
+    const schoolId = getSchoolId();
+    if (!schoolId) throw new Error('School ID is required to fetch parents');
+    const response = await api.get('/admin/users/role/parent', { params: { schoolId } });
+    return (response.data || []).filter((u) => u.status === 'pending_approval');
   },
 
   // ── getApprovedParents ─────────────────────────────────────────
   getApprovedParents: async () => {
-    try {
-      const schoolId = getSchoolId();
-      const params = {};
-      if (schoolId) params.schoolId = schoolId;
-
-      const response = await api.get('/admin/users/role/parent', { params });
-      return (response.data || []).filter(u =>
-        u.status === 'approved' || (u.status === 'active' && u.role === 'parent')
-      );
-    } catch (error) {
-      console.error('Error fetching approved parents:', error);
-      throw error;
-    }
+    const schoolId = getSchoolId();
+    if (!schoolId) throw new Error('School ID is required to fetch parents');
+    const response = await api.get('/admin/users/role/parent', { params: { schoolId } });
+    return (response.data || []).filter((u) =>
+      u.status === 'approved' || (u.status === 'active' && u.role === 'parent')
+    );
   },
 
   // ── getRejectedParents ─────────────────────────────────────────
   getRejectedParents: async () => {
-    try {
-      const schoolId = getSchoolId();
-      const params = {};
-      if (schoolId) params.schoolId = schoolId;
-
-      const response = await api.get('/admin/users/role/parent', { params });
-      return (response.data || []).filter(u =>
-        u.status === 'rejected' && u.role === 'parent'
-      );
-    } catch (error) {
-      console.error('Error fetching rejected parents:', error);
-      throw error;
-    }
+    const schoolId = getSchoolId();
+    if (!schoolId) throw new Error('School ID is required to fetch parents');
+    const response = await api.get('/admin/users/role/parent', { params: { schoolId } });
+    return (response.data || []).filter((u) => u.status === 'rejected');
   },
 
   // ── approveParent ──────────────────────────────────────────────
-  approveParent: async (parentId) => {
+  // Backend: PUT /api/admin/users/approve-user/{userId}
+  // Reads updatedBy from UserDTO, so pass it in the body.
+  approveParent: async (userId) => {
     try {
       const schoolId = getSchoolId();
-      const params = {};
-      if (schoolId) params.schoolId = schoolId;
-
-      const response = await api.patch(
-        `/admin/users/${parentId}`,
-        { status: 'approved', approvedAt: new Date().toISOString() },
-        { params }
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await api.put(
+        `/admin/users/approve-user/${userId}`,
+        {
+          approvedAt: new Date().toISOString(),
+          updatedBy: storedUser?.email || '',
+        },
+        { params: schoolId ? { schoolId } : undefined }
       );
       return response.data;
     } catch (error) {
@@ -448,16 +278,21 @@ const parentService = {
   },
 
   // ── rejectParent ───────────────────────────────────────────────
-  rejectParent: async (parentId, reason) => {
+  // Backend: PUT /api/admin/users/{userId}?schoolId=X
+  rejectParent: async (userId, reason) => {
     try {
       const schoolId = getSchoolId();
-      const params = {};
-      if (schoolId) params.schoolId = schoolId;
-
-      const response = await api.patch(
-        `/admin/users/${parentId}`,
-        { status: 'rejected', rejectionReason: reason, rejectedAt: new Date().toISOString() },
-        { params }
+      if (!schoolId) throw new Error('School ID is required');
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await api.put(
+        `/admin/users/${userId}`,
+        {
+          status: 'rejected',
+          rejectionReason: reason,
+          rejectedAt: new Date().toISOString(),
+          updatedBy: storedUser?.email || '',
+        },
+        { params: { schoolId } }
       );
       return response.data;
     } catch (error) {
@@ -466,38 +301,22 @@ const parentService = {
     }
   },
 
-  // ── resendApprovalEmail — restored from old version ─────────────
-  resendApprovalEmail: async (parentId) => {
-    try {
-      const response = await api.post(`/admin/users/${parentId}/notify`, {
-        type: 'approval_reminder',
-        message: 'Your registration is still pending approval'
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error resending approval email:', error);
-      throw error;
-    }
-  },
-  
-  // Get public schools list (for registration form)
+  // ── getPublicSchools ───────────────────────────────────────────
   getPublicSchools: async () => {
     try {
-      // Use existing getAllSchools endpoint without authentication requirements
       const response = await api.get('/superadmins/admins/schools/allSchools');
-      // Return basic school info needed for registration
-      return response.data.map(school => ({
+      return response.data.map((school) => ({
         id: school.id,
         name: school.name,
         province: school.province,
         region: school.region,
-        address: school.address
+        address: school.address,
       }));
     } catch (error) {
       console.error('Error fetching public schools:', error);
       throw error;
     }
-  }
+  },
 };
 
 export default parentService;
