@@ -21,16 +21,15 @@ const SuperAdminLayout = () => {
         sidebarWidth={SIDEBAR_WIDTH}
       />
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          ml: { sm: `${SIDEBAR_WIDTH}px` },
-          width: { sm: `calc(100% - ${SIDEBAR_WIDTH}px)` },
-          backgroundColor: theme.palette.background.default,
-          paddingTop: '64px',
-        }}
-      >
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            backgroundColor: theme.palette.background.default,
+            width: '100%',
+            paddingTop: '64px',
+          }}
+        >
         <TopBar
           src={LogoImage}
           isSuperAdmin={true}

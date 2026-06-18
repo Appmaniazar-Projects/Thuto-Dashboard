@@ -93,8 +93,30 @@ const SuperAdminAnalytics = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
-  const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState(null);
+
+  const emptyAnalytics = {
+  provinceStats: [],
+  regionStats: [],
+  quintileStats: [],
+  feeTypeStats: [],
+  schoolTypeStats: [],
+  topSchools: [],
+  summaryMetrics: {
+    totalSchools: 0,
+    totalStudents: 0,
+    totalAdmins: 0,
+    totalTeachers: 0,
+    totalPublic: 0,
+    totalIndependent: 0,
+    noFeePct: 0,
+    semiFeePct: 0,
+    feePayingPct: 0,
+    avgLearnersPerSchool: 0,
+  },
+};
+
+const [analytics, setAnalytics] = useState(emptyAnalytics);
 
   useEffect(() => {
    const superAdminRoles = ['superadmin', 'superadmin_national', 'superadmin_provincial', 'superadmin_regional', 'master'];
@@ -240,7 +262,6 @@ const SuperAdminAnalytics = () => {
     );
   }
 
-  if (!analytics) return null;
 
   const { provinceStats, regionStats, quintileStats, feeTypeStats, schoolTypeStats, topSchools, summaryMetrics } = analytics;
 
