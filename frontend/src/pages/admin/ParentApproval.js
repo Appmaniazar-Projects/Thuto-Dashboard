@@ -235,6 +235,14 @@ const ParentApproval = () => {
     return <Chip label={config.label} color={config.color} size="small" />;
   };
 
+    const getSchoolName = (parent) => {
+    // Backend returns schools list (SchoolDTO[]) when found via findByUserId
+    if (parent.schools?.length > 0) return parent.schools[0].name;
+    // Fallback: schoolId only was returned
+    if (parent.schoolId) return `School #${parent.schoolId}`;
+    return 'Unknown School';
+  };
+
   const renderParentTable = (parents, showApproveReject = true) => (
     <TableContainer component={Paper}>
       {showApproveReject && parents.length > 0 && (
@@ -315,7 +323,7 @@ const ParentApproval = () => {
                 <TableCell>{parent.phoneNumber}</TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {parent.school?.name || 'Unknown School'}
+                    {getSchoolName(parent)}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -508,7 +516,7 @@ const ParentApproval = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="text.secondary">School</Typography>
-                <Typography>{selectedParent.school?.name || 'Unknown'}</Typography>
+                <Typography>{getSchoolName(selectedParent)}</Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
                 <Typography variant="subtitle2" color="text.secondary">Relationship</Typography>
