@@ -236,12 +236,11 @@ const ParentApproval = () => {
   };
 
     const getSchoolName = (parent) => {
-    // Backend returns schools list (SchoolDTO[]) when found via findByUserId
-    if (parent.schools?.length > 0) return parent.schools[0].name;
-    // Fallback: schoolId only was returned
-    if (parent.schoolId) return `School #${parent.schoolId}`;
-    return 'Unknown School';
-  };
+  if (parent.school?.name) return parent.school.name;
+  if (parent.schools?.length > 0) return parent.schools[0].name;
+  if (parent.schoolId) return `School #${parent.schoolId}`;
+  return 'Unknown School';
+};
 
   const renderParentTable = (parents, showApproveReject = true) => (
     <TableContainer component={Paper}>
