@@ -21,8 +21,6 @@ import {
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -66,10 +64,6 @@ const COLORS = {
   feePaying: '#185FA5',
   public: '#185FA5',
   independent: '#EF9F27',
-  urban: '#185FA5',
-  township: '#378ADD',
-  semiRural: '#BA7517',
-  rural: '#639922',
 };
 
 const PIE_COLORS = [COLORS.noFee, COLORS.semiFee, COLORS.feePaying];
@@ -77,12 +71,45 @@ const PIE_COLORS = [COLORS.noFee, COLORS.semiFee, COLORS.feePaying];
 const formatPercent = (value) => `${value}%`;
 
 // ------------------------------------------------------------------
-// Helper to bucket quintile into fee category
+// NOTE ON BACKEND FIELD SHAPES
 // ------------------------------------------------------------------
+// The `School` entity does NOT have `totalStudents`, `totalAdmins`,
+// `totalTeachers`, or `schoolType`. It has, instead:
+//   - learners2025   (Integer)  -> student count
+//   - educators2025  (Integer)  -> teacher count
+//   - quintile        (String)  -> e.g. "1".."5" (format to be confirmed
+//                                  with backend — see parseQuintile below)
+//   - noFeeSchool     (String)  -> likely "Yes"/"No" flag (format TBC)
+//   - sector          (String)  -> likely "Public"/"Independent" (TBC)
+// There is currently NO field for admin counts on the school itself —
+// that would require a separate count query against the User/Admin
+// table, so totalAdmins is omitted from the summary metrics below
+// until the backend exposes it.
+// ------------------------------------------------------------------
+
+// Parses the quintile string into a number 1-5. Defaults to 5 (fee-paying)
+// if missing or unparsable. Adjust this if the backend confirms a
+// different format (e.g. "Q3" instead of "3").
+const parseQuintile = (rawQuintile) => {
+  if (rawQuintile === null || rawQuintile === undefined) return 5;
+  const digitsOnly = String(rawQuintile).replace(/\D/g, '');
+  const parsed = parseInt(digitsOnly, 10);
+  return Number.isFinite(parsed) && parsed >= 1 && parsed <= 5 ? parsed : 5;
+};
+
+// Determines fee category from the parsed quintile (1-3 no-fee, 4 semi-fee, 5 fee-paying)
 const getFeeCategory = (quintile) => {
   if (quintile <= 3) return 'noFee';
   if (quintile === 4) return 'semiFee';
   return 'feePaying';
+};
+
+// Determines whether a school is independent. `sector` format is
+// unconfirmed — this checks loosely for "independent" (case-insensitive)
+// and otherwise treats the school as public. Adjust once confirmed.
+const isIndependentSchool = (school) => {
+  const sector = (school.sector || '').toLowerCase();
+  return sector.includes('independent') || sector.includes('private');
 };
 
 // ------------------------------------------------------------------
@@ -93,33 +120,11 @@ const SuperAdminAnalytics = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [analytics, setAnalytics] = useState(null);
   const [error, setError] = useState(null);
 
-  const emptyAnalytics = {
-  provinceStats: [],
-  regionStats: [],
-  quintileStats: [],
-  feeTypeStats: [],
-  schoolTypeStats: [],
-  topSchools: [],
-  summaryMetrics: {
-    totalSchools: 0,
-    totalStudents: 0,
-    totalAdmins: 0,
-    totalTeachers: 0,
-    totalPublic: 0,
-    totalIndependent: 0,
-    noFeePct: 0,
-    semiFeePct: 0,
-    feePayingPct: 0,
-    avgLearnersPerSchool: 0,
-  },
-};
-
-const [analytics, setAnalytics] = useState(emptyAnalytics);
-
   useEffect(() => {
-   const superAdminRoles = ['superadmin', 'superadmin_national', 'superadmin_provincial', 'superadmin_regional', 'master'];
+    const superAdminRoles = ['superadmin', 'superadmin_national', 'superadmin_provincial', 'superadmin_regional', 'master'];
     if (!superAdminRoles.includes(user?.role)) {
       navigate('/dashboard');
       return;
@@ -146,7 +151,6 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
 
         // ---- Totals ------------------------------------------------
         let totalStudents = 0;
-        let totalAdmins = 0;
         let totalTeachers = 0;
         let totalNoFee = 0;
         let totalSemiFee = 0;
@@ -156,11 +160,11 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
 
         schools.forEach((school) => {
           const province = school.province || 'Unknown';
-          const region = school.region || school.district || 'Unknown';
-          const quintile = school.quintile || 5;
+          const region = school.region || school.districtMunicipality || 'Unknown';
+          const quintile = parseQuintile(school.quintile);
           const feeCategory = getFeeCategory(quintile);
-          const isPublic = school.schoolType !== 'independent';
-          const students = school.totalStudents || 0;
+          const isPublic = !isIndependentSchool(school);
+          const students = school.learners2025 || 0;
 
           // Province bucket
           if (!byProvince[province]) {
@@ -173,7 +177,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
           else byProvince[province].independent += 1;
 
           // Quintile bucket
-          if (quintile >= 1 && quintile <= 5) quintileCounts[quintile] += 1;
+          quintileCounts[quintile] += 1;
 
           // Region bucket
           if (!byRegion[region]) byRegion[region] = { name: region, schools: 0, learners: 0, noFee: 0, semiFee: 0, feePaying: 0, public: 0, independent: 0 };
@@ -185,8 +189,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
 
           // Totals
           totalStudents += students;
-          totalAdmins += school.totalAdmins || 0;
-          totalTeachers += school.totalTeachers || 0;
+          totalTeachers += school.educators2025 || 0;
           if (feeCategory === 'noFee') totalNoFee += 1;
           else if (feeCategory === 'semiFee') totalSemiFee += 1;
           else totalFeePaying += 1;
@@ -198,15 +201,14 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
         const provinceStats = Object.values(byProvince).filter((p) => p.schools > 0);
         const regionStats = Object.values(byRegion).sort((a, b) => b.schools - a.schools).slice(0, 12);
         const topSchools = [...schools]
-          .sort((a, b) => (b.totalStudents || 0) - (a.totalStudents || 0))
+          .sort((a, b) => (b.learners2025 || 0) - (a.learners2025 || 0))
           .slice(0, 8)
           .map((school) => ({
-            name: school.schoolName || school.name || 'Unnamed school',
+            name: school.name || 'Unnamed school',
             province: school.province || 'Unknown',
-            region: school.region || school.district || 'Unknown',
-            learners: school.totalStudents || 0,
-            quintile: school.quintile || 'N/A',
-            feeCategory: getFeeCategory(school.quintile || 5),
+            region: school.region || school.districtMunicipality || 'Unknown',
+            learners: school.learners2025 || 0,
+            quintile: parseQuintile(school.quintile),
           }));
         const total = schools.length;
         const noFeePct = total ? Math.round((totalNoFee / total) * 100) : 0;
@@ -233,7 +235,6 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
           summaryMetrics: {
             totalSchools: total,
             totalStudents,
-            totalAdmins,
             totalTeachers,
             totalPublic,
             totalIndependent,
@@ -262,6 +263,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
     );
   }
 
+  if (!analytics) return null;
 
   const { provinceStats, regionStats, quintileStats, feeTypeStats, schoolTypeStats, topSchools, summaryMetrics } = analytics;
 
@@ -273,7 +275,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
 
       {/* ---- Summary metrics ---- */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {[ 
+        {[
           { label: 'Schools', value: summaryMetrics.totalSchools },
           { label: 'Learners', value: summaryMetrics.totalStudents.toLocaleString() },
           { label: 'Public schools', value: summaryMetrics.totalPublic },
@@ -331,7 +333,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>Learners per province</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Province-level learner enrolment helps identify where the largest school populations are concentrated.
+                Province-level learner enrolment (2025) helps identify where the largest school populations are concentrated.
               </Typography>
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={provinceStats} layout="vertical" margin={{ left: 40 }}>
@@ -348,6 +350,9 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
           <Grid item xs={12}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>Public vs independent mix by province</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Independent/public split is inferred from the school's `sector` field — confirm exact values with backend if this looks off.
+              </Typography>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={provinceStats}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -464,7 +469,7 @@ const [analytics, setAnalytics] = useState(emptyAnalytics);
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>Regional school concentration</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                View which regions carry the largest share of schools and fee-paying coverage.
+                View which regions carry the largest share of schools and fee-paying coverage. Falls back to district municipality if region is unset.
               </Typography>
               <ResponsiveContainer width="100%" height={360}>
                 <BarChart data={regionStats} layout="vertical" margin={{ left: 20 }}>
