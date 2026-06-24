@@ -248,10 +248,10 @@ const parentService = {
   },
 
   // ── getRejectedParents ─────────────────────────────────────────
-  getRejectedParents: async () => {
+  getRejectedParents: async (userId) => {
     const schoolId = getSchoolId();
     if (!schoolId) throw new Error('School ID is required to fetch parents');
-    const response = await api.get('/admin/users/role/parent', { params: { schoolId } });
+    const response = await api.get(`/users/parent/reject-user/${userId}`, { params: { schoolId } });
     return (response.data || []).filter((u) => u.status === 'rejected');
   },
 
