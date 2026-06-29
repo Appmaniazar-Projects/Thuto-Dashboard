@@ -248,12 +248,22 @@ const parentService = {
   },
 
   // ── getRejectedParents ─────────────────────────────────────────
-  getRejectedParents: async (userId) => {
-    const schoolId = getSchoolId();
-    if (!schoolId) throw new Error('School ID is required to fetch parents');
-    const response = await api.get(`/users/parent/reject-user/${userId}`, { params: { schoolId } });
-    return (response.data || []).filter((u) => u.status === 'rejected');
-  },
+  // getRejectedParents: async (userId) => {
+  //   const schoolId = getSchoolId();
+  //   if (!schoolId) throw new Error('School ID is required to fetch parents');
+  //   const response = await api.get(`/users/parent/reject-user/${userId}`, { params: { schoolId } });
+  //   return (response.data || []).filter((u) => u.status === 'rejected');
+  // },
+
+  deleteParent: async (userId) => {
+  try {
+    const response = await api.delete(`/users/parent/reject-user/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting parent:', error);
+    throw error;
+  }
+},
 
   // ── approveParent ──────────────────────────────────────────────
   // Backend: PUT /api/admin/users/approve-user/{userId}

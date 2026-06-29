@@ -98,7 +98,7 @@ const ParentApproval = () => {
 
   const fetchRejectedParents = async () => {
     try {
-      const response = await parentService.getRejectedParents();
+      const response = await parentService.deleteParent();
       setRejectedParents(response || []);
     } catch (err) {
       console.error('Failed to fetch rejected parents:', err);
