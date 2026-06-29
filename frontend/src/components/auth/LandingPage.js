@@ -430,7 +430,7 @@ const LandingPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               New to the platform? Register as a parent
             </Typography>
-            {/* <Button
+            <Button
               variant="outlined"
               onClick={() => navigate('/parent/register')}
               sx={{
@@ -443,7 +443,7 @@ const LandingPage = () => {
               }}
             >
               Register as Parent
-            </Button> */}
+            </Button> 
             <Button
               variant="outlined"
               onClick={() => navigate('/register/irene-primary')}
