@@ -96,14 +96,10 @@ const ParentApproval = () => {
     }
   };
 
-  const fetchRejectedParents = async () => {
-    try {
-      const response = await parentService.deleteParent();
-      setRejectedParents(response || []);
-    } catch (err) {
-      console.error('Failed to fetch rejected parents:', err);
-    }
-  };
+const fetchRejectedParents = async () => {
+  // Rejection is now a hard delete, so there's no "rejected" list to fetch.
+  setRejectedParents([]);
+};
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -137,21 +133,21 @@ const ParentApproval = () => {
   };
 
   const confirmRejectParent = async () => {
-    try {
-      setLoading(true);
-      await parentService.rejectParent(selectedParent.id, rejectionReason);
-      
-      setSuccess('Parent registration rejected');
-      setRejectDialogOpen(false);
-      fetchPendingRegistrations();
-      fetchRejectedParents();
-      
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reject parent registration');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    setLoading(true);
+    await parentService.deleteParent(selectedParent.id);
+
+    setSuccess('Parent registration deleted');
+    setRejectDialogOpen(false);
+    fetchPendingRegistrations();
+    fetchRejectedParents();
+
+  } catch (err) {
+    setError(err.response?.data?.message || 'Failed to delete parent registration');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleResendApproval = async (parentId) => {
     try {
@@ -205,10 +201,11 @@ const ParentApproval = () => {
         setSuccess(`Successfully approved ${selectedParents.length} parent(s)`);
       } else if (bulkActionType === 'reject') {
         await Promise.all(selectedParents.map(id =>
-          parentService.rejectParent(id, bulkRejectionReason)
+          parentService.deleteParent(id)
         ));
-        setSuccess(`Successfully rejected ${selectedParents.length} parent(s)`);
+        setSuccess(`Successfully deleted ${selectedParents.length} parent(s)`);
       }
+    
 
       setBulkActionDialogOpen(false);
       setSelectedParents([]);

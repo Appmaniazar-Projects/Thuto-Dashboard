@@ -287,29 +287,29 @@ const parentService = {
     }
   },
 
-  // ── rejectParent ───────────────────────────────────────────────
-  // Backend: PUT /api/admin/users/{userId}?schoolId=X
-  rejectParent: async (userId, reason) => {
-    try {
-      const schoolId = getSchoolId();
-      if (!schoolId) throw new Error('School ID is required');
-      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-      const response = await api.put(
-        `/admin/users/${userId}`,
-        {
-          status: 'rejected',
-          rejectionReason: reason,
-          rejectedAt: new Date().toISOString(),
-          updatedBy: storedUser?.email || '',
-        },
-        { params: { schoolId } }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error rejecting parent:', error);
-      throw error;
-    }
-  },
+  // // ── rejectParent ───────────────────────────────────────────────
+  // // Backend: PUT /api/admin/users/{userId}?schoolId=X
+  // rejectParent: async (userId, reason) => {
+  //   try {
+  //     const schoolId = getSchoolId();
+  //     if (!schoolId) throw new Error('School ID is required');
+  //     const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  //     const response = await api.put(
+  //       `/admin/users/${userId}`,
+  //       {
+  //         status: 'rejected',
+  //         rejectionReason: reason,
+  //         rejectedAt: new Date().toISOString(),
+  //         updatedBy: storedUser?.email || '',
+  //       },
+  //       { params: { schoolId } }
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error rejecting parent:', error);
+  //     throw error;
+  //   }
+  // },
 
   // ── getPublicSchools ───────────────────────────────────────────
   getPublicSchools: async () => {
