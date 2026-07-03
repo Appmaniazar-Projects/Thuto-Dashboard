@@ -7,32 +7,44 @@ import fileUploadService from './fileUploadService';
  * /admins/allRoleSpecificUsers/all'
  */
 export const getAllUsers = async () => {
-  try {
-    // Get admin info for context
-    const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId =
-      localStorage.getItem('schoolId') ||
-      adminInfo.school?.id ||
-      adminInfo.schoolId;
-    
-    // Add admin context as query parameters
-    const params = {};
-    if (schoolId) params.schoolId = schoolId;
-    if (adminInfo.email) params.adminEmail = adminInfo.email;
-    
-    const response = await api.get('/admin/users', { params });
-    
-    // Handle different response structures
+  const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
+  const schoolId =
+    localStorage.getItem('schoolId') ||
+    adminInfo.school?.id ||
+    adminInfo.schoolId;
+
+  const params = {};
+  if (schoolId) params.schoolId = schoolId;
+  if (adminInfo.email) params.adminEmail = adminInfo.email;
+
+  const fetchUsers = async (queryParams) => {
+    const response = await api.get('/admin/users', {
+      params: Object.keys(queryParams).length ? queryParams : undefined
+    });
+
     const users = response.data || [];
-    
-    // Ensure we always return an array
     return Array.isArray(users) ? users : [];
+  };
+
+  try {
+    return await fetchUsers(params);
   } catch (error) {
-    // If it's a 404 or the endpoint doesn't exist, return empty array
     if (error.response?.status === 404) {
       return [];
     }
-    
+
+    // Some backend implementations may reject the optional adminEmail query.
+    // Retry without adminEmail if the first request failed with a server error.
+    if (error.response?.status === 500 && params.adminEmail) {
+      try {
+        const fallbackParams = { ...params };
+        delete fallbackParams.adminEmail;
+        return await fetchUsers(fallbackParams);
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+
     throw error;
   }
 };
