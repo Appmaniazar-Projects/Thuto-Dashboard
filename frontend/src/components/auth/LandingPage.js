@@ -441,7 +441,7 @@ const LandingPage = () => {
                   backgroundColor: 'rgba(25, 118, 210, 0.04)',
                 }
               }}
-            >
+            > 
               Register as Parent
             </Button> 
             <Button

@@ -13,11 +13,31 @@ import api from './api';
  * @param {Array} subjectData.gradeIds - List of grade IDs associated with the subject
  * @returns {Promise<Object>} Created subject object
  */
+const getCurrentSchoolId = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return (
+      localStorage.getItem('schoolId') ||
+      user.schoolId ||
+      user.school?.id ||
+      user.school?.schoolId ||
+      null
+    );
+  } catch {
+    return localStorage.getItem('schoolId') || null;
+  }
+};
+
+const getCurrentSchoolParams = () => {
+  const schoolId = getCurrentSchoolId();
+  return schoolId ? { schoolId } : {};
+};
+
 export const createSubject = async (subjectData) => {
   try {
     // Get admin context for schoolId
     const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
-    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId;
+    const schoolId = localStorage.getItem('schoolId') || adminInfo.schoolId || adminInfo.school?.id;
     
     if (!schoolId) {
       throw new Error('School ID not found in admin context');
@@ -30,8 +50,7 @@ export const createSubject = async (subjectData) => {
       gradeIds: subjectData.gradeIds || [], // Array of grade IDs for many-to-many relationship
       schoolId: Number(schoolId) // Include schoolId in the request body as expected by backend
     };
-    
-    
+
     const response = await api.post('/subjects', subjectPayload);
     return response.data;
   } catch (error) {
@@ -57,8 +76,9 @@ export const updateSubject = async (subjectId, subjectData) => {
  */
 export const getSchoolSubjects = async () => {
   try {
-    // Backend expects no schoolId filtering - subjects are global now
-    const response = await api.get('/subjects');
+    const response = await api.get('/subjects', {
+      params: getCurrentSchoolParams()
+    });
     
     let subjects = response.data;
     
@@ -93,7 +113,9 @@ export const getSchoolSubjects = async () => {
  */
 export const getSubjectsByTeacher = async (teacherId) => {
   try {
-    const response = await api.get(`/subjects/teacher/${teacherId}`);
+    const response = await api.get(`/subjects/teacher/${teacherId}`, {
+      params: getCurrentSchoolParams()
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch subjects for teacher:', error);
@@ -130,7 +152,9 @@ export const assignTeacherToSubject = async (subjectId, teacherId) => {
  */
 export const getSubjectsByStudent = async (studentId) => {
   try {
-    const response = await api.get(`/subjects/student/${studentId}`);
+    const response = await api.get(`/subjects/student/${studentId}`, {
+      params: getCurrentSchoolParams()
+    });
     return response.data;
   } catch (error) {
     console.error('Failed to fetch subjects for student:', error);

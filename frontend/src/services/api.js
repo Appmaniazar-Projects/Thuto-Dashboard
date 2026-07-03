@@ -35,6 +35,13 @@ api.interceptors.request.use(
       console.warn('Error parsing user data for schoolId:', e);
     }
 
+    const normalizedSchoolId =
+      localStorage.getItem('schoolId') ||
+      userData?.schoolId ||
+      userData?.school?.id ||
+      userData?.school?.schoolId ||
+      null;
+
     // Add schoolId to requests that need it (exclude specific services and endpoints)
     const excludedPaths = [
       '/auth/',
@@ -65,7 +72,7 @@ api.interceptors.request.use(
         .filter(p => p !== '/parent')
         .some(path => requestUrl.includes(path));
 
-    if (userData?.schoolId && !shouldExcludeSchoolId) {
+    if (normalizedSchoolId && !shouldExcludeSchoolId) {
       // Add schoolId as query parameter
       if (!config.params) {
         config.params = {};
@@ -73,7 +80,7 @@ api.interceptors.request.use(
       
       // Only add if not already present
       if (!config.params.schoolId) {
-        config.params.schoolId = userData.schoolId;
+        config.params.schoolId = normalizedSchoolId;
       }
     }
 
