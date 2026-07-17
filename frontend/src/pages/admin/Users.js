@@ -1272,31 +1272,6 @@ const Users = () => {
                             <TextField
                                 select
                                 margin="dense"
-                                label="Subjects"
-                                fullWidth
-                                variant="outlined"
-                                value={userForm.subjects}
-                                onChange={(e) => {
-                                    const raw = e.target.value;
-                                    const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
-                                    setUserForm({ ...userForm, subjects: next });
-                                }}
-                                SelectProps={{
-                                    multiple: true,
-                                }}
-                                error={formErrors.subjects}
-                                helperText={formErrors.subjects ? 'At least one subject is required for teachers' : ''}
-                                sx={{ mb: 2 }}
-                            >
-                                {subjects.map((subject) => (
-                                    <MenuItem key={subject.id} value={String(subject.id)}>
-                                        {subject.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                            <TextField
-                                select
-                                margin="dense"
                                 label="Grade"
                                 fullWidth
                                 variant="outlined"
@@ -1312,6 +1287,54 @@ const Users = () => {
                                             <MenuItem key={grade.id} value={gradeValue}>
                                                 {grade.name}
                                             </MenuItem>
+                                    );
+                                })}
+                            </TextField>
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Subjects"
+                                fullWidth
+                                variant="outlined"
+                                value={userForm.subjects}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
+                                    setUserForm({ ...userForm, subjects: next });
+                                }}
+                                SelectProps={{
+                                    multiple: true,
+                                }}
+                                error={formErrors.subjects}
+                                helperText={formErrors.subjects ? 'At least one subject is required for teachers' : 'Grades shown next to each subject are the grades that subject is taught in'}
+                                sx={{ mb: 2 }}
+                            >
+                                {subjects.map((subject) => {
+                                    // A subject can belong to more than one grade (e.g. Home Language is
+                                    // taught in Grade 4, 5 and 6). Subject Management already stores this
+                                    // as subject.gradeIds, so resolve those ids to names here so admins can
+                                    // see, right in this dropdown, which grades a subject covers.
+                                    const subjectGradeIds = Array.isArray(subject.gradeIds)
+                                        ? subject.gradeIds
+                                        : (Array.isArray(subject.grades) ? subject.grades.map((g) => g?.id ?? g) : []);
+                                    const subjectGradeNames = subjectGradeIds
+                                        .map((gradeId) => grades.find((g) => String(g.id) === String(gradeId))?.name)
+                                        .filter(Boolean);
+
+                                    return (
+                                        <MenuItem key={subject.id} value={String(subject.id)}>
+                                            {subject.name}
+                                            {subjectGradeNames.length > 0 && (
+                                                <Typography
+                                                    component="span"
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    sx={{ ml: 1 }}
+                                                >
+                                                    • {subjectGradeNames.join(', ')}
+                                                </Typography>
+                                            )}
+                                        </MenuItem>
                                     );
                                 })}
                             </TextField>
@@ -1351,6 +1374,8 @@ const Users = () => {
                                                 setParentLookupResult(null);
                                                 setFormErrors((prev) => ({ ...prev, parentPhoneNumber: false }));
                                             }}
+                                            error={formErrors.parentPhoneNumber}
+                                            helperText={formErrors.parentPhoneNumber ? 'Find an existing parent, or use "Add Parent/Guardian" below to add a new one' : ''}
                                         />
                                     </Grid>
                                     <Grid item xs={12} sm={4}>
@@ -1374,6 +1399,12 @@ const Users = () => {
                                 {parentLookupTried && !parentLookupResult && (
                                     <Alert severity="info" sx={{ mt: 2 }}>
                                         No existing parent found for that phone number. Please add a new parent/guardian below.
+                                    </Alert>
+                                )}
+
+                                {formErrors.parentPhoneNumber && newParents.length === 0 && (
+                                    <Alert severity="error" sx={{ mt: 2 }}>
+                                        A student must be linked to a parent/guardian. Search for an existing one above, or click "Add Parent/Guardian" below to add a new one.
                                     </Alert>
                                 )}
 
@@ -1437,7 +1468,12 @@ const Users = () => {
                                                         fullWidth
                                                         variant="outlined"
                                                         value={p.email}
-                                                        onChange={(e) => updateNewParent(index, 'email', e.target.value)}
+                                                        onChange={(e) => {
+                                                            updateNewParent(index, 'email', e.target.value);
+                                                            setFormErrors((prev) => ({ ...prev, parentEmail: false }));
+                                                        }}
+                                                        error={formErrors.parentEmail}
+                                                        helperText={formErrors.parentEmail ? 'Please enter a valid email address' : ''}
                                                     />
                                                 </Grid>
                                                 <Grid item xs={12} sm={6}>
