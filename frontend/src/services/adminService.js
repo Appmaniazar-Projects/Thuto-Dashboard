@@ -286,6 +286,11 @@ export const createUser = async (userData) => {
     if (roleUpper === 'TEACHER') {
       roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
       roleSpecificPayload.subjects = normalizeNumberArray(userData.subjects);
+      // Not yet consumed by the backend - included so it's ready once per-subject
+      // grade assignment is supported there (see Users.js subjectGrades).
+      if (Array.isArray(userData.subjectGrades) && userData.subjectGrades.length > 0) {
+        roleSpecificPayload.subjectGrades = userData.subjectGrades;
+      }
     }
 
     if (roleUpper === 'PARENT') {
@@ -344,6 +349,9 @@ export const updateUser = async (userId, userData) => {
     if (userData.schoolId) essentialFields.schoolId = userData.schoolId;
     if (userData.subjects && userData.subjects.length > 0) essentialFields.subjects = userData.subjects;
     if (userData.grade) essentialFields.grade = userData.grade;
+    // Not yet consumed by the backend - included so it's ready once per-subject
+    // grade assignment is supported there (see Users.js subjectGrades).
+    if (userData.subjectGrades && userData.subjectGrades.length > 0) essentialFields.subjectGrades = userData.subjectGrades;
     
     const updatePayload = {
       ...essentialFields,

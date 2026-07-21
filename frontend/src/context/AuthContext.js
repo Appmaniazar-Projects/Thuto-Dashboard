@@ -212,7 +212,27 @@ export const AuthProvider = ({ children }) => {
       setError('');
       setLoading(true);
       const response = await api.patch('/auth/me', updates);
-      setCurrentUser(response.data);
+
+      // Merge with the existing user so we don't lose fields the backend
+      // doesn't echo back (e.g. schoolId, level), then normalize role/level
+      // casing the same way the rest of this file expects.
+      const mergedUser = {
+        ...currentUser,
+        ...response.data,
+        role: (response.data?.role || currentUser?.role || '').toLowerCase(),
+        level: (response.data?.level || currentUser?.level || '')?.toLowerCase() || null,
+      };
+
+      setCurrentUser(mergedUser);
+
+      // Without this, a refresh re-reads the stale pre-edit data straight from
+      // localStorage (see the auth-init effect below), making saved changes
+      // appear to have been lost even though the backend update succeeded.
+      const isSuperAdminUser = [
+        'superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'
+      ].includes(mergedUser.role);
+      localStorage.setItem(isSuperAdminUser ? 'superAdmin' : 'user', JSON.stringify(mergedUser));
+
       enqueueSnackbar('Profile updated successfully!', { variant: 'success' });
       return true;
     } catch (err) {

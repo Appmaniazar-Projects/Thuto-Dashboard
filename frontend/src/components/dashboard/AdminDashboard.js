@@ -100,20 +100,27 @@ const AdminDashboard = () => {
           setAttendance([]);
         }
         
-        // Fetch grades with error handling and fallback
+        // Fetch grades - no fake fallback data. If this fails, admins should see
+        // that grade data didn't load rather than being shown numbers that may
+        // not even apply to their school. Irene Primary specifically runs
+        // Grade R - Grade 7; note this fallback is Irene-specific and will need
+        // revisiting once other schools are onboarded onto this shared dashboard.
         try {
           const gradesRes = await gradeService.getSchoolGrades();
           setGrades(gradesRes || []);
         } catch (error) {
-          console.warn('Grades endpoint not available, using fallback data:', error.message);
-          // Provide fallback grade data until backend implements the endpoint
+          console.warn('Grades endpoint not available:', error.message);
           setGrades([
-            { id: 1, name: 'Grade 8' },
-            { id: 2, name: 'Grade 9' },
-            { id: 3, name: 'Grade 10' },
-            { id: 4, name: 'Grade 11' },
-            { id: 5, name: 'Grade 12' }
+            { id: 1, name: 'Grade R' },
+            { id: 2, name: 'Grade 1' },
+            { id: 3, name: 'Grade 2' },
+            { id: 4, name: 'Grade 3' },
+            { id: 5, name: 'Grade 4' },
+            { id: 6, name: 'Grade 5' },
+            { id: 7, name: 'Grade 6' },
+            { id: 8, name: 'Grade 7' }
           ]);
+          setError((prev) => prev || "Grade data couldn't be loaded from the server - showing Irene's standard grade list as a placeholder. Refresh to try again.");
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

@@ -99,6 +99,9 @@ const Users = () => {
         phoneNumber: '',
         role: '',
         subjects: [],
+        // For teachers: which grades each selected subject is taught in.
+        // Shape: { [subjectId]: ['1', '2', ...] }
+        subjectGrades: {},
         grade: '',
         schoolId: '',
         parentName: '',
@@ -278,6 +281,26 @@ const Users = () => {
         return toIdString(raw);
     };
 
+    // Turns whatever shape the backend sends for per-subject grade assignments
+    // into { [subjectId]: ['1','2',...] }. Backend support for this is pending
+    // (see subjectGrades in the submit payload below), so this defensively
+    // handles the field being absent entirely.
+    const normalizeSubjectGrades = (user) => {
+        const raw = user?.subjectGrades || user?.teacherSubjectGrades;
+        if (!Array.isArray(raw)) return {};
+        const result = {};
+        raw.forEach((entry) => {
+            const subjectId = toIdString(entry?.subjectId ?? entry?.subject?.id ?? entry?.subject);
+            const gradeIds = Array.isArray(entry?.gradeIds)
+                ? entry.gradeIds.map((g) => toIdString(g)).filter(Boolean)
+                : [];
+            if (subjectId && gradeIds.length > 0) {
+                result[subjectId] = gradeIds;
+            }
+        });
+        return result;
+    };
+
     const normalizeSchoolId = (user) => {
         return toIdString(user?.schoolId ?? user?.school?.id);
     };
@@ -373,11 +396,16 @@ const Users = () => {
         }
 
         if (userForm.role === 'teacher') {
-            if (!userForm.grade) {
-                errors.grade = true;
-            }
             if (!Array.isArray(userForm.subjects) || userForm.subjects.length === 0) {
                 errors.subjects = true;
+            } else {
+                // Every selected subject needs at least one grade the teacher teaches it in.
+                const missingGradeSubject = userForm.subjects.some(
+                    (subjectId) => !Array.isArray(userForm.subjectGrades?.[subjectId]) || userForm.subjectGrades[subjectId].length === 0
+                );
+                if (missingGradeSubject) {
+                    errors.subjectGrades = true;
+                }
             }
         }
 
@@ -402,13 +430,33 @@ const Users = () => {
         const lookupParentPhoneRaw = (parentLookupPhone || '').toString().trim();
         const hasLookupParentPhone = !!normalizePhone(lookupParentPhoneRaw);
 
+        // For teachers, the single top-level "grade" field the backend still expects
+        // is derived from the per-subject grade selections (the first one picked),
+        // since a teacher no longer has one overall grade - they have a grade per subject.
+        const isTeacherSubmit = normalizeRole(userForm.role) === 'teacher';
+        const teacherSubjectGrades = isTeacherSubmit
+            ? (userForm.subjects || [])
+                .map((subjectId) => ({
+                    subjectId: toNumberIfNumeric(subjectId),
+                    gradeIds: (userForm.subjectGrades?.[subjectId] || []).map((g) => toNumberIfNumeric(g)),
+                }))
+                .filter((entry) => entry.gradeIds.length > 0)
+            : [];
+        const derivedTeacherGrade = teacherSubjectGrades[0]?.gradeIds?.[0] ?? '';
+
         const formData = {
             ...userForm,
             role: normalizeRole(userForm.role),
-            grade: userForm.grade ? toNumberIfNumeric(userForm.grade) : userForm.grade,
+            grade: isTeacherSubmit
+                ? derivedTeacherGrade
+                : (userForm.grade ? toNumberIfNumeric(userForm.grade) : userForm.grade),
             subjects: Array.isArray(userForm.subjects)
                 ? userForm.subjects.map((id) => toNumberIfNumeric(id)).filter((id) => id !== '' && id !== null && id !== undefined)
                 : [],
+            // Sent alongside the legacy singular `grade` field above so that once the
+            // backend supports per-subject grades, this is already in the payload.
+            // Until then, only the derived primary grade above is guaranteed to persist.
+            ...(isTeacherSubmit ? { subjectGrades: teacherSubjectGrades } : {}),
             // Preserve existing linked parent details when editing a student,
             // unless the admin explicitly finds/enters a new parent/guardian.
             parentName: shouldOverrideParentFields ? (primaryNewParent?.name || '') : (userForm.parentName || ''),
@@ -529,6 +577,7 @@ const Users = () => {
                 phoneNumber: user.phoneNumber || '',
                 role: normalizeRole(user.role) || '',
                 subjects: normalizeSubjectIds(user.subjects),
+                subjectGrades: normalizeSubjectGrades(user),
                 grade: normalizeGradeId(user),
                 schoolId: normalizeSchoolId(user),
                 parentName: user.parentName || '',
@@ -578,6 +627,7 @@ const Users = () => {
             phoneNumber: '',
             role: '',
             subjects: [],
+            subjectGrades: {},
             grade: '',
             schoolId: '',
             parentName: '',
@@ -1267,7 +1317,7 @@ const Users = () => {
                         />
                     )}
                     
-                    {(userForm.role === 'teacher' || userForm.role === 'student') && (
+                    {userForm.role === 'student' && (
                         <>
                             <TextField
                                 select
@@ -1276,7 +1326,17 @@ const Users = () => {
                                 fullWidth
                                 variant="outlined"
                                 value={userForm.grade}
-                                onChange={(e) => setUserForm({ ...userForm, grade: String(e.target.value) })}
+                                onChange={(e) => {
+                                    const nextGrade = String(e.target.value);
+                                    // Changing grade can invalidate previously picked subjects
+                                    // that aren't offered in the new grade, so drop those.
+                                    const stillValidSubjects = (userForm.subjects || []).filter((subjectId) => {
+                                        const subject = subjects.find((s) => String(s.id) === String(subjectId));
+                                        const subjectGradeIds = Array.isArray(subject?.gradeIds) ? subject.gradeIds.map(String) : [];
+                                        return subjectGradeIds.includes(nextGrade);
+                                    });
+                                    setUserForm({ ...userForm, grade: nextGrade, subjects: stillValidSubjects });
+                                }}
                                 error={formErrors.grade}
                                 helperText={formErrors.grade ? 'Grade is required' : ''}
                                 sx={{ mb: 2 }}
@@ -1297,6 +1357,7 @@ const Users = () => {
                                 fullWidth
                                 variant="outlined"
                                 value={userForm.subjects}
+                                disabled={!userForm.grade}
                                 onChange={(e) => {
                                     const raw = e.target.value;
                                     const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
@@ -1306,7 +1367,51 @@ const Users = () => {
                                     multiple: true,
                                 }}
                                 error={formErrors.subjects}
-                                helperText={formErrors.subjects ? 'At least one subject is required for teachers' : 'Grades shown next to each subject are the grades that subject is taught in'}
+                                helperText={
+                                    !userForm.grade
+                                        ? 'Select a grade first to see the subjects offered for it'
+                                        : (formErrors.subjects ? 'At least one subject is required' : '')
+                                }
+                                sx={{ mb: 2 }}
+                            >
+                                {subjects
+                                    .filter((subject) => {
+                                        if (!userForm.grade) return false;
+                                        const subjectGradeIds = Array.isArray(subject.gradeIds) ? subject.gradeIds.map(String) : [];
+                                        return subjectGradeIds.includes(String(userForm.grade));
+                                    })
+                                    .map((subject) => (
+                                        <MenuItem key={subject.id} value={String(subject.id)}>
+                                            {subject.name}
+                                        </MenuItem>
+                                    ))}
+                            </TextField>
+                        </>
+                    )}
+
+                    {userForm.role === 'teacher' && (
+                        <>
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Subjects"
+                                fullWidth
+                                variant="outlined"
+                                value={userForm.subjects}
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
+                                    // Drop subjectGrades entries for subjects that were just deselected.
+                                    const prunedSubjectGrades = Object.fromEntries(
+                                        Object.entries(userForm.subjectGrades || {}).filter(([subjectId]) => next.includes(subjectId))
+                                    );
+                                    setUserForm({ ...userForm, subjects: next, subjectGrades: prunedSubjectGrades });
+                                }}
+                                SelectProps={{
+                                    multiple: true,
+                                }}
+                                error={formErrors.subjects}
+                                helperText={formErrors.subjects ? 'At least one subject is required for teachers' : 'Pick every subject this teacher teaches, then set the grades for each below'}
                                 sx={{ mb: 2 }}
                             >
                                 {subjects.map((subject) => {
@@ -1338,6 +1443,64 @@ const Users = () => {
                                     );
                                 })}
                             </TextField>
+
+                            {userForm.subjects.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                        Grades taught per subject
+                                    </Typography>
+                                    {userForm.subjects.map((subjectId) => {
+                                        const subject = subjects.find((s) => String(s.id) === String(subjectId));
+                                        if (!subject) return null;
+
+                                        // A teacher can only be assigned to grades the subject itself
+                                        // is offered in (sourced from Subject Management).
+                                        const availableGradeIds = Array.isArray(subject.gradeIds) ? subject.gradeIds.map(String) : [];
+                                        const selectedGradeIds = userForm.subjectGrades?.[subjectId] || [];
+                                        const hasMissingGrade = formErrors.subjectGrades && selectedGradeIds.length === 0;
+
+                                        return (
+                                            <TextField
+                                                key={subjectId}
+                                                select
+                                                margin="dense"
+                                                label={`${subject.name} - Grades`}
+                                                fullWidth
+                                                variant="outlined"
+                                                value={selectedGradeIds}
+                                                onChange={(e) => {
+                                                    const raw = e.target.value;
+                                                    const next = Array.isArray(raw) ? raw.map((v) => String(v)) : [];
+                                                    setUserForm({
+                                                        ...userForm,
+                                                        subjectGrades: { ...userForm.subjectGrades, [subjectId]: next },
+                                                    });
+                                                }}
+                                                SelectProps={{ multiple: true }}
+                                                error={hasMissingGrade}
+                                                helperText={
+                                                    hasMissingGrade
+                                                        ? `Select at least one grade for ${subject.name}`
+                                                        : (availableGradeIds.length === 0
+                                                            ? `${subject.name} has no grades assigned yet in Subject Management`
+                                                            : '')
+                                                }
+                                                disabled={availableGradeIds.length === 0}
+                                                sx={{ mb: 1 }}
+                                            >
+                                                {availableGradeIds.map((gradeId) => {
+                                                    const grade = grades.find((g) => String(g.id) === gradeId);
+                                                    return (
+                                                        <MenuItem key={gradeId} value={gradeId}>
+                                                            {grade ? grade.name : `Grade ${gradeId}`}
+                                                        </MenuItem>
+                                                    );
+                                                })}
+                                            </TextField>
+                                        );
+                                    })}
+                                </Box>
+                            )}
                         </>
                     )}
 
