@@ -76,13 +76,8 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
       }
     }
     
-    // Debug: Log the actual response structure
-    console.log('RAW attendance response:', JSON.stringify(rawData, null, 2));
-    console.log('Response type:', typeof rawData);
-    console.log('Is array?', Array.isArray(rawData));
-    console.log('Has details?', rawData?.details);
-    console.log('Has summary?', rawData?.summary);
-
+    // Debug: check response shape (no record data logged - see below for why)
+    
     let details;
     let summary;
 
@@ -135,9 +130,8 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
 
       console.log('Building summary from', details.length, 'records');
       
-      details.forEach((record, index) => {
+      details.forEach((record) => {
         const status = (record.status || '').toLowerCase();
-        console.log(`Record ${index}:`, { status: record.status, normalized: status });
         if (status === 'present') {
           presentDays++;
         } else if (status === 'absent') {
@@ -160,7 +154,6 @@ export const getStudentAttendance = async (studentId, startDate, endDate) => {
       console.log('Calculated summary:', summary);
     }
 
-    console.log('Final attendance data:', { summary, details: details.slice(0, 3) });
     return { summary, details };
   } catch (error) {
     console.error('Error fetching attendance records:', error);
@@ -309,57 +302,12 @@ export const getChildAttendance = async (studentId, startDate, endDate) => {
  */
 export const getAttendanceSubmissions = async () => {
   try {
-    const storedUser = localStorage.getItem('user');
-    const userData = storedUser ? JSON.parse(storedUser) : null;
-    const schoolId =
-      localStorage.getItem('schoolId') ||
-      userData?.school?.id ||
-      userData?.schoolId ||
-      null;
-    const adminEmail = userData?.email || null;
-
-    console.log('Fetching attendance submissions with params:', { schoolId, adminEmail });
-
-    const params = {
-      ...(schoolId ? { schoolId } : {}),
-      ...(adminEmail ? { adminEmail } : {})
-    };
-
-    // Try multiple possible endpoints for attendance submissions
-    let response;
-    const endpoints = [
-      '/attendance/submission',
-      '/attendance/submissions',
-      '/attendance'
-    ];
-
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`Trying endpoint: ${endpoint} with params:`, params);
-        response = await api.get(endpoint, {
-          params: Object.keys(params).length > 0 ? params : undefined
-        });
-        console.log(`Success with endpoint: ${endpoint}`);
-        break;
-      } catch (err) {
-        console.log(`Failed endpoint ${endpoint}:`, err.response?.status, err.response?.data);
-        if (err.response?.status === 500) {
-          // For 500 errors, try the next endpoint but log the full error
-          console.error('500 Error details:', err.response?.data);
-          continue;
-        }
-        if (err.response?.status !== 404) {
-          // If it's not a 404 or 500, the endpoint exists but has other issues
-          throw err;
-        }
-        // Continue to next endpoint if 404
-      }
-    }
-
-    if (!response) {
-      console.log('All endpoints failed, returning empty array to prevent UI breakage');
-      return [];
-    }
+    // Confirmed against the actual backend controller (AttendanceController.java):
+    // GET /api/attendance -> getAttendanceForCurrentSchool(). There is no
+    // /attendance/submissions endpoint - that was based on stale API docs.
+    // This endpoint takes no query params (school comes from the authenticated
+    // principal), so nothing else needs to be sent here.
+    const response = await api.get('/attendance');
 
     const rows = Array.isArray(response.data) ? response.data : [];
     return rows.map((record) => {
@@ -401,12 +349,34 @@ export const getAttendanceSubmissions = async () => {
 
 /**
  * Updates the status of a specific attendance submission.
+ *
+ * IMPORTANT: the backend's PUT /api/attendance/{submissionId} does not
+ * actually use the path variable to look up the record - it just calls
+ * attendanceRepository.save() on whatever Attendance object is in the
+ * request body. Sending only { status } would save an almost-empty
+ * Attendance entity, which JPA's save() would insert as a brand new row
+ * rather than updating the real one. So the full original record (from
+ * getAttendanceSubmissions()'s `raw` field) needs to be passed in and
+ * merged with the status change here.
+ *
+ * This is a backend bug (needs @PathVariable("submissionId") added, and
+ * the method should look the record up and update it rather than blindly
+ * saving the body) - flagged separately for a backend fix. This frontend
+ * change only reduces the damage in the meantime.
+ *
  * @param {string} submissionId - The ID of the attendance submission to update.
- * @param {object} updateData - An object containing the new status.
+ * @param {object} updateData - Fields to change, e.g. { status: 'approved' }.
+ * @param {object} [fullRecord] - The original raw record (submission.raw), so the
+ *   full entity - not just the changed fields - goes to the backend.
  */
-export const updateAttendanceSubmission = async (submissionId, updateData) => {
+export const updateAttendanceSubmission = async (submissionId, updateData, fullRecord = null) => {
   try {
-    const response = await api.put(`/attendance/${submissionId}`, updateData);
+    const body = {
+      ...(fullRecord || {}),
+      ...updateData,
+      id: submissionId,
+    };
+    const response = await api.put(`/attendance/${submissionId}`, body);
     return response.data;
   } catch (error) {
     console.error('Failed to update attendance submission:', error);

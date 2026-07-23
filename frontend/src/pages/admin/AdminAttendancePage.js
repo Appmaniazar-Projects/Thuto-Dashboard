@@ -126,7 +126,7 @@ const AdminAttendancePage = () => {
     if (!selectedSubmission) return;
 
     try {
-      await updateAttendanceSubmission(selectedSubmission.id, { status: editStatus });
+      await updateAttendanceSubmission(selectedSubmission.id, { status: editStatus }, selectedSubmission.raw);
       enqueueSnackbar('Attendance updated successfully!', { variant: 'success' });
       handleClose();
       fetchSubmissions(); // Refresh data

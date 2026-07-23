@@ -396,6 +396,11 @@ const Users = () => {
         }
 
         if (userForm.role === 'teacher') {
+            // The teacher's own register/homeroom class - a single grade, separate
+            // from the grades they teach each subject in.
+            if (!userForm.grade) {
+                errors.grade = true;
+            }
             if (!Array.isArray(userForm.subjects) || userForm.subjects.length === 0) {
                 errors.subjects = true;
             } else {
@@ -430,9 +435,9 @@ const Users = () => {
         const lookupParentPhoneRaw = (parentLookupPhone || '').toString().trim();
         const hasLookupParentPhone = !!normalizePhone(lookupParentPhoneRaw);
 
-        // For teachers, the single top-level "grade" field the backend still expects
-        // is derived from the per-subject grade selections (the first one picked),
-        // since a teacher no longer has one overall grade - they have a grade per subject.
+        // Teachers have their own register/homeroom grade (userForm.grade, a single
+        // value entered above) which is separate from the grades they teach each
+        // subject in (userForm.subjectGrades). Both are sent to the backend.
         const isTeacherSubmit = normalizeRole(userForm.role) === 'teacher';
         const teacherSubjectGrades = isTeacherSubmit
             ? (userForm.subjects || [])
@@ -442,14 +447,11 @@ const Users = () => {
                 }))
                 .filter((entry) => entry.gradeIds.length > 0)
             : [];
-        const derivedTeacherGrade = teacherSubjectGrades[0]?.gradeIds?.[0] ?? '';
 
         const formData = {
             ...userForm,
             role: normalizeRole(userForm.role),
-            grade: isTeacherSubmit
-                ? derivedTeacherGrade
-                : (userForm.grade ? toNumberIfNumeric(userForm.grade) : userForm.grade),
+            grade: userForm.grade ? toNumberIfNumeric(userForm.grade) : userForm.grade,
             subjects: Array.isArray(userForm.subjects)
                 ? userForm.subjects.map((id) => toNumberIfNumeric(id)).filter((id) => id !== '' && id !== null && id !== undefined)
                 : [],
@@ -1391,6 +1393,27 @@ const Users = () => {
 
                     {userForm.role === 'teacher' && (
                         <>
+                            <TextField
+                                select
+                                margin="dense"
+                                label="Grade (Register Class)"
+                                fullWidth
+                                variant="outlined"
+                                value={userForm.grade}
+                                onChange={(e) => setUserForm({ ...userForm, grade: String(e.target.value) })}
+                                error={formErrors.grade}
+                                helperText={formErrors.grade ? 'Grade is required' : "The teacher's own register/homeroom class - separate from the grades they teach each subject in below"}
+                                sx={{ mb: 2 }}
+                            >
+                                {grades.map((grade) => {
+                                    const gradeValue = String(grade.id);
+                                    return (
+                                            <MenuItem key={grade.id} value={gradeValue}>
+                                                {grade.name}
+                                            </MenuItem>
+                                    );
+                                })}
+                            </TextField>
                             <TextField
                                 select
                                 margin="dense"

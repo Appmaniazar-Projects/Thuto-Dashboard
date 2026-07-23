@@ -59,15 +59,11 @@ const AttendanceView = ({ childId }) => {
           return;
         }
 
-        console.log(`AttendanceView - Fetching attendance for child: ${childId}`);
-        console.log(`AttendanceView - Date range: ${startDate} to ${endDate}`);
-
         const data = await getChildAttendance(childId, {
           startDate,
           endDate,
         });
-        
-        console.log(`AttendanceView - Received ${Array.isArray(data) ? data.length : 0} attendance records:`, data);
+
         setAttendance(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('AttendanceView - Error fetching attendance:', err);
