@@ -175,12 +175,11 @@ const ParentDashboard = () => {
     };
   }, [filteredAttendance]);
 
-  const getChildGradeLabel = (child) => {
-    if (child?.grade?.name) return child.grade.name;
-    if (child?.grade) return child.grade;
-    if (child?.gradeId) return child.gradeId;
-    return '';
-  };
+ const getChildGradeLabel = (child) => {
+  if (child?.grade?.name) return child.grade.name;
+  if (child?.grade) return child.grade;
+  return '';
+};
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;

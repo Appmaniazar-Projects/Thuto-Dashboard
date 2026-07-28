@@ -44,10 +44,22 @@ const parentService = {
               [c?.firstName, c?.lastName].filter(Boolean).join(' ') ||
               [c?.student?.firstName, c?.student?.lastName].filter(Boolean).join(' ') ||
               '';
-            const grade = c?.grade ?? c?.gradeName ?? c?.student?.grade ?? c?.student?.gradeName ?? c?.student?.gradeId ?? '';
+            const grade =
+              c?.gradeName ??
+              c?.grade?.name ??
+              c?.student?.gradeName ??
+              c?.student?.grade?.name ??
+              '';
+            const gradeId =
+              c?.gradeId ??
+              c?.grade?.id ??
+              (typeof c?.grade === 'number' ? c.grade : null) ??
+              c?.student?.gradeId ??
+              c?.student?.grade?.id ??
+              null;
             const className = c?.class ?? c?.className ?? c?.student?.class ?? c?.student?.className ?? '';
             const schoolName = c?.school ?? c?.schoolName ?? c?.student?.school ?? c?.student?.schoolName ?? '';
-            return { ...c, id, name, grade, class: className, school: schoolName };
+            return { ...c, id, name, grade, gradeId, class: className, school: schoolName };
           })
           .filter((c) => c?.id !== null && c?.id !== undefined);
       };
