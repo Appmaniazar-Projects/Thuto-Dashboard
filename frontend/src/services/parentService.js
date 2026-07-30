@@ -12,65 +12,76 @@ const getSchoolId = () => {
 
 const parentService = {
 
-  getMyChildren: async (phoneNumber) => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      const userData = storedUser ? JSON.parse(storedUser) : null;
+getMyChildren: async (phoneNumber) => {
+  const normalizeChildren = (items) => {
+    const list = Array.isArray(items) ? items : [];
+    return list
+      .map((c) => {
+        const id = c?.id ?? c?.studentId ?? c?.childId ?? c?.student?.id ?? null;
+        const name =
+          c?.name ||
+          [c?.firstName, c?.lastName].filter(Boolean).join(' ') ||
+          [c?.student?.firstName, c?.student?.lastName].filter(Boolean).join(' ') ||
+          '';
+        const grade =
+          c?.gradeName ??
+          c?.grade?.name ??
+          c?.student?.gradeName ??
+          c?.student?.grade?.name ??
+          '';
+        const gradeId =
+          c?.gradeId ??
+          c?.grade?.id ??
+          (typeof c?.grade === 'number' ? c.grade : null) ??
+          c?.student?.gradeId ??
+          c?.student?.grade?.id ??
+          null;
+        const className = c?.class ?? c?.className ?? c?.student?.class ?? c?.student?.className ?? '';
+        const schoolName = c?.school ?? c?.schoolName ?? c?.student?.school ?? c?.student?.schoolName ?? '';
+        return { ...c, id, name, grade, gradeId, class: className, school: schoolName };
+      })
+      .filter((c) => c?.id !== null && c?.id !== undefined);
+  };
 
-      const normalizePhone = (value) => {
-        const raw = (value ?? '').toString().trim();
-        if (!raw) return '';
-        const digits = raw.replace(/\D/g, '');
-        if (digits.startsWith('27') && digits.length === 11) {
-          return `0${digits.slice(2)}`;
-        }
-        return digits || raw;
-      };
+  try {
+    const storedUser = localStorage.getItem('user');
+    const userData = storedUser ? JSON.parse(storedUser) : null;
 
-      const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
-      const encodedPhone = encodeURIComponent(normalizedPhone);
+    // Primary source: studentDTOS on the logged-in user object
+    const studentDTOs = userData?.studentDTOS;
+    if (Array.isArray(studentDTOs) && studentDTOs.length > 0) {
+      return normalizeChildren(studentDTOs);
+    }
 
-      if (!encodedPhone) {
-        throw new Error('Parent phone number is required to fetch children');
+    // Fallback: phone-number lookup endpoint (older sessions, or if
+    // studentDTOS wasn't populated on this login response for some reason)
+    console.warn('getMyChildren - studentDTOS missing/empty, falling back to phone lookup');
+
+    const normalizePhone = (value) => {
+      const raw = (value ?? '').toString().trim();
+      if (!raw) return '';
+      const digits = raw.replace(/\D/g, '');
+      if (digits.startsWith('27') && digits.length === 11) {
+        return `0${digits.slice(2)}`;
       }
+      return digits || raw;
+    };
 
-      const normalizeChildren = (items) => {
-        const list = Array.isArray(items) ? items : [];
-        return list
-          .map((c) => {
-            const id = c?.id ?? c?.studentId ?? c?.childId ?? c?.student?.id ?? null;
-            const name =
-              c?.name ||
-              [c?.firstName, c?.lastName].filter(Boolean).join(' ') ||
-              [c?.student?.firstName, c?.student?.lastName].filter(Boolean).join(' ') ||
-              '';
-            const grade =
-              c?.gradeName ??
-              c?.grade?.name ??
-              c?.student?.gradeName ??
-              c?.student?.grade?.name ??
-              '';
-            const gradeId =
-              c?.gradeId ??
-              c?.grade?.id ??
-              (typeof c?.grade === 'number' ? c.grade : null) ??
-              c?.student?.gradeId ??
-              c?.student?.grade?.id ??
-              null;
-            const className = c?.class ?? c?.className ?? c?.student?.class ?? c?.student?.className ?? '';
-            const schoolName = c?.school ?? c?.schoolName ?? c?.student?.school ?? c?.student?.schoolName ?? '';
-            return { ...c, id, name, grade, gradeId, class: className, school: schoolName };
-          })
-          .filter((c) => c?.id !== null && c?.id !== undefined);
-      };
+    const normalizedPhone = normalizePhone(phoneNumber || userData?.phoneNumber);
+    const encodedPhone = encodeURIComponent(normalizedPhone);
 
-      const response = await api.get(`/parent/${encodedPhone}/children`);
-      return normalizeChildren(response.data);
-    } catch (error) {
-      console.error('Failed to fetch children:', error);
+    if (!encodedPhone) {
+      console.warn('getMyChildren - No phone number available for fallback either');
       return [];
     }
-  },
+
+    const response = await api.get(`/parent/${encodedPhone}/children`);
+    return normalizeChildren(response.data);
+  } catch (error) {
+    console.error('Failed to fetch children:', error);
+    return [];
+  }
+},
 
   getChildDetails: async (phoneNumber, childId) => {
     try {
