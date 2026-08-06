@@ -245,54 +245,6 @@ export const getAttendanceByGrade = async (gradeId) => {
   }
 };
 
-// ==================== PARENT ATTENDANCE ====================
-
-/**
- * Fetches attendance records for a specific child within a date range.
- *
- * NOTE: Backend requires startDate and endDate query params.
- *
- * @param {string|number} studentId - The ID of the student
- * @param {Date} startDate - Start date (inclusive)
- * @param {Date} endDate - End date (inclusive)
- * @returns {Promise<{summary?: object, details: Array}>} Normalized attendance data
- */
-export const getChildAttendance = async (studentId, startDate, endDate) => {
-  try {
-    if (!studentId) {
-      throw new Error('Missing studentId for attendance fetch');
-    }
-    if (!(startDate instanceof Date) || Number.isNaN(startDate.getTime())) {
-      throw new Error('Missing/invalid startDate for attendance fetch');
-    }
-    if (!(endDate instanceof Date) || Number.isNaN(endDate.getTime())) {
-      throw new Error('Missing/invalid endDate for attendance fetch');
-    }
-
-    const response = await api.get(`/attendance/student/${studentId}`, {
-      params: {
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      }
-    });
-
-    const rawData = response.data;
-
-    // Backend currently returns List<Attendance>. Normalize to { details }.
-    if (Array.isArray(rawData)) {
-      return { details: rawData };
-    }
-
-    if (rawData && Array.isArray(rawData.details)) {
-      return { details: rawData.details, summary: rawData.summary };
-    }
-
-    return { details: [] };
-  } catch (error) {
-    console.error(`Failed to fetch attendance for student ${studentId}:`, error);
-    throw error;
-  }
-};
 
 // ==================== ADMIN ATTENDANCE ====================
 

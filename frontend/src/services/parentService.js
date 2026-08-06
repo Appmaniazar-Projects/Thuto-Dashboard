@@ -165,25 +165,13 @@ getMyChildren: async (phoneNumber) => {
     }
   },
 
-  getChildAttendance: async (studentId, options = {}) => {
+  // NOTE: switched from the nonexistent /parent/children/{studentId}/attendance
+  // to the real endpoint confirmed by Siya: /attendance/all/student/{studentId}.
+  // This endpoint returns full history (no date range params), so any
+  // month/year filtering happens client-side (see ParentDashboard.js).
+  getChildAttendance: async (studentId) => {
     try {
-      const formatDateParam = (value) => {
-        if (!value) return null;
-        if (value instanceof Date) return value.toISOString().split('T')[0];
-        const trimmed = value.toString().trim();
-        return trimmed ? trimmed : null;
-      };
-
-      const startDate = formatDateParam(options?.startDate);
-      const endDate = formatDateParam(options?.endDate);
-      const params = {
-        ...(startDate ? { startDate } : {}),
-        ...(endDate ? { endDate } : {}),
-      };
-
-      const response = await api.get(`/parent/children/${studentId}/attendance`, {
-        params: Object.keys(params).length > 0 ? params : undefined,
-      });
+      const response = await api.get(`/attendance/all/student/${studentId}`);
 
       let data = response.data;
       if (typeof data === 'string') {
@@ -216,9 +204,22 @@ getMyChildren: async (phoneNumber) => {
     }
   },
 
-  getChildAcademicReports: async (phoneNumber, studentId) => {
+  // NOTE: ParentController.getChildReports compares the {parentId} path
+  // variable directly against parent.getId() (a Long) — it does NOT resolve
+  // a phone number. So this must send the parent's actual numeric user id,
+  // not their phone number, or the ownership check will fail.
+  getChildAcademicReports: async (studentId) => {
     try {
-      const response = await api.get(`/parent/${phoneNumber}/students/${studentId}/reports`);
+      const storedUser = localStorage.getItem('user');
+      const userData = storedUser ? JSON.parse(storedUser) : null;
+      const parentId = userData?.id;
+
+      if (!parentId) {
+        console.warn('getChildAcademicReports - No parent id found on user object');
+        return [];
+      }
+
+      const response = await api.get(`/parent/${parentId}/students/${studentId}/reports`);
       return response.data || [];
     } catch (error) {
       console.error(`Failed to fetch academic reports for child ${studentId}:`, error);
