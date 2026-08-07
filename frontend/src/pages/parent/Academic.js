@@ -10,6 +10,43 @@ import { useAuth } from '../../context/AuthContext';
 import parentService from '../../services/parentService';
 import { formatDisplayDate } from '../../utils/date';
 
+// NOTE: Backend (ParentController.getChildReports) currently returns
+// List<String> - raw file paths - not objects with title/date/description.
+// This normalizes each raw path into a display-friendly shape so the UI
+// below doesn't break. Once the backend returns a proper StudentFileDTO
+// (id, title, date, description, downloadUrl), this can be simplified to
+// just use the response directly.
+const normalizeReports = (rawList) => {
+  const list = Array.isArray(rawList) ? rawList : [];
+  return list
+    .map((item, index) => {
+      // Backend may return either raw strings (current behavior) or
+      // objects (if this is ever upgraded) - handle both.
+      if (typeof item === 'string') {
+        const path = item;
+        const fileName = path.split('/').pop() || `Report ${index + 1}`;
+        return {
+          id: path,
+          title: fileName,
+          date: null,
+          description: '',
+          downloadUrl: path,
+        };
+      }
+      if (item && typeof item === 'object') {
+        return {
+          id: item.id ?? item.downloadUrl ?? index,
+          title: item.title ?? item.fileName ?? item.name ?? `Report ${index + 1}`,
+          date: item.date ?? null,
+          description: item.description ?? '',
+          downloadUrl: item.downloadUrl ?? item.filePath ?? item.url ?? null,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+};
+
 const AcademicReportsPage = () => {
   const { children, loading: childrenLoading, error: childrenError } = useParent();
   const { user } = useAuth();
@@ -50,16 +87,12 @@ const AcademicReportsPage = () => {
           setIsLoadingReports(true);
           setReportsError('');
 
-          // Check if user has phoneNumber
-          if (!user?.phoneNumber) {
-            setReportsError('Phone number not found. Please update your profile.');
-            setReports([]);
-            setIsLoadingReports(false);
-            return;
-          }
-          
-          const data = await parentService.getChildAcademicReports(user.phoneNumber, selectedChildId);
-          setReports(Array.isArray(data) ? data : []);
+          // getChildAcademicReports now reads the parent's id from localStorage
+          // internally (see parentService.js) - it no longer takes a phone
+          // number. The backend's ownership check compares against the
+          // parent's numeric user id, not their phone number.
+          const data = await parentService.getChildAcademicReports(selectedChildId);
+          setReports(normalizeReports(data));
         } catch (err) {
           console.error('Error fetching reports:', err);
           setReports([]);
@@ -69,7 +102,7 @@ const AcademicReportsPage = () => {
       };
       fetchReports();
     }
-  }, [selectedChildId, user]);
+  }, [selectedChildId]);
 
   const handleChildChange = (event) => {
     setSelectedChildId(event.target.value);
@@ -133,9 +166,11 @@ const AcademicReportsPage = () => {
                 }}>
                   <Box>
                     <Typography variant="h6" gutterBottom>{report.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Date: {formatDisplayDate(report.date)}
-                    </Typography>
+                    {report.date && (
+                      <Typography variant="body2" color="text.secondary">
+                        Date: {formatDisplayDate(report.date)}
+                      </Typography>
+                    )}
                     {report.description && (
                       <Typography variant="body2" color="text.secondary" mt={1}>
                         {report.description}
@@ -149,6 +184,7 @@ const AcademicReportsPage = () => {
                     onClick={() => handleDownload(report.downloadUrl)}
                     size="small"
                     sx={{ ml: 2 }}
+                    disabled={!report.downloadUrl}
                   >
                     Download
                   </Button>

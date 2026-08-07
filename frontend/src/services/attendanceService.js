@@ -8,13 +8,21 @@
  * Key Features:
  * - Student attendance retrieval and statistics
  * - Teacher attendance submission and history
- * - Parent child attendance monitoring
  * - Admin attendance management and submissions
  * - Frontend-only filtering (no backend filter parameters)
  * 
+ * NOTE: Parent-facing attendance (viewing a child's attendance) lives in
+ * parentService.js (getChildAttendance -> GET /attendance/all/student/{studentId}),
+ * NOT here. A duplicate getChildAttendance used to exist in this file pointing at
+ * a different, param-mismatched endpoint (/attendance/student/{studentId}, missing
+ * the required schoolId param) and was never actually called anywhere in the app.
+ * Removed to avoid two same-named functions drifting out of sync. If a
+ * parent-facing attendance function is needed here in future, wire it to call
+ * parentService.getChildAttendance rather than reimplementing it.
+ * 
  * @module AttendanceService
  * @author Thuto Dashboard Team
- * @version 2.0.0
+ * @version 2.1.0
  * @since 1.0.0
  */
 
@@ -245,7 +253,6 @@ export const getAttendanceByGrade = async (gradeId) => {
   }
 };
 
-
 // ==================== ADMIN ATTENDANCE ====================
 
 /**
@@ -452,9 +459,6 @@ const attendanceService = {
   // Teacher functions
   getAttendanceHistory,
   submitTeacherAttendance,
-  
-  // Parent functions
-  getChildAttendance,
   
   // Admin functions
   getAttendanceSubmissions,
