@@ -8,42 +8,41 @@ import {
   Button,
   Typography,
   Alert,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
   Box,
   Chip
 } from '@mui/material';
 import { BugReport as BugIcon, Send as SendIcon } from '@mui/icons-material';
+import { createBug } from '../../services/bugService';
+
 
 const BugReport = ({ open, onClose, user }) => {
-  const [formData, setFormData] = useState({
-    issueType: '',
-    severity: '',
+  const initialFormState = {
     description: '',
-    stepsToReproduce: '',
     expectedBehavior: '',
-    actualBehavior: '',
-    browser: '',
-    userRole: user?.role || '',
-    page: window.location.pathname
-  });
+    actualBehavior: ''
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError('');
+  };
+
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.issueType || !formData.severity || !formData.description) {
-      setError('Please fill in all required fields');
+
+    if (!formData.description.trim() || !formData.expectedBehavior.trim() || !formData.actualBehavior.trim()) {
+      setError('Please fill in all fields so we understand what went wrong.');
       return;
     }
 
@@ -51,64 +50,19 @@ const BugReport = ({ open, onClose, user }) => {
     setError('');
 
     try {
-      // Create bug report data
       const bugReport = {
-        ...formData,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        description: formData.description.trim(),
+        expectedBehavior: formData.expectedBehavior.trim(),
+        actualBehavior: formData.actualBehavior.trim(),
+        // Auto-captured — the user never has to think about these.
+        role: user?.role || 'unknown',
+        schoolId: user?.schoolId || user?.school?.id || null,
+        page: window.location.pathname,
         userEmail: user?.email || 'anonymous',
-        userName: user?.name ? `${user.name} ${user.lastName || ''}` : 'Anonymous User'
+        userName: user?.name ? `${user.name} ${user.lastName || ''}`.trim() : 'Anonymous User'
       };
 
-      // Here you would normally send to your backend
-      // For now, we'll create a downloadable report
-      const reportContent = `
-BUG REPORT - ${new Date().toLocaleDateString()}
-
-========================================
-USER INFORMATION
-========================================
-Name: ${bugReport.userName}
-Email: ${bugReport.userEmail}
-Role: ${bugReport.userRole}
-Page: ${bugReport.page}
-Timestamp: ${bugReport.timestamp}
-
-========================================
-ISSUE DETAILS
-========================================
-Issue Type: ${bugReport.issueType}
-Severity: ${bugReport.severity}
-Description: ${bugReport.description}
-
-Steps to Reproduce:
-${bugReport.stepsToReproduce || 'Not provided'}
-
-Expected Behavior:
-${bugReport.expectedBehavior || 'Not provided'}
-
-Actual Behavior:
-${bugReport.actualBehavior || 'Not provided'}
-
-========================================
-TECHNICAL INFORMATION
-========================================
-Browser: ${bugReport.browser}
-User Agent: ${bugReport.userAgent}
-Screen Resolution: ${bugReport.screenResolution}
-      `.trim();
-
-      // Create and download the report
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bug_report_${Date.now()}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      await createBug(bugReport);
 
       setSubmitted(true);
       setTimeout(() => {
@@ -116,65 +70,28 @@ Screen Resolution: ${bugReport.screenResolution}
         onClose();
         resetForm();
       }, 2000);
-
     } catch (err) {
-      setError('Failed to submit bug report. Please try again.');
+      setError(
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to submit bug report. Please try again.'
+      );
       console.error('Bug report submission error:', err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      issueType: '',
-      severity: '',
-      description: '',
-      stepsToReproduce: '',
-      expectedBehavior: '',
-      actualBehavior: '',
-      browser: '',
-      userRole: user?.role || '',
-      page: window.location.pathname
-    });
-    setError('');
-  };
-
-  const issueTypes = [
-    'Bug/Error',
-    'Performance Issue',
-    'UI/UX Problem',
-    'Feature Request',
-    'Documentation Issue',
-    'Other'
-  ];
-
-  const severities = [
-    'Critical - System unusable',
-    'High - Major functionality broken',
-    'Medium - Workaround exists',
-    'Low - Minor issue'
-  ];
-
-  const browsers = [
-    'Chrome',
-    'Firefox',
-    'Safari',
-    'Edge',
-    'Mobile (iOS)',
-    'Mobile (Android)',
-    'Other'
-  ];
-
   if (submitted) {
     return (
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogContent sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="h6" color="success.main" gutterBottom>
-            Bug Report Submitted Successfully!
+            Thanks — we've got it!
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Thank you for helping improve Thuto Dashboard. Your report has been downloaded.
+            Your report has been sent through to our team.
           </Typography>
         </DialogContent>
       </Dialog>
@@ -182,11 +99,11 @@ Screen Resolution: ${bugReport.screenResolution}
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BugIcon color="error" />
-          <Typography variant="h6">Report a Bug</Typography>
+          <Typography variant="h6">Report a Problem</Typography>
         </Box>
       </DialogTitle>
 
@@ -194,105 +111,47 @@ Screen Resolution: ${bugReport.screenResolution}
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <FormControl fullWidth required>
-              <InputLabel>Issue Type</InputLabel>
-              <Select
-                name="issueType"
-                value={formData.issueType}
-                onChange={handleChange}
-                label="Issue Type"
-              >
-                {issueTypes.map(type => (
-                  <MenuItem key={type} value={type}>{type}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth required>
-              <InputLabel>Severity</InputLabel>
-              <Select
-                name="severity"
-                value={formData.severity}
-                onChange={handleChange}
-                label="Severity"
-              >
-                {severities.map(severity => (
-                  <MenuItem key={severity} value={severity}>{severity}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
           <TextField
             fullWidth
             required
             multiline
             rows={3}
-            label="Description"
+            label="What went wrong?"
             name="description"
             value={formData.description}
             onChange={handleChange}
             margin="normal"
-            helperText="Describe the issue you encountered"
+            helperText="Tell us what happened, in your own words"
+            autoFocus
           />
 
           <TextField
             fullWidth
+            required
             multiline
-            rows={3}
-            label="Steps to Reproduce"
-            name="stepsToReproduce"
-            value={formData.stepsToReproduce}
+            rows={2}
+            label="What did you expect to happen?"
+            name="expectedBehavior"
+            value={formData.expectedBehavior}
             onChange={handleChange}
             margin="normal"
-            helperText="Step-by-step instructions to reproduce the issue"
           />
 
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label="Expected Behavior"
-              name="expectedBehavior"
-              value={formData.expectedBehavior}
-              onChange={handleChange}
-              helperText="What should have happened"
-            />
-
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label="Actual Behavior"
-              name="actualBehavior"
-              value={formData.actualBehavior}
-              onChange={handleChange}
-              helperText="What actually happened"
-            />
-          </Box>
-
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Browser</InputLabel>
-            <Select
-              name="browser"
-              value={formData.browser}
-              onChange={handleChange}
-              label="Browser"
-            >
-              {browsers.map(browser => (
-                <MenuItem key={browser} value={browser}>{browser}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField
+            fullWidth
+            required
+            multiline
+            rows={2}
+            label="What actually happened?"
+            name="actualBehavior"
+            value={formData.actualBehavior}
+            onChange={handleChange}
+            margin="normal"
+          />
 
           <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Current Page: <Chip label={formData.page} size="small" />
-            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Your Role: <Chip label={formData.userRole} size="small" color="primary" />
+              Sending as: <Chip label={user?.role || 'unknown'} size="small" color="primary" />
             </Typography>
           </Box>
         </DialogContent>
@@ -307,7 +166,7 @@ Screen Resolution: ${bugReport.screenResolution}
             disabled={submitting}
             startIcon={submitting ? null : <SendIcon />}
           >
-            {submitting ? 'Submitting...' : 'Submit Report'}
+            {submitting ? 'Sending...' : 'Send Report'}
           </Button>
         </DialogActions>
       </form>
