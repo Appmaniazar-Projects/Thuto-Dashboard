@@ -1,33 +1,20 @@
-import axios from 'axios';
-
-// NOTE: Adjust API_BASE_URL / endpoint paths to match whatever base URL your
-// other services (e.g. superAdminService) use — this follows the same
-// axios + error-shape convention as the rest of the app.
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
-
-const bugsApi = axios.create({
-  baseURL: `${API_BASE_URL}/bugs`
-});
-
-// Attach auth token the same way other services do, if applicable.
-// bugsApi.interceptors.request.use((config) => { ... return config; });
+import api from './api';
 
 /**
  * Create a new bug report.
- * Payload shape agreed in the 17 Aug meeting:
  * { description, expectedBehavior, actualBehavior, role, schoolId, page }
  */
 export const createBug = async (payload) => {
-  const { data } = await bugsApi.post('/', payload);
+  const { data } = await api.post('/bugs', payload);
   return data;
 };
 
 /**
- * Update a bug (status change, assignment, etc.) — super admin side.
+ * Update a bug (status change, assignment, etc.) - super admin side.
  * e.g. updateBug(bugId, { status: 'in_progress', assignedTo: 'tiffany@...' })
  */
 export const updateBug = async (bugId, updates) => {
-  const { data } = await bugsApi.patch(`/${bugId}`, updates);
+  const { data } = await api.patch(`/bugs/${bugId}`, updates);
   return data;
 };
 
@@ -39,7 +26,7 @@ export const updateBug = async (bugId, updates) => {
  * as query params if the backend supports it.
  */
 export const getAllBugs = async (filters = {}) => {
-  const { data } = await bugsApi.get('/', { params: filters });
+  const { data } = await api.get('/bugs', { params: filters });
   return data;
 };
 

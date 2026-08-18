@@ -234,20 +234,32 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
             </Tooltip>
           )}
           
-          {/* Bug Report Button */}
-          <Tooltip title="Report a Bug">
-            <IconButton
-              color="inherit"
-              onClick={() => setBugReportOpen(true)}
-              sx={{ 
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              <BugIcon />
-            </IconButton>
-          </Tooltip>
+          {/* Bug Report Button - hidden for super admins, who manage bugs
+              directly via the Bugs dashboard under School Management instead */}
+          {(() => {
+            const isSuperAdminUser = user?.role === 'superadmin' ||
+              user?.role === 'SUPERADMIN_NATIONAL' ||
+              user?.role === 'SUPERADMIN_PROVINCIAL' ||
+              ['superadmin', 'superadmin_national', 'superadmin_regional', 'superadmin_provincial'].includes(user?.role);
+
+            if (isSuperAdminUser) return null;
+
+            return (
+              <Tooltip title="Report a Bug">
+                <IconButton
+                  color="inherit"
+                  onClick={() => setBugReportOpen(true)}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                    }
+                  }}
+                >
+                  <BugIcon />
+                </IconButton>
+              </Tooltip>
+            );
+          })()}
           
           {/* User Profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', ml: 2 }}>

@@ -8,36 +8,21 @@ import {
   CardContent,
   Dialog,
   DialogTitle,
-
   DialogContent,
-
   DialogActions,
-
   TextField,
   Autocomplete,
-
   Typography,
-
   Alert,
-
   CircularProgress,
-
   Table,
-
   TableBody,
-
   TableCell,
-
   TableContainer,
-
   TableHead,
-
   TableRow,
-
   Paper,
-
   IconButton,
-
   MenuItem,
 
   Chip,
@@ -78,7 +63,9 @@ import {
 
   UploadFile as UploadFileIcon,
 
-  EmojiEvents as SportsIcon
+  EmojiEvents as SportsIcon,
+
+  BugReport as BugIcon
 
 } from '@mui/icons-material';
 
@@ -103,6 +90,7 @@ import {
 import { getRoleDisplayName } from '../../constants/roleLabels';
 import regionService from '../../services/regionService';
 import analyticsService from '../../services/analyticsService';
+import { getAllBugs, updateBug } from '../../services/bugService';
 
 
 
@@ -214,6 +202,14 @@ const SuperAdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('schools');
+
+  // Bugs tab
+  const [bugs, setBugs] = useState([]);
+  const [bugsLoading, setBugsLoading] = useState(false);
+  const [bugsError, setBugsError] = useState('');
+  const [bugStatusFilter, setBugStatusFilter] = useState('all');
+  const [bugSchoolFilter, setBugSchoolFilter] = useState('all');
+  const [bugUpdatingId, setBugUpdatingId] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -650,6 +646,51 @@ const filteredSchools = useMemo(() => {
     load();
 
   }, [schoolForm.provinceId, schoolDialogOpen]);
+
+  // Load bugs when the Bugs tab is active, or when its filters change
+  useEffect(() => {
+    if (activeTab !== 'bugs') return;
+
+    const fetchBugs = async () => {
+      setBugsLoading(true);
+      setBugsError('');
+      try {
+        const filters = {};
+        if (bugStatusFilter !== 'all') filters.status = bugStatusFilter;
+        if (bugSchoolFilter !== 'all') filters.schoolId = bugSchoolFilter;
+
+        const data = await getAllBugs(filters);
+        setBugs(normalizeArray(data));
+      } catch (err) {
+        // Don't silently show an empty list on failure - the backend endpoints
+        // for this were only just built, so surfacing real errors matters here.
+        setBugsError(
+          err?.response?.data?.message || err?.message || 'Failed to load bug reports.'
+        );
+        setBugs([]);
+      } finally {
+        setBugsLoading(false);
+      }
+    };
+
+    fetchBugs();
+  }, [activeTab, bugStatusFilter, bugSchoolFilter]);
+
+  const handleUpdateBugStatus = async (bugId, updates) => {
+    setBugUpdatingId(bugId);
+    try {
+      await updateBug(bugId, updates);
+      setBugs((prev) =>
+        prev.map((b) => (b.id === bugId ? { ...b, ...updates } : b))
+      );
+    } catch (err) {
+      setBugsError(
+        err?.response?.data?.message || err?.message || 'Failed to update bug report.'
+      );
+    } finally {
+      setBugUpdatingId(null);
+    }
+  };
 
 
 
@@ -1468,6 +1509,16 @@ const filteredSchools = useMemo(() => {
             startIcon={<SportsIcon />}
           >Sports Center</Button>
         )}
+
+        <Button
+
+          variant={activeTab === 'bugs' ? 'contained' : 'outlined'}
+
+          onClick={() => setActiveTab('bugs')}
+
+          startIcon={<BugIcon />}
+
+        >Bugs</Button>
 
       </Box>
 
@@ -2498,7 +2549,103 @@ const filteredSchools = useMemo(() => {
 
       )}
 
+      {activeTab === 'bugs' && (
+        <Box>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={bugStatusFilter}
+                label="Status"
+                onChange={(e) => setBugStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All active</MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="in_progress">In Progress</MenuItem>
+                <MenuItem value="testing">Testing</MenuItem>
+                <MenuItem value="done">Done</MenuItem>
+                <MenuItem value="duplicate">Duplicate</MenuItem>
+              </Select>
+            </FormControl>
 
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel>School</InputLabel>
+              <Select
+                value={bugSchoolFilter}
+                label="School"
+                onChange={(e) => setBugSchoolFilter(e.target.value)}
+              >
+                <MenuItem value="all">All schools</MenuItem>
+                {schools.map((school) => (
+                  <MenuItem key={school.id} value={school.id}>{school.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {bugsError && <Alert severity="error" sx={{ mb: 2 }}>{bugsError}</Alert>}
+
+          {bugsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Reported By</TableCell>
+                    <TableCell>School</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Expected</TableCell>
+                    <TableCell>Actual</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {bugs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <Typography color="text.secondary">No bug reports found</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    bugs.map((bug) => {
+                      const school = schools.find((s) => String(s.id) === String(bug.schoolId));
+                      return (
+                        <TableRow key={bug.id}>
+                          <TableCell>
+                            <Typography variant="body2">{bug.userName || 'Unknown'}</Typography>
+                            <Chip label={bug.role || 'unknown'} size="small" sx={{ mt: 0.5 }} />
+                          </TableCell>
+                          <TableCell>{school?.name || bug.schoolId || 'N/A'}</TableCell>
+                          <TableCell sx={{ maxWidth: 200 }}>{bug.description}</TableCell>
+                          <TableCell sx={{ maxWidth: 160 }}>{bug.expectedBehavior}</TableCell>
+                          <TableCell sx={{ maxWidth: 160 }}>{bug.actualBehavior}</TableCell>
+                          <TableCell>
+                            <Select
+                              size="small"
+                              value={bug.status || 'pending'}
+                              disabled={bugUpdatingId === bug.id}
+                              onChange={(e) => handleUpdateBugStatus(bug.id, { status: e.target.value })}
+                            >
+                              <MenuItem value="pending">Pending</MenuItem>
+                              <MenuItem value="in_progress">In Progress</MenuItem>
+                              <MenuItem value="testing">Testing</MenuItem>
+                              <MenuItem value="done">Done</MenuItem>
+                              <MenuItem value="duplicate">Duplicate</MenuItem>
+                            </Select>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+      )}
 
       {/* School Dialog */}
 
