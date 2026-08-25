@@ -58,7 +58,6 @@ const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSetti
 // Parent Registration
 const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
 const TermsAndConditions = lazy(() => import('./components/legal/TermsAndConditions'));
-const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
 const QuickParentRegistration = lazy(() => import('./components/auth/QuickParentRegistration'));
 
