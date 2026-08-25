@@ -1,4 +1,3 @@
-// src/components/legal/TermsAndConditions.js
 import React from 'react';
 import { Box, Container, Typography, Divider } from '@mui/material';
 import { APP_TEXT } from '../../utils/appText';
