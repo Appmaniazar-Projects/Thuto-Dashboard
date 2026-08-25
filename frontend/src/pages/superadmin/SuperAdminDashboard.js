@@ -23,6 +23,7 @@ import {
   TableRow,
   Paper,
   IconButton,
+
   MenuItem,
 
   Chip,
@@ -1577,9 +1578,7 @@ const filteredSchools = useMemo(() => {
             </CardContent>
 
           </Card>
-
         </Grid>
-
       </Grid>
       
 

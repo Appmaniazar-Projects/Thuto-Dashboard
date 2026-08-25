@@ -13,6 +13,18 @@ const Footer = () => {
           {APP_TEXT.SITE_NAME}
         </Link>
         {' | All rights reserved.'}
+        {' | '}
+        <Link color="inherit" href="/terms">
+          Terms and Conditions
+        </Link>
+        {' | '}
+        <Link color="inherit" href="/Thuto%20App%20Privacy%20Policy.pdf" target="_blank" rel="noopener noreferrer">
+          Privacy Policy
+        </Link>
+        {' | '}
+        <Link color="inherit" href="/PAIA-Manual.pdf" target="_blank" rel="noopener noreferrer">
+          PAIA Manual
+        </Link>
       </Typography>
     </Box>
   );

@@ -1,4 +1,3 @@
-// src/routes.js
 import { Navigate } from 'react-router-dom';
 import { lazy, Suspense, isValidElement } from 'react';
 import { CircularProgress } from '@mui/material';
@@ -58,6 +57,8 @@ const SuperAdminSettings = lazy(() => import('./pages/superadmin/SuperAdminSetti
 
 // Parent Registration
 const ParentRegistration = lazy(() => import('./components/auth/ParentRegistration'));
+const TermsAndConditions = lazy(() => import('./components/legal/TermsAndConditions'));
+const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 const ParentApproval = lazy(() => import('./pages/admin/ParentApproval'));
 const QuickParentRegistration = lazy(() => import('./components/auth/QuickParentRegistration'));
 
@@ -91,6 +92,9 @@ export const publicRoutes = [
   { path: '/parent/register', element: <ParentRegistration /> },
   { path: '/register/:schoolSlug', element: <QuickParentRegistration /> },
   { path: '/register', element: <QuickParentRegistration /> }, 
+  { path: '/terms', element: <TermsAndConditions /> },
+  { path: '/terms-and-conditions', element: <TermsAndConditions /> },
+  { path: '/privacy-policy', element: <PrivacyPolicy /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 

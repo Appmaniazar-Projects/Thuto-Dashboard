@@ -3,6 +3,7 @@ import { Box, CssBaseline, Container, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Outlet } from 'react-router-dom';
 import { APP_CONFIG } from '../../config/appConfig';
+import Footer from './Footer';
 
 const StyledContainer = styled(Container)(({ theme }) => ({
   minHeight: '100vh',
@@ -38,6 +39,7 @@ const AuthLayout = ({ children, title }) => {
           </LogoContainer>
           {children}
         </ContentContainer>
+        <Footer />
       </StyledContainer>
     </Box>
   );
