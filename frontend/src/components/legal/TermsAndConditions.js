@@ -1,7 +1,9 @@
+// src/components/legal/TermsAndConditions.js
 import React from 'react';
-import { Box, Container, Typography, Divider } from '@mui/material';
+import { Box, Container, Typography, Divider, Link as MuiLink } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
 import { APP_TEXT } from '../../utils/appText';
-
 
 const Section = ({ title, children }) => (
   <Box sx={{ mb: 4 }}>
@@ -17,9 +19,41 @@ const Section = ({ title, children }) => (
 const TermsAndConditions = () => {
   const siteName = APP_TEXT.SITE_NAME;
   const lastUpdated = 'August 2026';
+  const navigate = useNavigate();
+
+  // Go back to whatever page the person was actually on. If this page was
+  // opened directly (e.g. a bookmarked/shared link with no real in-app
+  // history), navigate(-1) has nothing to go back to, so fall back to the
+  // landing page instead of leaving the person stuck.
+  const handleBack = () => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, sm: 6 } }}>
+      <MuiLink
+        component="button"
+        onClick={handleBack}
+        underline="hover"
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 0.5,
+          mb: 3,
+          color: 'text.secondary',
+          fontWeight: 600,
+          fontSize: 14,
+          '&:hover': { color: 'primary.main' },
+        }}
+      >
+        <ArrowBackIcon sx={{ fontSize: 18 }} />
+        Back
+      </MuiLink>
+
       <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
         Terms and Conditions
       </Typography>

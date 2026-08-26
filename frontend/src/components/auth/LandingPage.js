@@ -459,29 +459,6 @@ const LandingPage = () => {
              Register as Parent
             </Button>
           </Box>
-          <Box
-            sx={{
-              display: 'inline-block',
-              px: 2.5,
-              py: 1,
-              borderRadius: '50px',
-              background: 'rgba(255, 255, 255, 0.7)',
-              backdropFilter: 'blur(6px)',
-              border: '1px solid rgba(0, 0, 0, 0.08)',
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                color: theme.palette.text.secondary,
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                letterSpacing: '0.5px'
-              }}
-            >
-              2026 Thuto Educational Management Platform
-            </Typography>
-          </Box>
         </Box>
       </Container>
       

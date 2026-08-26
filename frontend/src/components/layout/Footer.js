@@ -1,31 +1,46 @@
 // src/components/layout/Footer.js
 import React from 'react';
-import { Box, Typography, Link } from '@mui/material';
-import { APP_TEXT } from '../../utils/appText';
+import { Box, Typography, Link, Stack, Divider } from '@mui/material';
+
+const FOOTER_LINKS = [
+  { label: 'Terms and Conditions', href: '/terms' },
+  { label: 'Privacy Policy', href: '/Thuto%20App%20Privacy%20Policy.pdf', external: true },
+  { label: 'PAIA Manual', href: '/PAIA-Manual.pdf', external: true },
+];
 
 const Footer = () => {
   return (
-    <Box sx={{ mt: 5, pt: 3, pb: 2, textAlign: 'center' }}>
-      <Typography variant="body2" color="text.secondary">
-        {'© '}
-        {new Date().getFullYear()}{' '}
-        <Link color="inherit" href="#">
-          {APP_TEXT.SITE_NAME}
-        </Link>
-        {' | All rights reserved.'}
-        {' | '}
-        <Link color="inherit" href="/terms">
-          Terms and Conditions
-        </Link>
-        {' | '}
-        <Link color="inherit" href="/Thuto%20App%20Privacy%20Policy.pdf" target="_blank" rel="noopener noreferrer">
-          Privacy Policy
-        </Link>
-        {' | '}
-        <Link color="inherit" href="/PAIA-Manual.pdf" target="_blank" rel="noopener noreferrer">
-          PAIA Manual
-        </Link>
-      </Typography>
+    <Box sx={{ mt: 5, pt: 3, pb: 3 }}>
+      <Divider sx={{ mb: 2.5 }} />
+      <Stack spacing={1} alignItems="center">
+        <Typography variant="body2" color="text.secondary">
+          {`© ${new Date().getFullYear()} Thuto Educational Management Platform | All rights reserved.`}
+        </Typography>
+        <Stack
+          direction="row"
+          spacing={{ xs: 1.5, sm: 3 }}
+          divider={<Box component="span" sx={{ color: 'text.disabled' }}>•</Box>}
+          flexWrap="wrap"
+          justifyContent="center"
+        >
+          {FOOTER_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              underline="hover"
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </Stack>
+      </Stack>
     </Box>
   );
 };
