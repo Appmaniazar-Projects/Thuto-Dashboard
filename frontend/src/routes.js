@@ -93,7 +93,6 @@ export const publicRoutes = [
   { path: '/register', element: <QuickParentRegistration /> }, 
   { path: '/terms', element: <TermsAndConditions /> },
   { path: '/terms-and-conditions', element: <TermsAndConditions /> },
-  { path: '/privacy-policy', element: <PrivacyPolicy /> },
   { path: '*', element: <NotFoundPage /> }
 ];
 
