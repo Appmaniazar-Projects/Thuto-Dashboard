@@ -660,6 +660,10 @@ const Users = () => {
         // Define headers based on the table
         const headers = ['Name', 'Last Name', 'Email', 'Phone Number', 'Role'];
         const isTeachersTable = title === 'Teachers';
+        const includesStudents = title === 'Students' || title === 'All Users';
+        if (includesStudents) {
+            headers.push('Username');
+        }
         if (isTeachersTable) {
             headers.push('Subjects', 'Grade');
         }
@@ -672,6 +676,11 @@ const Users = () => {
                 'Phone Number': user.phoneNumber,
                 'Role': user.role,
             };
+            if (includesStudents) {
+                row['Username'] = (user.role || '').toString().toLowerCase() === 'student'
+                    ? (user.username || 'Not set')
+                    : '';
+            }
             if (isTeachersTable) {
                 row['Subjects'] = user.subjects?.join(', ') || 'Not assigned';
                 row['Grade'] = user.grade || 'Not assigned';
@@ -984,6 +993,7 @@ const Users = () => {
                                 <TableCell>Email</TableCell>
                                 <TableCell>Phone Number</TableCell>
                                 <TableCell>Role</TableCell>
+                                {(title === 'Students' || title === 'All Users') && <TableCell>Username</TableCell>}
                                 {title === 'Teachers' && <TableCell>Subjects</TableCell>}
                                 {title === 'Teachers' && <TableCell>Grade</TableCell>}
                                 {title === 'Students' && <TableCell>Grade</TableCell>}
@@ -993,7 +1003,15 @@ const Users = () => {
                         <TableBody>
                             {safeUserData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center">
+                                    <TableCell
+                                        colSpan={
+                                            5 + 1 // base columns + Actions
+                                            + ((title === 'Students' || title === 'All Users') ? 1 : 0) // Username
+                                            + (title === 'Teachers' ? 2 : 0) // Subjects + Grade
+                                            + (title === 'Students' ? 1 : 0) // Grade
+                                        }
+                                        align="center"
+                                    >
                                         <Typography color="text.secondary">
                                             No {title.toLowerCase()} found
                                         </Typography>
@@ -1043,6 +1061,13 @@ const Users = () => {
                                                     size="small"
                                                 />
                                             </TableCell>
+                                            {(title === 'Students' || title === 'All Users') && (
+                                                <TableCell>
+                                                    {(user.role || '').toString().toLowerCase() === 'student'
+                                                        ? (user.username || 'Not set')
+                                                        : '—'}
+                                                </TableCell>
+                                            )}
                                             {title === 'Teachers' && (
                                                 <TableCell>
                                                     {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
