@@ -270,6 +270,8 @@ export const createUser = async (userData) => {
 
     if (roleUpper === 'STUDENT') {
       roleSpecificPayload.username = userData.username?.trim() || '';
+      // Students authenticate with username/password now instead of OTP.
+      if (userData.password) roleSpecificPayload.password = userData.password;
       roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
 
       const parentName = normalizeNullableString(userData.parentName);
@@ -284,6 +286,9 @@ export const createUser = async (userData) => {
     }
 
     if (roleUpper === 'TEACHER') {
+      // Teachers authenticate with username/password now instead of OTP.
+      roleSpecificPayload.username = userData.username?.trim() || '';
+      if (userData.password) roleSpecificPayload.password = userData.password;
       roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
       roleSpecificPayload.subjects = normalizeNumberArray(userData.subjects);
       // Not yet consumed by the backend - included so it's ready once per-subject
@@ -338,8 +343,11 @@ export const updateUser = async (userId, userData) => {
       role: userData.role?.toUpperCase() || 'STUDENT' // Backend might expect uppercase
     };
 
-    // Include optional fields when provided (e.g. student username and parent info)
+    // Include optional fields when provided (e.g. student/teacher username and parent info)
     if (userData.username) essentialFields.username = userData.username;
+    // Only sent when the admin actually typed a new one - leaving it blank
+    // means "keep the existing password".
+    if (userData.password) essentialFields.password = userData.password;
     if (userData.parentName) essentialFields.parentName = userData.parentName;
     if (userData.parentLastName) essentialFields.parentLastName = userData.parentLastName;
     if (userData.parentPhoneNumber) essentialFields.parentPhoneNumber = userData.parentPhoneNumber;

@@ -23,6 +23,7 @@ import {
   MenuItem,
   Chip,
   IconButton,
+  InputAdornment,
   Tabs,
   Tab,
   Grid,
@@ -48,8 +49,10 @@ import {
   SupervisorAccount as AdminIcon,
   School as TeacherIcon,
   Note as NoteIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import studentService from '../../services/studentService';
@@ -95,6 +98,7 @@ const Users = () => {
         name: '',
         lastName: '',
         username: '',
+        password: '',
         email: '',
         phoneNumber: '',
         role: '',
@@ -109,6 +113,7 @@ const Users = () => {
         parentPhoneNumber: '',
         parentEmail: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
 
     const roles = [
         { value: 'student', label: 'Student' },
@@ -171,20 +176,19 @@ const Users = () => {
     }, []);
 
     useEffect(() => {
-    if (userForm.role !== 'parent') return;
-    const query = (studentSearchInput || '').trim().toLowerCase();
-    if (!query) {
-        setStudentSearchOptions([]);
+        if (userForm.role !== 'parent') return;
+        const query = (studentSearchInput || '').trim().toLowerCase();
+        if (!query) {
+            setStudentSearchOptions([]);
+            setStudentSearchLoading(false);
+            return;
+        }
+        const matches = (students || []).filter((s) =>
+            (s.username || '').toLowerCase().includes(query)
+        );
+        setStudentSearchOptions(matches);
         setStudentSearchLoading(false);
-        return;
-    }
-    const matches = (students || []).filter(s =>
-        (s.username || '').toLowerCase().includes(query) ||
-        `${s.name || ''} ${s.lastName || ''}`.toLowerCase().includes(query)
-    );
-    setStudentSearchOptions(matches);
-    setStudentSearchLoading(false);
-}, [studentSearchInput, userForm.role, students]);
+    }, [studentSearchInput, userForm.role, students]);
 
     const loadGrades = async () => {
         try {
@@ -357,6 +361,13 @@ const Users = () => {
                 errors.username = true;
             }
 
+            // Students log in with username/password now (no more OTP), so a new
+            // student needs a password set. Leave it optional on edit so the admin
+            // isn't forced to reset it just to change another field.
+            if (!editingUser && !userForm.password.trim()) {
+                errors.password = true;
+            }
+
             // Student must have a grade selected
             if (!userForm.grade) {
                 errors.grade = true;
@@ -392,6 +403,15 @@ const Users = () => {
         }
 
         if (userForm.role === 'teacher') {
+            // Teachers now log in with username/password (created here by the
+            // admin) instead of OTP, same as students.
+            if (!userForm.username.trim()) {
+                errors.username = true;
+            }
+            if (!editingUser && !userForm.password.trim()) {
+                errors.password = true;
+            }
+
             // The teacher's own register/homeroom class - a single grade, separate
             // from the grades they teach each subject in.
             if (!userForm.grade) {
@@ -571,6 +591,9 @@ const Users = () => {
                 name: user.name || '',
                 lastName: user.lastName || '',
                 username: safeUsername,
+                // Never prefill a password - the admin only sets a new one if they
+                // want to change it.
+                password: '',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
                 role: normalizeRole(user.role) || '',
@@ -613,6 +636,7 @@ const Users = () => {
         setStudentSearchOptions([]);
         setFormErrors({});
         setError('');
+        setShowPassword(false);
         setDialogOpen(true);
     };
 
@@ -621,6 +645,7 @@ const Users = () => {
             name: '',
             lastName: '',
             username: '',
+            password: '',
             email: '',
             phoneNumber: '',
             role: '',
@@ -1287,6 +1312,61 @@ const Users = () => {
                         ))}
                     </TextField>
 
+                    {(userForm.role === 'student' || userForm.role === 'teacher') && (
+                        <>
+                            <TextField
+                                margin="dense"
+                                label="Username"
+                                fullWidth
+                                variant="outlined"
+                                value={userForm.username}
+                                onChange={(e) => {
+                                    setUserForm({ ...userForm, username: e.target.value });
+                                    setFormErrors((prev) => ({ ...prev, username: false }));
+                                }}
+                                error={formErrors.username}
+                                helperText={
+                                    formErrors.username
+                                        ? `Username is required for ${userForm.role === 'teacher' ? 'teachers' : 'students'}`
+                                        : `Used to log in - the ${userForm.role} will use this instead of OTP`
+                                }
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                margin="dense"
+                                label={editingUser ? 'New Password (leave blank to keep current)' : 'Password'}
+                                type={showPassword ? 'text' : 'password'}
+                                fullWidth
+                                variant="outlined"
+                                value={userForm.password}
+                                onChange={(e) => {
+                                    setUserForm({ ...userForm, password: e.target.value });
+                                    setFormErrors((prev) => ({ ...prev, password: false }));
+                                }}
+                                error={formErrors.password}
+                                helperText={
+                                    formErrors.password
+                                        ? 'Password is required'
+                                        : (editingUser ? 'Leave blank to keep the existing password' : `Sets the initial login password for this ${userForm.role}`)
+                                }
+                                InputProps={{
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label="toggle password visibility"
+                                                onClick={() => setShowPassword((prev) => !prev)}
+                                                edge="end"
+                                            >
+                                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                sx={{ mb: 2 }}
+                            />
+                        </>
+                    )}
+
                     {userForm.role === 'parent' && (
                         <Autocomplete
                             multiple
@@ -1324,7 +1404,7 @@ const Users = () => {
                                     label="Link Student(s)"
                                     placeholder="Search by username"
                                     variant="outlined"
-                                    helperText="Type the student's exact username, select to link, then type another username to add more"
+                                    helperText="Type part of the student's username, select to link, then type another username to add more"
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
@@ -1550,18 +1630,6 @@ const Users = () => {
 
                     {userForm.role === 'student' && (
                         <>
-                            <TextField
-                            margin="dense"
-                            label="Username"
-                            fullWidth
-                            variant="outlined"
-                            value={userForm.username}
-                            onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                            error={formErrors.username}
-                            helperText={formErrors.username ? 'Username is required for students' : ''}
-                            sx={{ mb: 2 }}
-                            />
-
                             <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, mb: 2 }}>
                                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                     Find Existing Parent/Guardian
@@ -1705,7 +1773,6 @@ const Users = () => {
                         )}
                     
                     
-                    {/* Password removed - users authenticate with OTP */}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
