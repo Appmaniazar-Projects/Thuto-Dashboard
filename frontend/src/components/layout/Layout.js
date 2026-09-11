@@ -39,30 +39,34 @@ const Layout = () => {
       />
 
       <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          backgroundColor: theme.palette.background.default,
-          transition: theme.transitions.create(['margin', 'width'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          marginLeft: 0, // Remove dynamic margin to fix white space issue
-          width: '100%',
-          paddingTop: '64px',
-        }}
-      >
-        <Container 
-          maxWidth={false} 
-          sx={{ 
-            py: isTablet ? 2 : 4, // Reduce padding on tablet
-            px: isTablet ? 2 : 4   // Reduce padding on tablet
+          component="main"
+          sx={{
+            flexGrow: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh',
+            backgroundColor: theme.palette.background.default,
+            transition: theme.transitions.create(['margin', 'width'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+            marginLeft: 0,
+            width: '100%',
+            paddingTop: '64px',
           }}
         >
-          <Outlet />
-        </Container>
-        <Footer />
-      </Box>
+          <Container 
+            maxWidth={false} 
+            sx={{ 
+              flexGrow: 1,
+              py: isTablet ? 2 : 4,
+              px: isTablet ? 2 : 4
+            }}
+          >
+            <Outlet />
+          </Container>
+          <Footer />
+        </Box>
     </Box>
   );
 };

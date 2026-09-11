@@ -171,24 +171,20 @@ const Users = () => {
     }, []);
 
     useEffect(() => {
-        if (userForm.role !== 'parent') return;
-        const query = (studentSearchInput || '').trim();
-        if (!query) {
-            setStudentSearchOptions([]);
-            setStudentSearchLoading(false);
-            return;
-        }
-
-        setStudentSearchLoading(true);
-        const timer = setTimeout(() => {
-            searchStudents(query)
-                .then((results) => setStudentSearchOptions(Array.isArray(results) ? results : []))
-                .catch(() => setStudentSearchOptions([]))
-                .finally(() => setStudentSearchLoading(false));
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [studentSearchInput, userForm.role]);
+    if (userForm.role !== 'parent') return;
+    const query = (studentSearchInput || '').trim().toLowerCase();
+    if (!query) {
+        setStudentSearchOptions([]);
+        setStudentSearchLoading(false);
+        return;
+    }
+    const matches = (students || []).filter(s =>
+        (s.username || '').toLowerCase().includes(query) ||
+        `${s.name || ''} ${s.lastName || ''}`.toLowerCase().includes(query)
+    );
+    setStudentSearchOptions(matches);
+    setStudentSearchLoading(false);
+}, [studentSearchInput, userForm.role, students]);
 
     const loadGrades = async () => {
         try {
