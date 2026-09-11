@@ -49,7 +49,7 @@ import {
   School as TeacherIcon,
   Note as NoteIcon,
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, searchStudents, checkParentPhoneExists } from '../../services/adminService';
+import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, checkParentPhoneExists } from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import studentService from '../../services/studentService';
@@ -171,20 +171,19 @@ const Users = () => {
     }, []);
 
     useEffect(() => {
-    if (userForm.role !== 'parent') return;
-    const query = (studentSearchInput || '').trim().toLowerCase();
-    if (!query) {
-        setStudentSearchOptions([]);
+        if (userForm.role !== 'parent') return;
+        const query = (studentSearchInput || '').trim().toLowerCase();
+        if (!query) {
+            setStudentSearchOptions([]);
+            setStudentSearchLoading(false);
+            return;
+        }
+        const matches = (students || []).filter((s) =>
+            (s.username || '').toLowerCase().includes(query)
+        );
+        setStudentSearchOptions(matches);
         setStudentSearchLoading(false);
-        return;
-    }
-    const matches = (students || []).filter(s =>
-        (s.username || '').toLowerCase().includes(query) ||
-        `${s.name || ''} ${s.lastName || ''}`.toLowerCase().includes(query)
-    );
-    setStudentSearchOptions(matches);
-    setStudentSearchLoading(false);
-}, [studentSearchInput, userForm.role, students]);
+    }, [studentSearchInput, userForm.role, students]);
 
     const loadGrades = async () => {
         try {
@@ -1324,7 +1323,7 @@ const Users = () => {
                                     label="Link Student(s)"
                                     placeholder="Search by username"
                                     variant="outlined"
-                                    helperText="Type the student's exact username, select to link, then type another username to add more"
+                                    helperText="Type part of the student's username, select to link, then type another username to add more"
                                     InputProps={{
                                         ...params.InputProps,
                                         endAdornment: (
