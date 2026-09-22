@@ -1,32 +1,28 @@
 import api from './api';
-import { auth } from './firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 /**
- * Handles OTP-based login for Teachers, Students, and Parents
- * @param {string} phoneNumber - User's phone number (digits only, no formatting)
+ * Handles username/password login for Teachers, Students, and Parents.
+ *
+ * Replaces the old Firebase-phone-OTP flow: students and teachers log in
+ * directly with credentials set by the admin (see Users.js), and parents
+ * log in with the credentials they set during their OTP activation flow.
+ * No Firebase token is involved here any more.
+ *
+ * @param {string} username
+ * @param {string} password
+ * @param {string} role - 'student' | 'parent' | 'teacher'
  * @returns {Promise<Object>} User data and auth token
  */
-const login = async (phoneNumber, role, username) => {
-  const firebaseUser = auth.currentUser;
-  if (!firebaseUser) throw new Error('No Firebase user found');
-  
-  const firebaseToken = await firebaseUser.getIdToken();
-  
-  // Backend expects firebaseToken (not idToken) and extracts phone from Firebase token
+const login = async (username, password, role) => {
   try {
     const requestData = {
-      phoneNumber: phoneNumber.replace(/\s+/g, ''),
-      firebaseToken,
-      //role,
+      username: (username || '').trim(),
+      password: password || '',
       role: (role ?? '').toString().toUpperCase(),
-      username: username || null,
     };
-    
-    
+
     const response = await api.post('/auth/login', requestData);
-    
-    
+
     if (response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       localStorage.setItem('token', response.data.token);
