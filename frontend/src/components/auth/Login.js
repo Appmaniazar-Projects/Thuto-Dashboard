@@ -125,7 +125,6 @@ const Login = () => {
             margin="normal"
             disabled={loading}
             autoComplete="username"
-            helperText={!usernameTouched ? 'Usually your email address' : ''}
           />
 
           <TextField

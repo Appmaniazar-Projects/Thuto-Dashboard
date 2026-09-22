@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 const Login = lazy(() => import('./components/auth/Login'));
 const AdminLogin = lazy(() => import('./components/auth/AdminLogin'));
 const LandingPage = lazy(() => import('./components/auth/LandingPage'));
+const ParentActivation = lazy(() => import('./components/auth/ParentActivation'));
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const EventsPage = lazy(() => import('./pages/EventsPage'));
@@ -83,6 +84,7 @@ export const publicRoutes = [
   { path: '/', element: <LandingPage /> },
   { path: '/landing', element: <LandingPage /> },
   { path: '/login', element: <Login /> },
+  { path: '/otp', element: <ParentActivation /> },
   { path: '/admin/login', element: <AdminLogin /> },
   { path: '/superadmin/login', element: <SuperAdminLogin /> },
   { path: '/superadmin/forgot-password', element: <ForgotPassword /> },
