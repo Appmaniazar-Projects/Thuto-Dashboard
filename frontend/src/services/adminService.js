@@ -2,11 +2,42 @@ import api from './api';
 import fileUploadService from './fileUploadService';
 
 /**
- * Fetches all users for the admin
- * @returns {Promise<Array>} Array of user objects
- * /admins/allRoleSpecificUsers/all'
+ * Builds the user list from the role endpoints. Used only when /admin/users
+ * itself is failing with a server error. If the admin role endpoint also
+ * fails, admins are simply left out.
  */
-export const getAllUsers = async () => {
+const fetchFromRoleEndpoints = async () => {
+  const results = await Promise.allSettled([
+    getUsersByRole('parent'),
+    getUsersByRole('teacher'),
+    getUsersByRole('student'),
+    getUsersByRole('admin'),
+  ]);
+
+  const lists = results
+    .filter((r) => r.status === 'fulfilled' && Array.isArray(r.value))
+    .map((r) => r.value);
+
+  // Every role endpoint failed too, so surface the real error
+  if (lists.length === 0) throw results[0].reason;
+
+  const byId = new Map();
+  lists.flat().forEach((u) => byId.set(u.id, u));
+  return Array.from(byId.values());
+};
+
+/**
+ * Fetches all users for the admin
+ * @param {Object} [options]
+ * @param {string} [options.role] - If given, returns only users with this role
+ * @returns {Promise<Array>} Array of user objects
+ */
+export const getAllUsers = async (options = {}) => {
+  // Lets callers like EventsPage ask for one role: getAllUsers({ role: 'teacher' })
+  if (options?.role) {
+    return getUsersByRole(options.role);
+  }
+
   const adminInfo = JSON.parse(localStorage.getItem('user') || '{}');
   const schoolId =
     localStorage.getItem('schoolId') ||
@@ -33,16 +64,23 @@ export const getAllUsers = async () => {
       return [];
     }
 
-    // Some backend implementations may reject the optional adminEmail query.
-    // Retry without adminEmail if the first request failed with a server error.
-    if (error.response?.status === 500 && params.adminEmail) {
-      try {
-        const fallbackParams = { ...params };
-        delete fallbackParams.adminEmail;
-        return await fetchUsers(fallbackParams);
-      } catch (retryError) {
-        throw retryError;
+    if (error.response?.status >= 500) {
+      // First retry without adminEmail, in case the backend rejects it
+      if (params.adminEmail) {
+        try {
+          const fallbackParams = { ...params };
+          delete fallbackParams.adminEmail;
+          return await fetchUsers(fallbackParams);
+        } catch (retryError) {
+          // fall through to the role-endpoint fallback
+        }
       }
+
+      // Nothing personal is logged here, only the status code
+      console.warn(
+        `GET /admin/users failed (${error.response.status}); building the list from the role endpoints instead.`
+      );
+      return await fetchFromRoleEndpoints();
     }
 
     throw error;
