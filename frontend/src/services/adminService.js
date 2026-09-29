@@ -309,6 +309,7 @@ export const createUser = async (userData) => {
     if (roleUpper === 'STUDENT') {
       roleSpecificPayload.username = userData.username?.trim() || '';
       roleSpecificPayload.grade = normalizeNumber(userData.grade) ?? userData.grade;
+      roleSpecificPayload.subjects = normalizeNumberArray(userData.subjects); 
 
       const parentName = normalizeNullableString(userData.parentName);
       const parentLastName = normalizeNullableString(userData.parentLastName);
