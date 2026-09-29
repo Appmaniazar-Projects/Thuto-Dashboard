@@ -54,6 +54,7 @@ import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import studentService from '../../services/studentService';
 import PageTitle from '../../components/common/PageTitle';
+import { describeError } from '../../utils/describeError';
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -65,6 +66,7 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState(0);
+    const [tabErrors, setTabErrors] = useState({ all: '', parents: '', teachers: '', students: '' });
     
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -213,32 +215,62 @@ const Users = () => {
     const fetchUsers = async () => {
     try {
         setLoading(true);
-        const [allUsersData, parentsData, teachersData, studentsData] = await Promise.all([
+        setError('');
+
+        const results = await Promise.allSettled([
             getAllUsers(),
             getUsersByRole('parent'),
             getUsersByRole('teacher'),
             getUsersByRole('student')
         ]);
 
-        // Approved + legacy (null status) parents are treated as approved
+        const [allRes, parentsRes, teachersRes, studentsRes] = results;
+        const listOrNull = (res) =>
+            res.status === 'fulfilled' && Array.isArray(res.value) ? res.value : null;
+
+        const allUsersData = listOrNull(allRes);
+        const parentsDataRaw = listOrNull(parentsRes);
+        const teachersData = listOrNull(teachersRes);
+        const studentsData = listOrNull(studentsRes);
+
         const isApprovedParent = (u) =>
-            u.status === 'approved' ||
-            u.status === 'active' ||
-            !u.status; // legacy records created before status existed
+            u.status === 'approved' || u.status === 'active' || !u.status;
 
-        const approvedParents = (parentsData || []).filter(isApprovedParent);
+        const approvedParents = parentsDataRaw ? parentsDataRaw.filter(isApprovedParent) : null;
 
-        const filteredAllUsers = (allUsersData || []).filter((u) => {
-            if ((u.role || '').toString().toLowerCase() !== 'parent') return true;
-            return isApprovedParent(u);
-        });
+        // "All Users" tab: prefer the real endpoint; otherwise build from
+        // whichever role lists succeeded (admins won't appear either way,
+        // since there is no admin fetch here).
+        let combinedUsers;
+        if (allUsersData) {
+            combinedUsers = allUsersData.filter((u) =>
+                (u.role || '').toString().toLowerCase() !== 'parent' || isApprovedParent(u)
+            );
+        } else {
+            const byId = new Map();
+            [...(approvedParents || []), ...(teachersData || []), ...(studentsData || [])]
+                .forEach((u) => byId.set(u.id, u));
+            combinedUsers = Array.from(byId.values());
+        }
 
-        setUsers(filteredAllUsers);
-        setParents(approvedParents);
+        setUsers(combinedUsers);
+        setParents(approvedParents || []);
         setTeachers(teachersData || []);
         setStudents(studentsData || []);
+
+        setTabErrors({
+            all: allUsersData ? '' : (allRes.status === 'rejected' ? describeError(allRes.reason, 'Could not load all users.') : ''),
+            parents: approvedParents !== null ? '' : describeError(parentsRes.reason, 'Could not load parents.'),
+            teachers: teachersData ? '' : describeError(teachersRes.reason, 'Could not load teachers.'),
+            students: studentsData ? '' : describeError(studentsRes.reason, 'Could not load students.'),
+        });
+
+        // Only block the whole page if literally everything failed
+        if (!allUsersData && approvedParents === null && !teachersData && !studentsData) {
+            setError('Failed to load users.');
+        }
     } catch (err) {
-        setError('Failed to load users.');
+        setError(describeError(err, 'Failed to load users.'));
     } finally {
         setLoading(false);
     }
@@ -909,195 +941,195 @@ const Users = () => {
         }
     };
 
-    const renderUserTable = (userData, title, canCreateRole = true) => {
-        // Safety check: ensure userData is always an array
-        const safeUserData = Array.isArray(userData) ? userData : [];
-        
-        return (
-        <Card>
-            <CardContent>
+ const renderUserTable = (userData, title, canCreateRole = true, tabError = '') => {
+    const safeUserData = Array.isArray(userData) ? userData : [];
+
+    return (
+    <Card>
+        <CardContent>
+            {tabError && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    {tabError}
+                </Alert>
+            )}
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 1,
+                    mb: 2
+                }}
+            >
+                <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{title}</Typography>
                 <Box
                     sx={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: { xs: 'flex-start', sm: 'center' },
-                        flexDirection: { xs: 'column', sm: 'row' },
+                        flexWrap: 'wrap',
                         gap: 1,
-                        mb: 2
+                        width: { xs: '100%', sm: 'auto' },
+                        justifyContent: { xs: 'flex-start', sm: 'flex-end' }
                     }}
                 >
-                    <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{title}</Typography>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 1,
-                            width: { xs: '100%', sm: 'auto' },
-                            justifyContent: { xs: 'flex-start', sm: 'flex-end' }
-                        }}
+                    {canCreateRole && (
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => {
+                                const roleMap = {
+                                    'All Users': 'student',
+                                    'Parents': 'parent',
+                                    'Students': 'student',
+                                    'Teachers': 'teacher'
+                                };
+                                const selectedRole = roleMap[title] || 'student';
+
+                                resetForm();
+                                setUserForm(prev => ({ ...prev, role: selectedRole }));
+                                setEditingUser(null);
+                                setFormErrors({});
+                                setError('');
+                                setDialogOpen(true);
+                            }}
+                            sx={{ flexGrow: 0 }}
+                        >
+                            Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
+                        </Button>
+                    )}
+                    <Button
+                        variant="outlined"
+                        startIcon={<UploadFileIcon />}
+                        onClick={() => setBulkUploadDialogOpen(true)}
                     >
-                        {canCreateRole && (
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => {
-                                    const roleMap = {
-                                        'All Users': 'student',
-                                        'Parents': 'parent',
-                                        'Students': 'student',
-                                        'Teachers': 'teacher'
-                                    };
-                                    const selectedRole = roleMap[title] || 'student';
-                                    
-                                    // Reset form and set the role
-                                    resetForm();
-                                    setUserForm(prev => ({ ...prev, role: selectedRole }));
-                                    setEditingUser(null);
-                                    setFormErrors({});
-                                    setError('');
-                                    setDialogOpen(true);
-                                }}
-                                sx={{ flexGrow: 0 }}
-                            >
-                                Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
-                            </Button>
-                        )}
-                        <Button
-                            variant="outlined"
-                            startIcon={<UploadFileIcon />}
-                            onClick={() => setBulkUploadDialogOpen(true)}
-                        >
-                            Bulk Upload
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            startIcon={<DownloadIcon />}
-                            onClick={() => handleExport(userData, title)}
-                        >
-                            Export CSV
-                        </Button>
-                    </Box>
+                        Bulk Upload
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        onClick={() => handleExport(userData, title)}
+                    >
+                        Export CSV
+                    </Button>
                 </Box>
-                
-                <TableContainer>
-                    <Table>
-                        <TableHead>
+            </Box>
+
+            <TableContainer>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>First Name</TableCell>
+                            <TableCell>Last Name</TableCell>
+                            <TableCell>Email</TableCell>
+                            <TableCell>Phone Number</TableCell>
+                            <TableCell>Role</TableCell>
+                            {(title === 'Students' || title === 'All Users') && <TableCell>Username</TableCell>}
+                            {title === 'Teachers' && <TableCell>Subjects</TableCell>}
+                            {title === 'Teachers' && <TableCell>Grade</TableCell>}
+                            {title === 'Students' && <TableCell>Grade</TableCell>}
+                            <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {safeUserData.length === 0 ? (
                             <TableRow>
-                                <TableCell>First Name</TableCell>
-                                <TableCell>Last Name</TableCell>
-                                <TableCell>Email</TableCell>
-                                <TableCell>Phone Number</TableCell>
-                                <TableCell>Role</TableCell>
-                                {(title === 'Students' || title === 'All Users') && <TableCell>Username</TableCell>}
-                                {title === 'Teachers' && <TableCell>Subjects</TableCell>}
-                                {title === 'Teachers' && <TableCell>Grade</TableCell>}
-                                {title === 'Students' && <TableCell>Grade</TableCell>}
-                                <TableCell align="right">Actions</TableCell>
+                                <TableCell
+                                    colSpan={
+                                        5 + 1
+                                        + ((title === 'Students' || title === 'All Users') ? 1 : 0)
+                                        + (title === 'Teachers' ? 2 : 0)
+                                        + (title === 'Students' ? 1 : 0)
+                                    }
+                                    align="center"
+                                >
+                                    <Typography color="text.secondary">
+                                        No {title.toLowerCase()} found
+                                    </Typography>
+                                </TableCell>
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {safeUserData.length === 0 ? (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={
-                                            5 + 1 // base columns + Actions
-                                            + ((title === 'Students' || title === 'All Users') ? 1 : 0) // Username
-                                            + (title === 'Teachers' ? 2 : 0) // Subjects + Grade
-                                            + (title === 'Students' ? 1 : 0) // Grade
-                                        }
-                                        align="center"
-                                    >
-                                        <Typography color="text.secondary">
-                                            No {title.toLowerCase()} found
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                safeUserData.map((user) => {
-                                    // For teachers: resolve subject and grade IDs to names
-                                    let subjectNames = [];
-                                    let gradeName = 'Not assigned';
-                                    
-                                    if (title === 'Teachers') {
-                                        // Convert subject IDs to names
-                                        if (Array.isArray(user.subjects) && user.subjects.length > 0) {
-                                            subjectNames = user.subjects
-                                                .map(subjectId => {
-                                                    const subject = subjects.find(s => String(s.id) === String(subjectId));
-                                                    return subject ? subject.name : null;
-                                                })
-                                                .filter(Boolean); // Remove null values
-                                        }
-                                        
-                                        // Convert grade ID to name
-                                        if (user.grade) {
-                                            const grade = grades.find(g => String(g.id) === String(user.grade));
-                                            gradeName = grade ? grade.name : 'Not assigned';
-                                        }
+                        ) : (
+                            safeUserData.map((user) => {
+                                let subjectNames = [];
+                                let gradeName = 'Not assigned';
+
+                                if (title === 'Teachers') {
+                                    if (Array.isArray(user.subjects) && user.subjects.length > 0) {
+                                        subjectNames = user.subjects
+                                            .map(subjectId => {
+                                                const subject = subjects.find(s => String(s.id) === String(subjectId));
+                                                return subject ? subject.name : null;
+                                            })
+                                            .filter(Boolean);
                                     }
-                                    
-                                    // For students: resolve grade ID to name
-                                    let studentGradeName = 'Not assigned';
-                                    if (title === 'Students' && user.grade) {
+
+                                    if (user.grade) {
                                         const grade = grades.find(g => String(g.id) === String(user.grade));
-                                        studentGradeName = grade ? grade.name : 'Not assigned';
+                                        gradeName = grade ? grade.name : 'Not assigned';
                                     }
-                                    
-                                    return (
-                                        <TableRow key={user.id}>
-                                            <TableCell>{user.name}</TableCell>
-                                            <TableCell>{user.lastName || 'N/A'}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
-                                            <TableCell>{user.phoneNumber}</TableCell>
+                                }
+
+                                let studentGradeName = 'Not assigned';
+                                if (title === 'Students' && user.grade) {
+                                    const grade = grades.find(g => String(g.id) === String(user.grade));
+                                    studentGradeName = grade ? grade.name : 'Not assigned';
+                                }
+
+                                return (
+                                    <TableRow key={user.id}>
+                                        <TableCell>{user.name}</TableCell>
+                                        <TableCell>{user.lastName || 'N/A'}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>{user.phoneNumber}</TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={user.role}
+                                                color={getRoleColor(user.role)}
+                                                size="small"
+                                            />
+                                        </TableCell>
+                                        {(title === 'Students' || title === 'All Users') && (
                                             <TableCell>
-                                                <Chip 
-                                                    label={user.role} 
-                                                    color={getRoleColor(user.role)}
-                                                    size="small"
-                                                />
+                                                {(user.role || '').toString().toLowerCase() === 'student'
+                                                    ? (user.username || 'Not set')
+                                                    : '—'}
                                             </TableCell>
-                                            {(title === 'Students' || title === 'All Users') && (
-                                                <TableCell>
-                                                    {(user.role || '').toString().toLowerCase() === 'student'
-                                                        ? (user.username || 'Not set')
-                                                        : '—'}
-                                                </TableCell>
-                                            )}
-                                            {title === 'Teachers' && (
-                                                <TableCell>
-                                                    {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
-                                                </TableCell>
-                                            )}
-                                            {title === 'Teachers' && (
-                                                <TableCell>{gradeName}</TableCell>
-                                            )}
+                                        )}
+                                        {title === 'Teachers' && (
+                                            <TableCell>
+                                                {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
+                                            </TableCell>
+                                        )}
+                                        {title === 'Teachers' && (
+                                            <TableCell>{gradeName}</TableCell>
+                                        )}
+                                        {title === 'Students' && (
+                                            <TableCell>{studentGradeName}</TableCell>
+                                        )}
+                                        <TableCell align="right">
                                             {title === 'Students' && (
-                                                <TableCell>{studentGradeName}</TableCell>
+                                                <IconButton onClick={() => handleExportStudentNotes(user)} title="Export Notes">
+                                                    <NoteIcon />
+                                                </IconButton>
                                             )}
-                                            <TableCell align="right">
-                                                {title === 'Students' && (
-                                                    <IconButton onClick={() => handleExportStudentNotes(user)} title="Export Notes">
-                                                        <NoteIcon />
-                                                    </IconButton>
-                                                )}
-                                                <IconButton onClick={() => openDialog(user)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                                <IconButton onClick={() => handleDelete(user.id)} color="error">
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </CardContent>
-        </Card>
-        );
-    };
+                                            <IconButton onClick={() => openDialog(user)}>
+                                                <EditIcon />
+                                            </IconButton>
+                                            <IconButton onClick={() => handleDelete(user.id)} color="error">
+                                                <DeleteIcon />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })
+                        )}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </CardContent>
+    </Card>
+    );
+};
 
     if (loading) return <CircularProgress />;
 
@@ -1190,10 +1222,10 @@ const Users = () => {
             </Box>
 
             {/* Tab Panels */}
-            {activeTab === 0 && renderUserTable(users, 'All Users')}
-            {activeTab === 1 && renderUserTable(parents, 'Parents')}
-            {activeTab === 2 && renderUserTable(teachers, 'Teachers')}
-            {activeTab === 3 && renderUserTable(students, 'Students')}
+            {activeTab === 0 && renderUserTable(users, 'All Users', true, tabErrors.all)}
+            {activeTab === 1 && renderUserTable(parents, 'Parents', true, tabErrors.parents)}
+            {activeTab === 2 && renderUserTable(teachers, 'Teachers', true, tabErrors.teachers)}
+            {activeTab === 3 && renderUserTable(students, 'Students', true, tabErrors.students)}
 
             {/* User Dialog */}
             <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
