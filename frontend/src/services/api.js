@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance - configured to use Railway backend
 const api = axios.create({
   // Use Railway backend URL
-  baseURL: `${process.env.REACT_APP_API_URL || 'https://soothing-magic-development.up.railway.app/'}/api`,
+  baseURL: `${process.env.REACT_APP_API_URL || 'https://soothing-magic-development.up.railway.app'}/api`,
   timeout: 170000, 
   headers: {
     "Content-Type": "application/json",
