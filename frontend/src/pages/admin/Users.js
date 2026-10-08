@@ -52,7 +52,15 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
-import { getAllUsers, createUser, updateUser, deleteUser, getUsersByRole, checkParentPhoneExists } from '../../services/adminService';
+import {
+    getAllUsers,
+    createUser,
+    updateUser,
+    deleteUser,
+    getUsersByRole,
+    checkParentPhoneExists,
+    uploadBulkData,
+} from '../../services/adminService';
 import gradeService from '../../services/gradeService';
 import subjectService from '../../services/subjectService';
 import studentService from '../../services/studentService';
@@ -70,7 +78,7 @@ const Users = () => {
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState(0);
     const [tabErrors, setTabErrors] = useState({ all: '', parents: '', teachers: '', students: '' });
-    
+
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
@@ -94,7 +102,7 @@ const Users = () => {
     const [studentSearchInput, setStudentSearchInput] = useState('');
     const [studentSearchOptions, setStudentSearchOptions] = useState([]);
     const [studentSearchLoading, setStudentSearchLoading] = useState(false);
-    
+
     // Form state
     const [userForm, setUserForm] = useState({
         name: '',
@@ -124,7 +132,10 @@ const Users = () => {
     ];
 
     const addNewParent = () => {
-        setNewParents((prev) => [...prev, { name: '', lastName: '', email: '', phoneNumber: '' }]);
+        setNewParents((prev) => [
+            ...prev,
+            { name: '', lastName: '', email: '', phoneNumber: '', username: '', password: '', isExisting: false },
+        ]);
     };
 
     const removeNewParent = (indexToRemove) => {
@@ -157,6 +168,9 @@ const Users = () => {
                     lastName: found?.lastName || '',
                     email: found?.email || '',
                     phoneNumber: found?.phoneNumber || parentLookupPhone || '',
+                    username: found?.username || '',
+                    password: '',
+                    isExisting: true,
                 },
             ]);
             setFormErrors((prev) => ({ ...prev, parentPhoneNumber: false }));
@@ -218,68 +232,68 @@ const Users = () => {
     };
 
     const fetchUsers = async () => {
-    try {
-        setLoading(true);
-        setError('');
+        try {
+            setLoading(true);
+            setError('');
 
-        const results = await Promise.allSettled([
-            getAllUsers(),
-            getUsersByRole('parent'),
-            getUsersByRole('teacher'),
-            getUsersByRole('student')
-        ]);
+            const results = await Promise.allSettled([
+                getAllUsers(),
+                getUsersByRole('parent'),
+                getUsersByRole('teacher'),
+                getUsersByRole('student')
+            ]);
 
-        const [allRes, parentsRes, teachersRes, studentsRes] = results;
-        const listOrNull = (res) =>
-            res.status === 'fulfilled' && Array.isArray(res.value) ? res.value : null;
+            const [allRes, parentsRes, teachersRes, studentsRes] = results;
+            const listOrNull = (res) =>
+                res.status === 'fulfilled' && Array.isArray(res.value) ? res.value : null;
 
-        const allUsersData = listOrNull(allRes);
-        const parentsDataRaw = listOrNull(parentsRes);
-        const teachersData = listOrNull(teachersRes);
-        const studentsData = listOrNull(studentsRes);
+            const allUsersData = listOrNull(allRes);
+            const parentsDataRaw = listOrNull(parentsRes);
+            const teachersData = listOrNull(teachersRes);
+            const studentsData = listOrNull(studentsRes);
 
-        const isApprovedParent = (u) =>
-            u.status === 'approved' || u.status === 'active' || !u.status;
+            const isApprovedParent = (u) =>
+                u.status === 'approved' || u.status === 'active' || !u.status;
 
-        const approvedParents = parentsDataRaw ? parentsDataRaw.filter(isApprovedParent) : null;
+            const approvedParents = parentsDataRaw ? parentsDataRaw.filter(isApprovedParent) : null;
 
-        // "All Users" tab: prefer the real endpoint; otherwise build from
-        // whichever role lists succeeded (admins won't appear either way,
-        // since there is no admin fetch here).
-        let combinedUsers;
-        if (allUsersData) {
-            combinedUsers = allUsersData.filter((u) =>
-                (u.role || '').toString().toLowerCase() !== 'parent' || isApprovedParent(u)
-            );
-        } else {
-            const byId = new Map();
-            [...(approvedParents || []), ...(teachersData || []), ...(studentsData || [])]
-                .forEach((u) => byId.set(u.id, u));
-            combinedUsers = Array.from(byId.values());
+            // "All Users" tab: prefer the real endpoint; otherwise build from
+            // whichever role lists succeeded (admins won't appear either way,
+            // since there is no admin fetch here).
+            let combinedUsers;
+            if (allUsersData) {
+                combinedUsers = allUsersData.filter((u) =>
+                    (u.role || '').toString().toLowerCase() !== 'parent' || isApprovedParent(u)
+                );
+            } else {
+                const byId = new Map();
+                [...(approvedParents || []), ...(teachersData || []), ...(studentsData || [])]
+                    .forEach((u) => byId.set(u.id, u));
+                combinedUsers = Array.from(byId.values());
+            }
+
+            setUsers(combinedUsers);
+            setParents(approvedParents || []);
+            setTeachers(teachersData || []);
+            setStudents(studentsData || []);
+
+            setTabErrors({
+                all: allUsersData ? '' : (allRes.status === 'rejected' ? describeError(allRes.reason, 'Could not load all users.') : ''),
+                parents: approvedParents !== null ? '' : describeError(parentsRes.reason, 'Could not load parents.'),
+                teachers: teachersData ? '' : describeError(teachersRes.reason, 'Could not load teachers.'),
+                students: studentsData ? '' : describeError(studentsRes.reason, 'Could not load students.'),
+            });
+
+            // Only block the whole page if literally everything failed
+            if (!allUsersData && approvedParents === null && !teachersData && !studentsData) {
+                setError('Failed to load users.');
+            }
+        } catch (err) {
+            setError(describeError(err, 'Failed to load users.'));
+        } finally {
+            setLoading(false);
         }
-
-        setUsers(combinedUsers);
-        setParents(approvedParents || []);
-        setTeachers(teachersData || []);
-        setStudents(studentsData || []);
-
-        setTabErrors({
-            all: allUsersData ? '' : (allRes.status === 'rejected' ? describeError(allRes.reason, 'Could not load all users.') : ''),
-            parents: approvedParents !== null ? '' : describeError(parentsRes.reason, 'Could not load parents.'),
-            teachers: teachersData ? '' : describeError(teachersRes.reason, 'Could not load teachers.'),
-            students: studentsData ? '' : describeError(studentsRes.reason, 'Could not load students.'),
-        });
-
-        // Only block the whole page if literally everything failed
-        if (!allUsersData && approvedParents === null && !teachersData && !studentsData) {
-            setError('Failed to load users.');
-        }
-    } catch (err) {
-        setError(describeError(err, 'Failed to load users.'));
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     // Normalize role to lowercase before submission
     const normalizeRole = (role) => {
@@ -349,14 +363,14 @@ const Users = () => {
         // Reset previous errors
         setFormErrors({});
         setError('');
-        
+
         // Validation
         const errors = {};
-        
+
         if (!userForm.name.trim()) {
             errors.name = true;
         }
-        
+
         if (!userForm.email.trim()) {
             errors.email = true;
         } else {
@@ -366,7 +380,6 @@ const Users = () => {
                 errors.email = true;
             }
         }
-        
 
         if (userForm.role !== 'student') {
             // For parent/teacher, keep phone required
@@ -432,6 +445,17 @@ const Users = () => {
                     errors.parentEmail = true;
                 }
             }
+
+            // A brand new parent/guardian created from the student form needs
+            // login credentials. Existing parents keep their current ones.
+            if (primaryNewParent && !primaryNewParent.isExisting) {
+                if (!(primaryNewParent.username || '').trim()) {
+                    errors.parentUsername = true;
+                }
+                if (!(primaryNewParent.password || '').trim()) {
+                    errors.parentPassword = true;
+                }
+            }
         }
 
         if (userForm.role === 'teacher') {
@@ -462,20 +486,27 @@ const Users = () => {
             }
         }
 
+        if (userForm.role === 'parent') {
+            // Parents created by an admin log in with username/password.
+            if (!userForm.username.trim()) {
+                errors.username = true;
+            }
+            if (!editingUser && !userForm.password.trim()) {
+                errors.password = true;
+            }
+        }
 
-
-        
         if (!userForm.role) {
             errors.role = true;
         }
-        
+
         // If there are errors, set them and return
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
             setError('Please fix the errors above');
             return;
         }
-        
+
         // Normalize form data before submission
         const primaryNewParent = newParents.find((p) => p.phoneNumber?.trim()) || null;
 
@@ -515,7 +546,23 @@ const Users = () => {
             parentPhoneNumber: shouldOverrideParentFields
                 ? (primaryNewParent?.phoneNumber || '')
                 : (hasLookupParentPhone ? lookupParentPhoneRaw : (userForm.parentPhoneNumber || '')),
+            // Credentials are only sent for a brand new parent/guardian. Existing
+            // parents (found by phone) keep whatever they already have.
+            parentUsername:
+                shouldOverrideParentFields && !primaryNewParent?.isExisting
+                    ? (primaryNewParent?.username || '').trim()
+                    : '',
+            parentPassword:
+                shouldOverrideParentFields && !primaryNewParent?.isExisting
+                    ? (primaryNewParent?.password || '')
+                    : '',
         };
+
+        // When editing, a blank password means "keep the current one", so don't
+        // send an empty value that the backend might try to hash.
+        if (editingUser && !(formData.password || '').trim()) {
+            delete formData.password;
+        }
 
         if ((formData.role || '').toString().toLowerCase() === 'parent') {
             const studentDTOS = (selectedStudents || [])
@@ -524,6 +571,11 @@ const Users = () => {
 
             if (studentDTOS.length > 0) {
                 formData.studentDTOS = studentDTOS;
+            }
+
+            // Admin-created parents skip the approval queue
+            if (!editingUser) {
+                formData.status = 'approved';
             }
         }
 
@@ -582,7 +634,7 @@ const Users = () => {
         try {
             // Get student's notes from the backend
             const notes = await studentService.getStudentNotes(student.id);
-            
+
             // Create CSV content
             const csvContent = [
                 ['Student Name', 'Date', 'Note', 'Teacher', 'Subject'],
@@ -597,11 +649,11 @@ const Users = () => {
 
             // Convert to CSV string
             const csvString = Papa.unparse(csvContent);
-            
+
             // Create blob and download
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             saveAs(blob, `student_notes_${student.name}_${student.lastName || ''}_${new Date().toISOString().split('T')[0]}.csv`);
-            
+
         } catch (error) {
             setError('Failed to export student notes. Please try again.');
         }
@@ -614,8 +666,13 @@ const Users = () => {
             const roleLower = (normalizeRole(user.role) || '').toString().toLowerCase();
             const normalizedUsername = normalizePhone(user.username);
             const normalizedPhone = normalizePhone(user.phoneNumber);
+            // Older OTP accounts used the phone number as the username. Don't
+            // prefill that, so the admin picks a proper username.
             const safeUsername =
-                roleLower === 'student' && normalizedUsername && normalizedPhone && normalizedUsername === normalizedPhone
+                (roleLower === 'student' || roleLower === 'parent') &&
+                normalizedUsername &&
+                normalizedPhone &&
+                normalizedUsername === normalizedPhone
                     ? ''
                     : (user.username || '');
 
@@ -713,8 +770,8 @@ const Users = () => {
         // Define headers based on the table
         const headers = ['Name', 'Last Name', 'Email', 'Phone Number', 'Role'];
         const isTeachersTable = title === 'Teachers';
-        const includesStudents = title === 'Students' || title === 'All Users';
-        if (includesStudents) {
+        const includesUsername = title === 'Students' || title === 'Parents' || title === 'All Users';
+        if (includesUsername) {
             headers.push('Username');
         }
         if (isTeachersTable) {
@@ -729,8 +786,8 @@ const Users = () => {
                 'Phone Number': user.phoneNumber,
                 'Role': user.role,
             };
-            if (includesStudents) {
-                row['Username'] = (user.role || '').toString().toLowerCase() === 'student'
+            if (includesUsername) {
+                row['Username'] = ['student', 'parent'].includes((user.role || '').toString().toLowerCase())
                     ? (user.username || 'Not set')
                     : '';
             }
@@ -754,13 +811,14 @@ const Users = () => {
             'email',
             'phoneNumber',
             'role',
+            'username',
+            'password',
             'schoolId',
             'parentRole',
             'relationshipToStudent',
             'studentNames',
             'grade',
-            'subjects',
-            'password'
+            'subjects'
         ];
 
         const sampleRows = [
@@ -771,13 +829,14 @@ const Users = () => {
                 email: 'john.doe@student.school.com',
                 phoneNumber: '0761234567',
                 role: 'student',
+                username: 'john.doe',
+                password: 'TempPass123',
                 schoolId: 'SCH001',
                 parentRole: '',
                 relationshipToStudent: '',
                 studentNames: '',
                 grade: '8',
-                subjects: 'Mathematics,English,Science',
-                password: 'TempPass123'
+                subjects: 'Mathematics,English,Science'
             },
             // Parent example
             {
@@ -786,13 +845,14 @@ const Users = () => {
                 email: 'jane.doe@parent.com',
                 phoneNumber: '0767654321',
                 role: 'parent',
+                username: 'jane.doe',
+                password: 'TempPass123',
                 schoolId: 'SCH001',
                 parentRole: 'parent',
                 relationshipToStudent: 'Mother',
                 studentNames: 'John Doe',
                 grade: '',
-                subjects: '',
-                password: 'TempPass123'
+                subjects: ''
             },
             // Teacher example
             {
@@ -801,13 +861,14 @@ const Users = () => {
                 email: 'sarah.johnson@school.com',
                 phoneNumber: '0712345678',
                 role: 'teacher',
+                username: 'sarah.johnson',
+                password: 'TempPass123',
                 schoolId: 'SCH001',
                 parentRole: '',
                 relationshipToStudent: '',
                 studentNames: '',
                 grade: '',
-                subjects: 'Mathematics,Physics',
-                password: 'TempPass123'
+                subjects: 'Mathematics,Physics'
             }
         ];
 
@@ -827,7 +888,7 @@ const Users = () => {
 
     const validateBulkUploadData = (data) => {
         const errors = [];
-        const requiredFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'role'];
+        const requiredFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'role', 'username', 'password'];
 
         data.forEach((row, index) => {
             const rowNum = index + 2; // +2 because of 0-index and header row
@@ -901,17 +962,19 @@ const Users = () => {
 
             setBulkUploadProgress(25);
 
-            // Process the data - normalize and prepare for upload
+            // Process the data - normalize and prepare for upload.
+            // Users added by an admin (including parents) are pre-approved.
             const processedData = parsed.data.map(row => ({
                 ...row,
                 role: row.role.toLowerCase(),
                 parentRole: row.parentRole ? row.parentRole.toLowerCase() : '',
                 firstName: row.firstName.trim(),
                 lastName: row.lastName.trim(),
+                username: row.username.trim(),
                 email: row.email.trim().toLowerCase(),
                 phoneNumber: row.phoneNumber.replace(/\s/g, ''),
                 name: `${row.firstName.trim()} ${row.lastName.trim()}`,
-                status: row.role === 'parent' ? 'pending_approval' : 'active'
+                status: 'active'
             }));
 
             setBulkUploadProgress(50);
@@ -938,7 +1001,7 @@ const Users = () => {
                 recordCount: processedData.length
             };
 
-            const response = await adminService.uploadBulkData(bulkDataPayload);
+            const response = await uploadBulkData(bulkDataPayload);
             setBulkUploadProgress(100);
 
             setBulkUploadResults({
@@ -967,195 +1030,196 @@ const Users = () => {
         }
     };
 
- const renderUserTable = (userData, title, canCreateRole = true, tabError = '') => {
-    const safeUserData = Array.isArray(userData) ? userData : [];
+    const renderUserTable = (userData, title, canCreateRole = true, tabError = '') => {
+        const safeUserData = Array.isArray(userData) ? userData : [];
+        const showUsernameColumn = title === 'Students' || title === 'Parents' || title === 'All Users';
 
-    return (
-    <Card>
-        <CardContent>
-            {tabError && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                    {tabError}
-                </Alert>
-            )}
+        return (
+        <Card>
+            <CardContent>
+                {tabError && (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                        {tabError}
+                    </Alert>
+                )}
 
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    gap: 1,
-                    mb: 2
-                }}
-            >
-                <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{title}</Typography>
                 <Box
                     sx={{
                         display: 'flex',
-                        flexWrap: 'wrap',
+                        justifyContent: 'space-between',
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        flexDirection: { xs: 'column', sm: 'row' },
                         gap: 1,
-                        width: { xs: '100%', sm: 'auto' },
-                        justifyContent: { xs: 'flex-start', sm: 'flex-end' }
+                        mb: 2
                     }}
                 >
-                    {canCreateRole && (
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => {
-                                const roleMap = {
-                                    'All Users': 'student',
-                                    'Parents': 'parent',
-                                    'Students': 'student',
-                                    'Teachers': 'teacher'
-                                };
-                                const selectedRole = roleMap[title] || 'student';
-
-                                resetForm();
-                                setUserForm(prev => ({ ...prev, role: selectedRole }));
-                                setEditingUser(null);
-                                setFormErrors({});
-                                setError('');
-                                setDialogOpen(true);
-                            }}
-                            sx={{ flexGrow: 0 }}
-                        >
-                            Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
-                        </Button>
-                    )}
-                    <Button
-                        variant="outlined"
-                        startIcon={<UploadFileIcon />}
-                        onClick={() => setBulkUploadDialogOpen(true)}
+                    <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{title}</Typography>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1,
+                            width: { xs: '100%', sm: 'auto' },
+                            justifyContent: { xs: 'flex-start', sm: 'flex-end' }
+                        }}
                     >
-                        Bulk Upload
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleExport(userData, title)}
-                    >
-                        Export CSV
-                    </Button>
-                </Box>
-            </Box>
+                        {canCreateRole && (
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={() => {
+                                    const roleMap = {
+                                        'All Users': 'student',
+                                        'Parents': 'parent',
+                                        'Students': 'student',
+                                        'Teachers': 'teacher'
+                                    };
+                                    const selectedRole = roleMap[title] || 'student';
 
-            <TableContainer>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>First Name</TableCell>
-                            <TableCell>Last Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Phone Number</TableCell>
-                            <TableCell>Role</TableCell>
-                            {(title === 'Students' || title === 'All Users') && <TableCell>Username</TableCell>}
-                            {title === 'Teachers' && <TableCell>Subjects</TableCell>}
-                            {title === 'Teachers' && <TableCell>Grade</TableCell>}
-                            {title === 'Students' && <TableCell>Grade</TableCell>}
-                            <TableCell align="right">Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {safeUserData.length === 0 ? (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={
-                                        5 + 1
-                                        + ((title === 'Students' || title === 'All Users') ? 1 : 0)
-                                        + (title === 'Teachers' ? 2 : 0)
-                                        + (title === 'Students' ? 1 : 0)
-                                    }
-                                    align="center"
-                                >
-                                    <Typography color="text.secondary">
-                                        No {title.toLowerCase()} found
-                                    </Typography>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            safeUserData.map((user) => {
-                                let subjectNames = [];
-                                let gradeName = 'Not assigned';
-
-                                if (title === 'Teachers') {
-                                    if (Array.isArray(user.subjects) && user.subjects.length > 0) {
-                                        subjectNames = user.subjects
-                                            .map(subjectId => {
-                                                const subject = subjects.find(s => String(s.id) === String(subjectId));
-                                                return subject ? subject.name : null;
-                                            })
-                                            .filter(Boolean);
-                                    }
-
-                                    if (user.grade) {
-                                        const grade = grades.find(g => String(g.id) === String(user.grade));
-                                        gradeName = grade ? grade.name : 'Not assigned';
-                                    }
-                                }
-
-                                let studentGradeName = 'Not assigned';
-                                if (title === 'Students' && user.grade) {
-                                    const grade = grades.find(g => String(g.id) === String(user.grade));
-                                    studentGradeName = grade ? grade.name : 'Not assigned';
-                                }
-
-                                return (
-                                    <TableRow key={user.id}>
-                                        <TableCell>{user.name}</TableCell>
-                                        <TableCell>{user.lastName || 'N/A'}</TableCell>
-                                        <TableCell>{user.email}</TableCell>
-                                        <TableCell>{user.phoneNumber}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={user.role}
-                                                color={getRoleColor(user.role)}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        {(title === 'Students' || title === 'All Users') && (
-                                            <TableCell>
-                                                {(user.role || '').toString().toLowerCase() === 'student'
-                                                    ? (user.username || 'Not set')
-                                                    : '—'}
-                                            </TableCell>
-                                        )}
-                                        {title === 'Teachers' && (
-                                            <TableCell>
-                                                {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
-                                            </TableCell>
-                                        )}
-                                        {title === 'Teachers' && (
-                                            <TableCell>{gradeName}</TableCell>
-                                        )}
-                                        {title === 'Students' && (
-                                            <TableCell>{studentGradeName}</TableCell>
-                                        )}
-                                        <TableCell align="right">
-                                            {title === 'Students' && (
-                                                <IconButton onClick={() => handleExportStudentNotes(user)} title="Export Notes">
-                                                    <NoteIcon />
-                                                </IconButton>
-                                            )}
-                                            <IconButton onClick={() => openDialog(user)}>
-                                                <EditIcon />
-                                            </IconButton>
-                                            <IconButton onClick={() => handleDelete(user.id)} color="error">
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })
+                                    resetForm();
+                                    setUserForm(prev => ({ ...prev, role: selectedRole }));
+                                    setEditingUser(null);
+                                    setFormErrors({});
+                                    setError('');
+                                    setDialogOpen(true);
+                                }}
+                                sx={{ flexGrow: 0 }}
+                            >
+                                Add {title === 'All Users' ? 'User' : title.slice(0, -1)}
+                            </Button>
                         )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-        </CardContent>
-    </Card>
-    );
-};
+                        <Button
+                            variant="outlined"
+                            startIcon={<UploadFileIcon />}
+                            onClick={() => setBulkUploadDialogOpen(true)}
+                        >
+                            Bulk Upload
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => handleExport(userData, title)}
+                        >
+                            Export CSV
+                        </Button>
+                    </Box>
+                </Box>
+
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>First Name</TableCell>
+                                <TableCell>Last Name</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell>Phone Number</TableCell>
+                                <TableCell>Role</TableCell>
+                                {showUsernameColumn && <TableCell>Username</TableCell>}
+                                {title === 'Teachers' && <TableCell>Subjects</TableCell>}
+                                {title === 'Teachers' && <TableCell>Grade</TableCell>}
+                                {title === 'Students' && <TableCell>Grade</TableCell>}
+                                <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {safeUserData.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={
+                                            5 + 1
+                                            + (showUsernameColumn ? 1 : 0)
+                                            + (title === 'Teachers' ? 2 : 0)
+                                            + (title === 'Students' ? 1 : 0)
+                                        }
+                                        align="center"
+                                    >
+                                        <Typography color="text.secondary">
+                                            No {title.toLowerCase()} found
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                safeUserData.map((user) => {
+                                    let subjectNames = [];
+                                    let gradeName = 'Not assigned';
+
+                                    if (title === 'Teachers') {
+                                        if (Array.isArray(user.subjects) && user.subjects.length > 0) {
+                                            subjectNames = user.subjects
+                                                .map(subjectId => {
+                                                    const subject = subjects.find(s => String(s.id) === String(subjectId));
+                                                    return subject ? subject.name : null;
+                                                })
+                                                .filter(Boolean);
+                                        }
+
+                                        if (user.grade) {
+                                            const grade = grades.find(g => String(g.id) === String(user.grade));
+                                            gradeName = grade ? grade.name : 'Not assigned';
+                                        }
+                                    }
+
+                                    let studentGradeName = 'Not assigned';
+                                    if (title === 'Students' && user.grade) {
+                                        const grade = grades.find(g => String(g.id) === String(user.grade));
+                                        studentGradeName = grade ? grade.name : 'Not assigned';
+                                    }
+
+                                    return (
+                                        <TableRow key={user.id}>
+                                            <TableCell>{user.name}</TableCell>
+                                            <TableCell>{user.lastName || 'N/A'}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>{user.phoneNumber}</TableCell>
+                                            <TableCell>
+                                                <Chip
+                                                    label={user.role}
+                                                    color={getRoleColor(user.role)}
+                                                    size="small"
+                                                />
+                                            </TableCell>
+                                            {showUsernameColumn && (
+                                                <TableCell>
+                                                    {['student', 'parent'].includes((user.role || '').toString().toLowerCase())
+                                                        ? (user.username || 'Not set')
+                                                        : '—'}
+                                                </TableCell>
+                                            )}
+                                            {title === 'Teachers' && (
+                                                <TableCell>
+                                                    {subjectNames.length > 0 ? subjectNames.join(', ') : 'Not assigned'}
+                                                </TableCell>
+                                            )}
+                                            {title === 'Teachers' && (
+                                                <TableCell>{gradeName}</TableCell>
+                                            )}
+                                            {title === 'Students' && (
+                                                <TableCell>{studentGradeName}</TableCell>
+                                            )}
+                                            <TableCell align="right">
+                                                {title === 'Students' && (
+                                                    <IconButton onClick={() => handleExportStudentNotes(user)} title="Export Notes">
+                                                        <NoteIcon />
+                                                    </IconButton>
+                                                )}
+                                                <IconButton onClick={() => openDialog(user)}>
+                                                    <EditIcon />
+                                                </IconButton>
+                                                <IconButton onClick={() => handleDelete(user.id)} color="error">
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </CardContent>
+        </Card>
+        );
+    };
 
     if (loading) return <CircularProgress />;
 
@@ -1264,13 +1328,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.name}
-                    onChange={(e) => {
-                        setUserForm({ ...userForm, name: e.target.value });
-                        setFormErrors({ ...formErrors, name: false });
-                    }}
-                    error={formErrors.name}
-                    helperText={formErrors.name ? 'Name is required' : ''}
-                    required
+                        onChange={(e) => {
+                            setUserForm({ ...userForm, name: e.target.value });
+                            setFormErrors({ ...formErrors, name: false });
+                        }}
+                        error={formErrors.name}
+                        helperText={formErrors.name ? 'Name is required' : ''}
+                        required
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -1289,13 +1353,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.email}
-                    onChange={(e) => {
-                        setUserForm({ ...userForm, email: e.target.value });
-                        setFormErrors({ ...formErrors, email: false });
-                    }}
-                    error={formErrors.email}
-                    helperText={formErrors.email ? 'Please enter a valid email address' : ''}
-                    required
+                        onChange={(e) => {
+                            setUserForm({ ...userForm, email: e.target.value });
+                            setFormErrors({ ...formErrors, email: false });
+                        }}
+                        error={formErrors.email}
+                        helperText={formErrors.email ? 'Please enter a valid email address' : ''}
+                        required
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -1304,13 +1368,13 @@ const Users = () => {
                         fullWidth
                         variant="outlined"
                         value={userForm.phoneNumber}
-                    onChange={(e) => {
-                        setUserForm({ ...userForm, phoneNumber: e.target.value });
-                        setFormErrors({ ...formErrors, phoneNumber: false });
-                    }}
-                    error={formErrors.phoneNumber}
-                    helperText={formErrors.phoneNumber ? 'Phone number is required' : ''}
-                    required={userForm.role !== 'student'}
+                        onChange={(e) => {
+                            setUserForm({ ...userForm, phoneNumber: e.target.value });
+                            setFormErrors({ ...formErrors, phoneNumber: false });
+                        }}
+                        error={formErrors.phoneNumber}
+                        helperText={formErrors.phoneNumber ? 'Phone number is required' : ''}
+                        required={userForm.role !== 'student'}
                         sx={{ mb: 2 }}
                     />
                     <TextField
@@ -1344,7 +1408,7 @@ const Users = () => {
                         ))}
                     </TextField>
 
-                    {(userForm.role === 'student' || userForm.role === 'teacher') && (
+                    {(userForm.role === 'student' || userForm.role === 'teacher' || userForm.role === 'parent') && (
                         <>
                             <TextField
                                 margin="dense"
@@ -1359,7 +1423,7 @@ const Users = () => {
                                 error={formErrors.username}
                                 helperText={
                                     formErrors.username
-                                        ? `Username is required for ${userForm.role === 'teacher' ? 'teachers' : 'students'}`
+                                        ? `Username is required for ${userForm.role}s`
                                         : `Used to log in - the ${userForm.role} will use this instead of OTP`
                                 }
                                 sx={{ mb: 2 }}
@@ -1451,7 +1515,7 @@ const Users = () => {
                             sx={{ mb: 2 }}
                         />
                     )}
-                    
+
                     {userForm.role === 'student' && (
                         <>
                             <TextField
@@ -1479,9 +1543,9 @@ const Users = () => {
                                 {grades.map((grade) => {
                                     const gradeValue = String(grade.id);
                                     return (
-                                            <MenuItem key={grade.id} value={gradeValue}>
-                                                {grade.name}
-                                            </MenuItem>
+                                        <MenuItem key={grade.id} value={gradeValue}>
+                                            {grade.name}
+                                        </MenuItem>
                                     );
                                 })}
                             </TextField>
@@ -1541,9 +1605,9 @@ const Users = () => {
                                 {grades.map((grade) => {
                                     const gradeValue = String(grade.id);
                                     return (
-                                            <MenuItem key={grade.id} value={gradeValue}>
-                                                {grade.name}
-                                            </MenuItem>
+                                        <MenuItem key={grade.id} value={gradeValue}>
+                                            {grade.name}
+                                        </MenuItem>
                                     );
                                 })}
                             </TextField>
@@ -1795,16 +1859,62 @@ const Users = () => {
                                                         helperText={formErrors.parentPhoneNumber ? 'Parent/guardian phone number is required for students' : ''}
                                                     />
                                                 </Grid>
+
+                                                {!p.isExisting && (
+                                                    <>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <TextField
+                                                                margin="dense"
+                                                                label="Username"
+                                                                fullWidth
+                                                                variant="outlined"
+                                                                value={p.username}
+                                                                onChange={(e) => {
+                                                                    updateNewParent(index, 'username', e.target.value);
+                                                                    setFormErrors((prev) => ({ ...prev, parentUsername: false }));
+                                                                }}
+                                                                error={formErrors.parentUsername}
+                                                                helperText={formErrors.parentUsername ? 'Username is required' : 'Used by the parent to log in'}
+                                                            />
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <TextField
+                                                                margin="dense"
+                                                                label="Password"
+                                                                type={showPassword ? 'text' : 'password'}
+                                                                fullWidth
+                                                                variant="outlined"
+                                                                value={p.password}
+                                                                onChange={(e) => {
+                                                                    updateNewParent(index, 'password', e.target.value);
+                                                                    setFormErrors((prev) => ({ ...prev, parentPassword: false }));
+                                                                }}
+                                                                error={formErrors.parentPassword}
+                                                                helperText={formErrors.parentPassword ? 'Password is required' : 'Initial login password'}
+                                                                InputProps={{
+                                                                    endAdornment: (
+                                                                        <InputAdornment position="end">
+                                                                            <IconButton
+                                                                                aria-label="toggle password visibility"
+                                                                                onClick={() => setShowPassword((prev) => !prev)}
+                                                                                edge="end"
+                                                                            >
+                                                                                {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                                                            </IconButton>
+                                                                        </InputAdornment>
+                                                                    ),
+                                                                }}
+                                                            />
+                                                        </Grid>
+                                                    </>
+                                                )}
                                             </Grid>
                                         </Box>
                                     ))}
                                 </>
                             )}
-
                         </>
-                        )}
-                    
-                    
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
@@ -1819,6 +1929,7 @@ const Users = () => {
                 <DialogContent>
                     <Alert severity="info" sx={{ mb: 2 }}>
                         Upload a CSV file with user data. Download the template first to see the required format.
+                        Every row needs a username and password.
                     </Alert>
 
                     {bulkUploadErrors.length > 0 && (
