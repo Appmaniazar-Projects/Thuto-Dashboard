@@ -58,7 +58,8 @@ api.interceptors.request.use(
       '/users/',
       '/subjects/',
       '/student/',
-      '/events/'
+      '/events/',
+      '/notifications'  // user-scoped via JWT; no schoolId needed
 
     ];
 

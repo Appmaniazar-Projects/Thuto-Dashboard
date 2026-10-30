@@ -15,6 +15,7 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 
 const StudentSubjects = lazy(() => import('./pages/student/StudentSubjects'));
 const Resources = lazy(() => import('./pages/student/Resources'));
@@ -105,6 +106,7 @@ const protectedRoutes = [
   { path: '/messages', element: <MessagesPage /> },
   { path: '/profile', element: <ProfilePage /> },
   { path: '/settings', element: <SettingsPage /> },
+  { path: '/notifications', element: <NotificationsPage /> },
   { path: '/events/create', element: <CreateEventPage /> },
   { path: '/events/:eventId/pledge', element: <SponsorshipPledgePage />, roles: ['parent'] },
   { path: '/calendar/event/new', element: <Navigate to="/events/create" replace /> },

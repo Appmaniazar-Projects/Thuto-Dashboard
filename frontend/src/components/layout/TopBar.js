@@ -13,26 +13,20 @@ import {
   useMediaQuery,
   useTheme,
   ListItemText,
-  List,
-  ListItem,
   Divider,
-  Button,
   ListItemIcon
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   AccountCircle,
-  Notifications as NotificationsIcon,
   Mail as MailIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
-  MarkChatRead as MarkChatReadIcon,
   BugReport as BugIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { notificationService } from '../../services/notificationService';
-import { formatDistanceToNow } from 'date-fns';
+import NotificationBell from '../notifications/NotificationBell';
 import SchoolLogo from '../common/SchoolLogo';
 import BugReport from '../testing/BugReport';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -44,26 +38,7 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [bugReportOpen, setBugReportOpen] = useState(false);
-
-  // Fetch notifications for admin user
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (user && user.role === 'admin') {
-        const userNotifications = await notificationService.getNotificationsForUser(user.id);
-        setNotifications(userNotifications);
-        setUnreadCount(userNotifications.filter(n => !n.read).length);
-      }
-    };
-
-    fetchNotifications();
-    // Optional: Set up polling to refresh notifications periodically
-    const interval = setInterval(fetchNotifications, 30000); // every 30 seconds
-    return () => clearInterval(interval);
-  }, [user]);
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -71,14 +46,6 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleNotificationsOpen = (event) => {
-    setNotificationsAnchorEl(event.currentTarget);
-  };
-
-  const handleNotificationsClose = () => {
-    setNotificationsAnchorEl(null);
   };
 
   const handleLogout = () => {
@@ -117,26 +84,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
     }
   };
 
-  const handleMarkAsRead = async (notificationId) => {
-    await notificationService.markNotificationAsRead(notificationId);
-    const updatedNotifications = notifications.map(n => 
-      n.id === notificationId ? { ...n, read: true } : n
-    );
-    setNotifications(updatedNotifications);
-    setUnreadCount(updatedNotifications.filter(n => !n.read).length);
-  };
-
-  const handleMarkAllAsRead = async () => {
-    await notificationService.markAllNotificationsAsRead(user.id);
-    const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
-    setNotifications(updatedNotifications);
-    setUnreadCount(0);
-    handleNotificationsClose();
-  };
-
   const menuId = 'primary-account-menu';
   const isMenuOpen = Boolean(anchorEl);
-  const isNotificationsOpen = Boolean(notificationsAnchorEl);
 
   return (
     <AppBar
@@ -219,20 +168,8 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
               return null;
             })()}
           
-          {/* Notifications */}
-          {user && user.role === 'admin' && (
-            <Tooltip title="Notifications">
-              <IconButton 
-                color="inherit" 
-                onClick={handleNotificationsOpen}
-                sx={{ mr: 1 }}
-              >
-                <Badge badgeContent={unreadCount} color="error">
-                  <NotificationsIcon />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-          )}
+          {/* Notifications (admin, teacher, student, parent roles — see NOTIFICATION_CONFIG.ROLES) */}
+          <NotificationBell />
           
           {/* Bug Report Button - hidden for super admins, who manage bugs
               directly via the Bugs dashboard under School Management instead */}
@@ -293,58 +230,6 @@ const TopBar = ({ drawerWidth, handleDrawerToggle, title, sidebarOpen, isSuperAd
         </Box>
       </Toolbar>
       
-      {/* Notifications Menu */}
-      <Menu
-        anchorEl={notificationsAnchorEl}
-        open={isNotificationsOpen}
-        onClose={handleNotificationsClose}
-        PaperProps={{
-          sx: {
-            width: 360,
-            maxWidth: '90vw',
-            mt: 1.5,
-            backgroundColor: '#1f2937',
-            border: '1px solid #374151',
-            color: '#f9fafb',
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Typography variant="h6">Notifications</Typography>
-          {unreadCount > 0 && (
-            <Button size="small" onClick={handleMarkAllAsRead} startIcon={<MarkChatReadIcon />}>
-              Mark all as read
-            </Button>
-          )}
-        </Box>
-        <Divider sx={{ borderColor: '#374151' }} />
-        <List sx={{ p: 0, maxHeight: 400, overflowY: 'auto' }}>
-          {notifications.length > 0 ? notifications.map(notification => (
-            <ListItem 
-              key={notification.id}
-              button 
-              onClick={() => handleMarkAsRead(notification.id)}
-              sx={{
-                backgroundColor: !notification.read ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-                borderBottom: '1px solid #374151',
-              }}
-            >
-              <ListItemText
-                primary={notification.message}
-                secondary={formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                primaryTypographyProps={{ fontWeight: !notification.read ? 'bold' : 'normal' }}
-                secondaryTypographyProps={{ color: '#9ca3af' }}
-              />
-            </ListItem>
-          )) : (
-            <ListItem>
-              <ListItemText primary="No new notifications" sx={{ textAlign: 'center', color: '#9ca3af' }} />
-            </ListItem>
-          )}
-        </List>
-      </Menu>
-
       {/* Profile Menu */}
       <Menu
         anchorEl={anchorEl}
